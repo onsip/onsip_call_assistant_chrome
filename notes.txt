@@ -1,0 +1,8 @@
+Chrome API (how to setup autoupdating on custom hosting - not needed when using the Chrome gallery):
+http://code.google.com/chrome/extensions/autoupdate.html
+
+Updating the extension on Chrome gallery:
+* create a ZIP archive with the source files
+* make sure you increment the extension's version number in the manifest.json file
+* make sure there is no update_url in the manifest.json file
+* upload it on the developer dashboard page
