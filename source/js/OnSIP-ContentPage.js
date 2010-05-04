@@ -99,7 +99,7 @@ function clearDOM() {
 
 // parse DOM and convert phone numbers to click-to-call links
 function parseDOM(node) {
-	var invalidNodes = ['SCRIPT', 'STYLE', 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A', 'PRE', 'CODE'];
+	var invalidNodes = ['SCRIPT', 'STYLE', 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A', 'CODE'];
 	var nodeName = node.nodeName.toUpperCase();
 	var childNodesLength = node.childNodes.length;
 	
@@ -126,62 +126,73 @@ function parseDOM(node) {
 
 // replace phone numbers
 function parsePhoneNumbers(node) {
-	var text = node.nodeValue;
-	var newNode = text;
-	var foundNumbers = [];
-	var phoneNo;
-	var cleanNo;
-	var phoneLink;
-	var expr;
-	
 	// eliminate the obvious cases
-	if (!node || text.length < 10 || !/\d/.test(text)) {
-		return 0;
-	}
+    
+    if (!node || node.nodeValue.length < 10 ||
+    node.nodeValue.search(/\d/) == -1) {
+        return 0;
+    }
+    
+    var phoneNumber = /((((\+|(00))[1-9]\d{0,3}[\s\-.]?)?\d{2,4}[\s\/\-.]?)|21)\d{5,9}/;
+    var phoneNumberNorthAmerica = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}/;
+    var phoneNumberDelimiter = /[\s.,;:|]/;
+    
+    var text = node.nodeValue;
+    var offset = 0;
+    var number = "";
+    var found = false;
+    var foundNorthAmerica = false;
+    
+    // find the first phone number in the text node
+    while (!found) {
+        var result = text.match(phoneNumberNorthAmerica);
+        if (result) {
+            foundNorthAmerica = true;
+        }
+        else {
+            foundNorthAmerica = false;
+        }
+        
+        if (!result) {
+            return 0;
+        }
+        
+        var pos = result.index;
+        offset += pos;
+        number = result[0];
+        
+        // make sure we have a resonable delimiters around our matching number
+        if (pos && !text.substr(pos - 1, 1).match(phoneNumberDelimiter) ||
+        pos + number.length < text.length &&
+        !text.substr(pos + number.length, 1).match(phoneNumberDelimiter)) {
+            offset += number.length;
+            text = text.substr(pos + number.length);
+            continue;
+        }
+        
+        // looks like we found a phone number
+        found = true;
+    }
+    
+    // wrap the phone number in a span tag
+	var cleanNumber = cleanPhoneNo(number);
 	
-	var phoneNumber = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}/g;
-	var phoneNumberDelimiter = '([\\s\\.,;:|\\[\\]()]+)';
+	if (foundNorthAmerica && cleanNumber.length == 10) {
+        cleanNumber = "1" + cleanNumber;
+    }
+    var spanNode = $('<a href="onsip:' + cleanNumber + '@' + toDomain + '" title="Click-to-Call ' + number + '" class="onsip-click-to-call" rel="' + cleanNumber + '"></a>')[0];
 	
-	// find all phone numbers in current string and save them in an array
-	var result = text.match(phoneNumber);
-	if ( $.isArray(result) ) {
-		foundNumbers = result.unique();
-	}
 	
-	// loop through the phone numbers array and replace each of them with a click-to-call link
-	for ( var n = 0; n < foundNumbers.length; n++ ) {
-		phoneNo		= foundNumbers[n];
-		cleanNo		= cleanPhoneNo(phoneNo);
-		cleanNo		= ( cleanNo.length == 11 ) ? cleanNo : '1' + cleanNo;
-		phoneLink	= '<a href="onsip:' + cleanNo + '@' + toDomain + '" title="Click-to-Call ' + phoneNo + '" class="onsip-click-to-call" rel="' + cleanNo + '">' + phoneNo + '</a>';
-		
-		/**
-		 * stupid JavaScript doesn't understand \A and \Z regexp anchors 
-		 * and I'm to tired to search for a more elegant solution, 
-		 * so here goes:
-		 */
-		
-		// replace valid phone numbers in the middle of the string
-		expr1		= RegExp(phoneNumberDelimiter + escapeRegExp(phoneNo) + phoneNumberDelimiter, 'g');
-		newNode		= newNode.replace(expr1, '\$1' + phoneLink + '\$2');
-		
-		// replace valid phone numbers at the begining of the string
-		expr2		= RegExp('^' + escapeRegExp(phoneNo) + phoneNumberDelimiter, 'g');
-		newNode		= newNode.replace(expr2, phoneLink + '\$1');
-		
-		// replace valid phone numbers at the end of the string
-		expr3		= RegExp(phoneNumberDelimiter + escapeRegExp(phoneNo) + '$', 'g');
-		newNode		= newNode.replace(expr3, '\$1' + phoneLink);
-		
-		// replace valid phone numbers where they're the only characters in the string
-		expr4		= RegExp('^' + escapeRegExp(phoneNo) + '$', 'g');
-		newNode		= newNode.replace(expr4, phoneLink);
-	}
-	
-	// replace text node with the new HTML nodes
-	$(node).replaceWith(newNode);
-	
-	return foundNumbers.length;
+    var range = node.ownerDocument.createRange();
+    range.setStart(node, offset);
+    range.setEnd(node, offset + number.length);
+    var docfrag = range.extractContents();
+    var before = range.startContainer.splitText(range.startOffset);
+    var parent = before.parentNode;
+    spanNode.appendChild(docfrag);
+    parent.insertBefore(spanNode, before);
+    
+    return 1;
 }
 
 function addEvents(node) {
