@@ -256,7 +256,7 @@ function showSetupMessage(phoneNo) {
 	if (call.size() == 0) {
 		$('.onsip-message-box').remove();
 		
-		call = $('<div class="onsip-message-box onsip-call-message"><div>Calling <strong>' + phoneNo + '</strong> ...<p><a href="#">CANCEL</a><p></div></div>');
+		call = $('<div class="onsip-message-box onsip-call-message"><div>Calling <strong>' + phoneNo + '</strong> ...<p><a href="#">Close</a><p></div></div>');
 		call.find('DIV').css('background-image', 'url(' + chrome.extension.getURL('images/i_calling.png') + ')');
 		call.find('A').click(function(e){
 			e.preventDefault();
@@ -292,7 +292,7 @@ function showErrorMessage(msg, fromAddressError) {
 	if (fromAddressError) {
 		DIV += '<a href="#" class="onsip-edit-address">Edit telephone number address</a> ';
 	}
-	DIV += '<a href="#">CLOSE</a><p></div></div>';
+	DIV += '<a href="#">Close</a><p></div></div>';
 	
 	error = $(DIV);
 	error.find('DIV').css('background-image', 'url(' + chrome.extension.getURL('images/i_error.png') + ')');
