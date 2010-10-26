@@ -1,6 +1,6 @@
 {
-	"name"			: "OnSIP Click-to-Call",
-	"version"		: "1.0.1",
+	"name"			: "OnSIP Click-to-Call - HighRise",
+	"version"		: "1.1.0",
 	
 	"description"	: "Click on any phone number on a page to dial, using the OnSIP Hosted PBX service",
 	"icons"			: { "19" : "images/icon-19.png", "32" : "images/icon-32.png", "48" : "images/icon-48.png", "128" : "images/icon-128.png"},
@@ -13,13 +13,13 @@
 	"options_page"	: "index.html",
 	"background_page"	: "bg-page.html",
 
-	"permissions"	: ["tabs", "http://www.jnctn.com/restapi"],
+	"permissions"	: ["tabs", "http://www.jnctn.com/restapi", "https://*.highrisehq.com/*", "https://dashboard.onsip.com/*"],
 	
 	"content_scripts": [
 		{
 			"matches"	: ["http://*/*", "https://*/*"],
-			"js"		: ["js/jquery.js", "js/utils.js", "js/OnSIP-ContentPage.js"],
-			"css"		: ["css/content-page.css"],
+			"js"		: ["js/jquery.js", "js/utils.js", "js/OnSIP-ContentPage.js" ],
+			"css"		: [ "css/dashboard.css", "css/content-page.css"],
 			"run_at"	: "document_end"
 		}
 	]

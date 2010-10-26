@@ -1,19 +1,94 @@
-.onsip-click-to-call-icon	{	display:none; position:absolute; z-index:9999; width:27px; height:25px; left:50px; background:url(../images/icon-phone.png) center center no-repeat; }
+a#close-notification-btn:hover{
+    text-decoration: none;
+}
 
-.onsip-message-box			{	position:fixed !important; z-index:9999 !important; top:20% !important; padding:10px !important; left:50% !important; margin:0 0 0 -250px !important; 
-								background-color:rgba(100, 100, 100, 0.7) !important; border-radius:50px !important; 
-							}
-	.onsip-message-box DIV		{	position:relative !important; width:400px !important; border-radius:40px !important; padding:15px 15px 15px 65px !important; 
-									color:#FFF !important; font:normal 14px Verdana, Geneva, Arial, Helvetica, sans-serif !important;
-									background:url(../images/i_warning.png) 20px center no-repeat; background-color:#000 !important; cursor:pointer !important;
-								}
-	
-	.onsip-call-message DIV		{	cursor:default !important; }
-	
-	.onsip-message-box P		{	margin:0 0 -5px !important; padding:10px 10px 0 !important; text-align:right !important; }
-	.onsip-message-box P A		{	display:inline-block !important; color:#FFF !important; text-decoration:none !important; border-radius:3px !important; padding:3px 10px !important; 
-									background: -webkit-gradient(linear, left top, left bottom, from(#CC0000), to(#990000) ) 0 !important; 
-									font:normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif !important; text-shadow:1px 1px 0px #000 !important;
-								}
+
+.onsip-error-box{
+        position:fixed !important;
+    z-index:9999 !important;
+    top:20% !important;
+    padding:10px !important;
+    left:50% !important;
+    margin:0 0 0 -250px !important;
+    background-color: #afafaf;
+    width: 200px !important;
+}
+
+.onsip-click-to-call-icon	{
+    display:none;
+    position:absolute;
+    z-index:9999;
+    width:27px;
+    height:25px;
+    left:50px;
+    background:url(../images/icon-phone.png) center center no-repeat;
+}
+
+.onsip-message-box{
+    position:fixed !important;
+    z-index:9999 !important;
+    top:20% !important;
+    padding:10px !important;
+    left:50% !important;
+    margin:0 0 0 -250px !important;
+    background: transparent url(../images/pop_up_background.png);
+    height:80px;
+}
+.onsip-message-box div{
+    position:relative !important;
+    width:200px !important;
+
+    padding: 5px 15px 5px 65px !important;
+    color:#333 !important; font:normal 14px Verdana, Geneva, Arial, Helvetica, sans-serif !important;
+    background: transparent url(../images/pop_up_background.png);
+}
+.onsip-call-message div	{
+    cursor:default !important;
+}
+
+.onsip-message-box p{
+    width: 50px !important;
+    height: 50px !important;
+    position: absolute !important;
+    top: -10px !important;
+    margin-right: -10px !important;
+}
+.onsip-message-box p a{	
+    display:inline-block !important;
+    color:#333 !important;
+    text-decoration:none !important;
+ }
 	
 	.onsip-message-box P A.onsip-edit-address	{	background: -webkit-gradient(linear, left top, left bottom, from(#006600), to(#003300) ) 0 !important; }
+
+#onsip-message-wrapper{
+    position: relative !important;
+}
+#popup-message{
+margin: 0 !important;
+padding: 0 0 2px 8px !important;
+width: inherit !important;
+color:#666666 !important;
+}
+#popup-name{
+margin: 0 !important;
+padding: 0 0 2px 8px !important;
+color:#333 !important;
+  font-size: 15px !important;
+  font-weight:bold !important;
+  width: inherit !important;
+}
+#popup-number{
+    margin: 0 !important;
+padding: 0 0 2px 8px !important;
+width: inherit !important;
+color:#222 !important;
+font-weight:bold;
+  font-size:16px !important;
+
+}
+#close-btn-wrapper{
+    margin-top:-21px;
+  position:absolute;
+  right:-17px;
+}

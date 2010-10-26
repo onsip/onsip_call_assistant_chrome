@@ -24,15 +24,15 @@ H4		{	font-weight:bold; font-size:14px; margin:14px 0; padding:0; }
 
 	#content	{	position:relative; width:960px; padding:60px 0 80px; overflow:hidden; }
 	
-		#options	{	position:relative; float:right; width:300px; padding:10px 30px 30px; margin:0; background:#F3F9FD url(../images/bg-options.png) top left repeat-x; border:1px solid #c0d7e6; border-radius:6px; }
+		#options	{	position:relative; float:right; width:300px; padding:10px 10px 30px 30px; margin:0; background:#F3F9FD url(../images/bg-options.png) top left repeat-x; border:1px solid #c0d7e6; border-radius:6px; }
 			#options FIELDSET	{	padding:0; margin:0; border:0; font-size:12px; }
 			#options FIELDSET.submit	{	text-align:right; padding:20px 0 0; }
 			#options LABEL		{	display:block; padding:0 0 5px; text-shadow:1px 1px 0px #FFF; }
 			
-			#options INPUT[type="text"]			{	width:288px; padding:2px 4px; border:2px solid #004A8F; color:#778; font:normal 14px Verdana, Helvetica, sans-serif; }
+			#options INPUT[type="text"], #options INPUT[type="password"]{	width:258px; padding:2px 4px; border:2px solid #004A8F; color:#778; font:normal 14px Verdana, Helvetica, sans-serif; float: left; }
 			#options INPUT[type="text"]:focus	{	border-color:#5087C7; outline:none; color:#445; }
 			
-			#options INPUT[type="submit"]		{	border:none; padding:0; margin:0; width:131px; cursor:pointer; height:34px; 
+			#options INPUT[type="submit"]		{	border:none; padding:0; margin:5px 10px 0px 0px; width:131px; cursor:pointer; height:34px;
 													background:url(../images/btn-save.png) top left no-repeat; 
 													font:normal 14px Verdana, Helvetica, sans-serif; color:#FFF; text-shadow:1px 1px 0px #333;
 												}
@@ -41,6 +41,8 @@ H4		{	font-weight:bold; font-size:14px; margin:14px 0; padding:0; }
 			#options INPUT[type="submit"]:active{	background-position:0 -68px; outline:none; }
 			
 			#savedMsg	{	display:none; position:absolute; left:30px; bottom:35px; width:150px; color:#70A433; text-align:center; text-shadow:1px 1px 0px #FFF; line-height:14px; }
+			#errorMsg	{	display:none; position:absolute; left:30px; bottom:25px; width:150px; color:#cc0000; text-align:center; text-shadow:1px 1px 0px #FFF; line-height:14px; }
+			#validatingMsg	{	display:none; position:absolute; left:30px; bottom:35px; width:150px; color:#cc0000; text-align:center; text-shadow:1px 1px 0px #FFF; line-height:14px; }
 		
 		#content P	{	text-align:justify; }
 	
@@ -50,8 +52,44 @@ H4		{	font-weight:bold; font-size:14px; margin:14px 0; padding:0; }
 	#footer		{	position:relative; width:100%; height:40px; padding:20px 0 0; margin:-60px 0 0; font-size:12px; color:#FFF; background:#003B73 url(../images/bg-footer.jpg) top left repeat-x; }
 		#footerContent	{	position:relative; width:980px; margin:0 auto; text-align:center; }
 
+/*highrise modification*/
+select#timezone{
+    width: 270px;
+    background-color: #e9efe8;
+}
 
+.tool-tip-trigger{
+    color: #5087C7;
+    float: left;
+    padding: 2px 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
 
+.tooltip{
+    background-color: #FFF;
+    border: 1px solid #5087C7;
+    padding: 7px 10px;
+   margin-right:  20px;
+   font-size: 10px;
+    border-radius: 8px 8px 8px 0px;
+}
+/*highrise modification*/
 
+/* test */
 
+div#test{
+    background-color: #ccc;
+}
+.form-item-label{
+        width: 200px;
+        float: left;
+}
+#disablePopup{
+        float: left;
+}
 
+#notification-conf{
+        padding-top: 10px !important;
+}
+/* test */
