@@ -1,3 +1,5 @@
+// Testing git update
+var test = 'test';
 var pref = OnSIP_Preferences; // alias for the OnSIP_Preferences object
 var dblClick = false; // timeout to perform the single-click; canceled if second-click detected
 var callInProgress = false; // is there any call in progress?
