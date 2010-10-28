@@ -19,7 +19,7 @@
 		{
 			"matches"	: ["http://*/*", "https://*/*"],
 			"js"		: ["js/jquery.js", "js/utils.js", "js/OnSIP-ContentPage.js" ],
-			"css"		: [ "css/dashboard.css", "css/content-page.css"],
+			"css"		: ["css/content-page.css"],
 			"run_at"	: "document_end"
 		}
 	]
