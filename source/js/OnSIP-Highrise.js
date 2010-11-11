@@ -26,7 +26,69 @@ HIGHRISE.verifyToken = function (call) {
 
 };
 
-HIGHRISE.addNodeToProfile = function (customer, note, call) {
+HIGHRISE.postNote = function (phone_number, note) {
+    var clean_phone_num = null, customer = null;
+    if (companies || contacts) {
+	clean_phone_number = this._normalizePhoneNumber (phone_number);
+	costumer = this._findContact (clean_phone_number);
+	if (costumer) {
+	    // create note 
+	    var note = "";
+	    this._postNoteToProfile (costumer, note, null);       
+	}
+    }    
+};
+
+/** Find the person or company **/
+HIGHRISE._findContact = function (phone_number) {
+
+    var  i = 0, j = 0, costumer = null;
+    for (i = 0; i < contacts.length; i += 1) {
+        for (j = 0; j < contacts[i].phone_numbers.length; j += 1) {
+	    if (contacts[i].phone_numbers[j].phone_number === phone_number) {
+		costumer = contacts[i];
+		costumer.type = 'people';
+		return costumer;
+	    }    
+	}    	
+    }
+    
+    for (i = 0; i < companies.length; i += 1) {
+        for (j = 0; j < companies[i].phone_numbers.length; j += 1) {
+            if (companies[i].phone_numbers[j].phone_number === phone_number) {
+		costumer= companies[i];
+		costumer.type = 'companies';
+		return costumer;
+            }
+        }
+    }
+    
+    return null;
+
+};
+
+/** Normalize the phone number **/ 
+HIGHRISE._normalizePhoneNumber = function (phone_number) {
+
+    var clean_phone_num = null,
+        clean_phone_ext = null;
+
+
+    clean_phone_ext = getPhoneExtension( phone_num );
+    clean_phone_num = removeExtention ( phone_number );
+    clean_phone_num = cleanPhoneNo (clean_phone_num);
+    if(clean_phone_num.length === 10) {
+	clean_phone_num = '1' + clean_phone_num;
+    }
+    if(clean_phone_ext ){
+	clean_phone_num += cleanPhoneNo (clean_phone_ext);
+    }
+	
+    return clean_phone_num;
+
+};
+
+HIGHRISE._postNoteToProfile = function (customer, note, call) {
 
     var xhr  = new XMLHttpRequest();
     var that = this;
@@ -34,10 +96,14 @@ HIGHRISE.addNodeToProfile = function (customer, note, call) {
 	if (xhr.readyState !== 4) {
 	    return false;
 	}
-	if (xhr.status !== 200) {	    
-	    call.onError (xhr.status);
+	if (xhr.status !== 200) {
+	    if (call && call.onError) {
+	        call.onError (xhr.status);
+	    }
 	} else{
-	    call.onSuccess ();
+	    if (call && call.onSuccess) {
+	        call.onSuccess ();
+	    }
 	}
 	return true;
     };
@@ -47,8 +113,7 @@ HIGHRISE.addNodeToProfile = function (customer, note, call) {
 
 };
 
-
-HIGHRISE.getContacts = function (call) {
+HIGHRISE._getContacts = function (call) {
 
    var xhr  = new XMLHttpRequest();
    var that = this;
@@ -72,7 +137,7 @@ HIGHRISE.getContacts = function (call) {
 
                                                                                                                                                                                          
 // Retrieve companies from highrise                                                                                                                                                        
-HIGHRISE.getCompanies = function (call) {   
+HIGHRISE._getCompanies = function (call) {   
 
    var xhr  = new XMLHttpRequest();
    var that = this;
@@ -101,8 +166,7 @@ HIGHRISE._parseContactsXML = function (xml) {
     var person_nodes   = root_node.getElementsByTagName("person");
     var node_len       = person_nodes.length;
     var i = 0, first_name = null, last_name  = null, phone_number_nodes = [],
-        j = 0, phone_num  = null, location   = null, person_id = null, clean_phone_ext = null,
-        clean_phone_num = null;
+    j = 0, phone_num  = null, location   = null, person_id = null;
 
     this.contacts = [];
     for (i = 0 ; i < node_len ; i += 1) {
@@ -112,18 +176,9 @@ HIGHRISE._parseContactsXML = function (xml) {
 	phone_number_nodes  = person_nodes[i].getElementsByTagName ("phone-number");
 	var phone_numbers_list = [];
 	for (j = 0; j < phone_number_nodes.length; j += 1) {
-	    phone_num = phone_number_nodes[j].getElementsByTagName ("number")  [0].firstChild.nodeValue;
-	    location  = phone_number_nodes[j].getElementsByTagName ("location")[0].firstChild.nodeValue;
-	    clean_phone_ext = getPhoneExtension( phone_num );
-
-	    clean_phone_num = removeExtention ( phone_num );
-	    clean_phone_num = cleanPhoneNo (clean_phone_num);
-	    if(clean_phone_num.length === 10) {
-		clean_phone_num = '1' + clean_phone_num;
-	    }
-	    if(clean_phone_ext ){
-		clean_phone_num += cleanPhoneNo (clean_phone_ext);
-	    }
+	    phone_num  = phone_number_nodes[j].getElementsByTagName ("number")  [0].firstChild.nodeValue;
+	    location   = phone_number_nodes[j].getElementsByTagName ("location")[0].firstChild.nodeValue;	   
+	    phone_num  = this._normalizePhoneNumber (phone_num);
 	    var ph_obj = {
 		phone_number : phone_num,
 		location     : location
@@ -148,8 +203,7 @@ HIGHRISE._parseCompaniesXML = function (xml) {
    var company_nodes  = root_node.getElementsByTagName("company");
    var node_len       = company_nodes.length;
    var i = 0, company_name = null, company_id = null, phone_number_nodes = [], 
-       j = 0, phone_num    = null, location   = null, clean_phone_ext    = null,
-       clean_phone_num     = null;
+       j = 0, phone_num    = null, location   = null;
    this.companies = [];
    for (i = 0 ; i < node_len ; i += 1) {      
       company_name        = company_nodes[i].getElementsByTagName ("name")[0].firstChild.nodeValue;
@@ -159,18 +213,9 @@ HIGHRISE._parseCompaniesXML = function (xml) {
       for (j = 0; j < phone_number_nodes.length; j += 1) {
 	  phone_num = phone_number_nodes[j].getElementsByTagName ("number")  [0].firstChild.nodeValue;
 	  location  = phone_number_nodes[j].getElementsByTagName ("location")[0].firstChild.nodeValue;
-	  clean_phone_ext = getPhoneExtension( phone_num );
-
-	  clean_phone_num = removeExtention ( phone_num );
-	  clean_phone_num = cleanPhoneNo (clean_phone_num);
-	  if(clean_phone_num.length === 10) {
-	      clean_phone_num = '1' + clean_phone_num;
-	  }
-	  if(clean_phone_ext ){
-	      clean_phone_num += cleanPhoneNo (clean_phone_ext);
-	  }
+	  phone_num  = this._normalizePhoneNumber (phone_num);
 	  var ph_obj = {
-	      phone_number : clean_phone_num,
+	      phone_number : phone_num,
 	      location     : location
 	  };
 	  phone_numbers_list.push (ph_obj);
