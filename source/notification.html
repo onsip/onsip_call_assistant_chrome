@@ -3,8 +3,8 @@
 
 <script type="text/javascript">
 
-function parse() {
-   //chrome.extension.getBackgroundPage().doThing();
+function parse1() {
+   //chrome.extension.getBackgroundPage().doThing();   
    var arg  = {};
    var href = window.location.href;
    console.log ('############### ' + window.location.href);
@@ -22,12 +22,15 @@ function parse() {
    return arg; 
 }
 
+//console.log ('before parse');
 //parse();
+//console.log ('after parse');
 
 </script>
+
 <div id="content">
 <h3 id="title"></h3>
-<a href="" onclick="javascript:parse();"> Hangup </a>
+<a href="javascript:parse1();"> Hangup </a>
 <!-- <a href="" onclick="javascript:Test();"> Hangup </a> -->
 </div>
 </body>

@@ -79,14 +79,16 @@ OX_EXT.init = function () {
     }.bind(this));
 };
 
-OX_EXT.createCall = function () {
+OX_EXT.createCall = function (from_address, to_address) {
     
-    console.log( 'Create Call' );
-    
-    var to   = 'sip:18008013381@junctionnetworks.com',
-	from = 'sip:oren@junctionnetworks.com';
-    
-    this.ox_conn.ActiveCalls.create(to, from, null, {
+    if ( isNumberFormatted (to_address) ) {
+	to_address = 'sip:' + to_address;
+    } else {
+	to_address = 'sip:' + to_address + '@' + getDomain(from_address);
+    }
+    from_address = 'sip:' + from_address;
+    console.log ('Create Call - ' + from_address + ' ^ ' + to_address);
+    this.ox_conn.ActiveCalls.create(to_address, from_address, null, {
        onSuccess : function (packet) {	 
 	  console.log('BOSH :: create call success');
        },

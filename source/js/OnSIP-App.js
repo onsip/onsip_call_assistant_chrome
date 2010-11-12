@@ -31,6 +31,7 @@ OnsipApp.OX = function() {
      * Setup connection
      */
     setup: function (con) {
+     
       var handlers = {};
 
       var adapter = OX.ConnectionAdapter.extend({
@@ -66,13 +67,14 @@ OnsipApp.OX = function() {
             con.deleteHandler(handlers[event]);
             delete handlers[event];
           }
-        },
-
+	},
+	
         send: function (xml, cb, args) {
-          var node = document.createElement('wrapper');
-          node.innerHTML = xml;         
-          node = node.firstChild;
-
+	  
+       	  console.log("XML :: " + xml);	 	 
+		 
+	  var node = OX.StropheAdapter.createNode(xml);
+ 	 
           if (cb) {
             function wrapped(stanza) {
               var packetAdapter = {
@@ -90,7 +92,7 @@ OnsipApp.OX = function() {
               cb.apply(this, newArgs);
               return false;
             }
-
+	    
             var id = node.getAttribute('id');
             if (!id) {
               id = con.getUniqueId();
@@ -99,13 +101,22 @@ OnsipApp.OX = function() {
 
             this._callbacks[id] = con.addHandler(wrapped, null, null,
                                                  null, id, null);
+	   
           }
-
-          node.setAttribute('xmlns', 'jabber:client');
-          return con.send(node);
-        }
+	
+	  //node.setAttribute('xmlns', 'jabber:client');
+	  
+	  //console.log("XML 2 : " + node.innerHTML);	  
+	    
+	  return con.send(node);
+		  
+		  
+	 }
+		 
+       
       });
-
+	  
+  
       this.con = OX.Connection.extend({connection: adapter});
       this.con.initConnection();
 
@@ -120,6 +131,7 @@ OnsipApp.OX = function() {
                                            this._handleActiveCallSubscribe);
       this.con.ActiveCalls.registerHandler('onUnsubscribed',
                                            this._handleActiveCallUnsubscribe);
+  
     },
 
     /**
@@ -152,22 +164,24 @@ OnsipApp.OX = function() {
      * Initiate a Call
      */
     createCall: function (params) {
-        dbg.log('BOSH :: Create Call');
+      dbg.log('BOSH :: Create Call');
       var to   = 'sip:'+params.to,
           from = 'sip:'+params.from;
 
-      this.con.ActiveCalls.create(to, from, {
-        onSuccess: function (packet) {
-          dbg.log('BOSH :: create call success');
-        },
-
-        onError: function (packet) {
-          dbg.log('BOSH :: create call error');
-        }
+      this.con.ActiveCalls.create(to, from, null, {
+	      onSuccess: function (packet) {
+		  dbg.log('BOSH :: create call success');
+	      },
+	      onError: function (packet) {
+		  dbg.log('BOSH :: create call error');
+		  var e = packet.getNode('error');
+		  var t = packet.getNode('text');
+		  dbg.log('BOSH :: ');
+	      }
       });
-
+      
       return false;
-    },
+      },
 
     /**
      * Subscribe To node in order to recieve an incoming call
@@ -229,7 +243,7 @@ OnsipApp.OX = function() {
     /**
      * Listener for a Call Restract
      */
-    _handleActiveCallRetract: function ( itemURI ) {
+    _handleActiveCallRetract: function ( itemURI ) {	  
       dbg.log('BOSH::CALL Retract');
       // Clear RequestStack - these are global vars
       requestStackState = false;
@@ -744,6 +758,7 @@ OnsipApp.Strophe = function() {
     doLogin: function (aForm) {
       var jid  = aForm.username.value;
           pass = aForm.password.value;
+
       con.connect(jid, pass, handleStatusChanged);
 
       OnsipApp.OX.setup(con);

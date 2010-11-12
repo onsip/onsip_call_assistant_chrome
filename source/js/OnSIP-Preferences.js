@@ -7,7 +7,7 @@ var OnSIP_Preferences = {
 
 		fromAddress		: 'you@yourdomain.onsip.com',
         onsipPassword   : 'Please enter your password',
-        onsipHttpBase   : 'htttps://dashboard.onsip.com/http-bind/',
+        onsipHttpBase   : 'https://dashboard.onsip.com/http-bind/',
         timeout			: 3000,
         enabled			: true,
 

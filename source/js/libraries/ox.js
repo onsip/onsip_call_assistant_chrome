@@ -1,26 +1,24 @@
- /* Start ----------------------------------------------------- ox.js*/
-
 /**
  * @namespace
  */
 var OX = {
-  debug: function() {
+  debug: function () {
     return window.console && window.console.debug && window.console.debug.apply(window.console, arguments);
   },
 
-  log: function() {
+  log: function () {
     return window.console && window.console.log && window.console.log.apply(window.console, arguments);
   },
 
-  warn: function() {
+  warn: function () {
     return window.console && window.console.warn && window.console.warn.apply(window.console, arguments);
   },
 
-  error: function() {
+  error: function () {
     return window.console && window.console.error && window.console.error.apply(window.console, arguments);
   },
 
-  group: function() {
+  group: function () {
     if (window.console && window.console.group) {
       window.console.group.apply(window.console, arguments);
     } else {
@@ -28,8 +26,10 @@ var OX = {
     }
   },
 
-  groupEnd: function() {
-    if (window.console && window.console.groupEnd) window.console.groupEnd();
+  groupEnd: function () {
+    if (window.console && window.console.groupEnd) {
+      window.console.groupEnd();
+    }
   }
 
 };
@@ -40,7 +40,7 @@ var OX = {
  * throw new OX.Error('the error message');
  *
  */
-OX.Error = function(message) {
+OX.Error = function (message) {
   this.message = message;
 };
 OX.Error.prototype = new Error();
@@ -89,8 +89,10 @@ OX.Base = {
    */
   mixin: function () {
     for (var i = 0, len = arguments.length; i < len; i++) {
-      for (var k in arguments[i]) if (arguments[i].hasOwnProperty(k)) {
-        this[k] = arguments[i][k];
+      for (var k in arguments[i]) {
+        if (arguments[i].hasOwnProperty(k)) {
+          this[k] = arguments[i][k];
+        }
       }
     }
 
@@ -121,16 +123,21 @@ OX.URI = OX.Base.extend(/** @lends OX.URI */{
     // Scan from ? to # to find query               - optional
     // Scan from # to EOL to find fragment          - optional
     var parts = uriString.match(/^([^:]*:)(\/\/[^\/]*\/)?([^?]*)(\?[^#]*)?(#.*)?/);
-    if (parts[1])
+    if (parts[1]) {
       scheme = parts[1].substr(0, parts[1].length - 1);
-    if (parts[2])
+    }
+    if (parts[2]) {
       authority = parts[2].substr(2, parts[2].length - 2).substr(0, parts[2].length - 3);
-    if (parts[3])
+    }
+    if (parts[3]) {
       path = parts[3];
-    if (parts[4])
+    }
+    if (parts[4]) {
       query = parts[4].substr(1, parts[4].length - 1);
-    if (parts[5])
+    }
+    if (parts[5]) {
       fragment = parts[5].substr(1, parts[5].length - 1);
+    }
 
     return OX.URI.Base.extend({scheme: scheme, authority: authority,
                                path: path, query: query, fragment: fragment});
@@ -192,14 +199,16 @@ OX.URI.Base = OX.Base.extend(/** @lends OX.URI.Base# */{
    * @returns {String} The action of this query, or undefined if none found.
    */
   action: function () {
-    if (!this.query)
+    if (!this.query) {
       return undefined;
+    }
 
     var parts = this.query.split(';');
-    if (parts[0] === '')
+    if (parts[0] === '') {
       return undefined;
-    else
+    } else {
       return parts[0];
+    }
   },
 
   /**
@@ -213,14 +222,16 @@ OX.URI.Base = OX.Base.extend(/** @lends OX.URI.Base# */{
    * @returns {String} The value of the parameter, or undefined if not found.
    */
   queryParam: function (param) {
-    if (!this.query)
+    if (!this.query) {
       return undefined;
+    }
 
     var parts = this.query.split(';');
     for (var i = 1, len = parts.length; i < len; i++) {
       var kvp = parts[i].split('=');
-      if (kvp[0] === param)
+      if (kvp[0] === param) {
         return kvp[1] || '';
+      }
     }
     return undefined;
   },
@@ -395,16 +406,21 @@ OX.URI = OX.Base.extend(/** @lends OX.URI */{
     // Scan from ? to # to find query               - optional
     // Scan from # to EOL to find fragment          - optional
     var parts = uriString.match(/^([^:]*:)(\/\/[^\/]*\/)?([^?]*)(\?[^#]*)?(#.*)?/);
-    if (parts[1])
+    if (parts[1]) {
       scheme = parts[1].substr(0, parts[1].length - 1);
-    if (parts[2])
+    }
+    if (parts[2]) {
       authority = parts[2].substr(2, parts[2].length - 2).substr(0, parts[2].length - 3);
-    if (parts[3])
+    }
+    if (parts[3]) {
       path = parts[3];
-    if (parts[4])
+    }
+    if (parts[4]) {
       query = parts[4].substr(1, parts[4].length - 1);
-    if (parts[5])
+    }
+    if (parts[5]) {
       fragment = parts[5].substr(1, parts[5].length - 1);
+    }
 
     return OX.URI.Base.extend({scheme: scheme, authority: authority,
                                path: path, query: query, fragment: fragment});
@@ -466,14 +482,16 @@ OX.URI.Base = OX.Base.extend(/** @lends OX.URI.Base# */{
    * @returns {String} The action of this query, or undefined if none found.
    */
   action: function () {
-    if (!this.query)
+    if (!this.query) {
       return undefined;
+    }
 
     var parts = this.query.split(';');
-    if (parts[0] === '')
+    if (parts[0] === '') {
       return undefined;
-    else
+    } else {
       return parts[0];
+    }
   },
 
   /**
@@ -487,14 +505,16 @@ OX.URI.Base = OX.Base.extend(/** @lends OX.URI.Base# */{
    * @returns {String} The value of the parameter, or undefined if not found.
    */
   queryParam: function (param) {
-    if (!this.query)
+    if (!this.query) {
       return undefined;
+    }
 
     var parts = this.query.split(';');
     for (var i = 1, len = parts.length; i < len; i++) {
       var kvp = parts[i].split('=');
-      if (kvp[0] === param)
+      if (kvp[0] === param) {
         return kvp[1] || '';
+      }
     }
     return undefined;
   },
@@ -525,20 +545,18 @@ OX.Mixins = {};
  *
  * @requires connection A property which is an {@link OX.ConnectionAdapter} object on receiving object.
  */
-OX.Mixins.EntityTime = function() {
+OX.Mixins.EntityTime = (function () {
   return /** @lends OX.Mixins.EntityTime# */ {
     getTime: function (entityURI, callbacks) {
       var iq = OX.XMPP.IQ.extend(),
-          time = OX.XML.Element.extend({
-            name: 'time',
-            xmlns: 'urn:xmpp:time'
-          });
+          time = OX.XML.Element.extend({name: 'time',
+                                        xmlns: 'urn:xmpp:time'});
 
       iq.to(entityURI.path);
       iq.type('get');
       iq.addChild(time);
 
-      this.connection.send(iq.convertToString(), function(packet) {
+      this.connection.send(iq.convertToString(), function (packet) {
         if (packet.getType() === 'error' && callbacks.onError) {
           callbacks.onError(packet);
         } else if (callbacks.onSuccess) {
@@ -554,7 +572,7 @@ OX.Mixins.EntityTime = function() {
       });
     }
   };
-}();
+}());
 
 /**
  * CallDialog mixin.
@@ -566,7 +584,7 @@ OX.Mixins.EntityTime = function() {
  * @requires fromTag property on receiving object.
  * @requires toTag property on receiving object.
  */
-OX.Mixins.CallDialog = function () {
+OX.Mixins.CallDialog = (function () {
   return /** @lends OX.Mixins.CallDialog# */{
     /**
      * Transfer a call to a sip address.
@@ -600,8 +618,9 @@ OX.Mixins.CallDialog = function () {
       iq.addChild(cmd.addChild(xData));
 
       this.connection.send(iq.convertToString(), function (packet) {
-        if (!packet)
+        if (!packet) {
           return;
+        }
 
         if (packet.getType() === 'error' && callbacks.onError) {
           callbacks.onError(packet);
@@ -639,8 +658,9 @@ OX.Mixins.CallDialog = function () {
       iq.addChild(cmd.addChild(xData));
 
       this.connection.send(iq.convertToString(), function (packet) {
-        if (!packet)
+        if (!packet) {
           return;
+        }
 
         if (packet.getType() === 'error' && callbacks.onError) {
           callbacks.onError(packet);
@@ -677,8 +697,9 @@ OX.Mixins.CallDialog = function () {
       iq.addChild(cmd.addChild(xData));
 
       this.connection.send(iq.convertToString(), function (packet) {
-        if (!packet)
+        if (!packet) {
           return;
+        }
 
         if (packet.getType() === 'error' && callbacks.onError) {
           callbacks.onError(packet);
@@ -688,7 +709,7 @@ OX.Mixins.CallDialog = function () {
       }, []);
     }
   };
-}();
+}());
 
 /**
  * CallLabeler mixin.
@@ -697,7 +718,7 @@ OX.Mixins.CallDialog = function () {
  * @requires connection A property which is an {@link OX.ConnectionAdapter} object on receiving object.
  * @requires callID property on receiving object.
  */
-OX.Mixins.CallLabeler = function () {
+OX.Mixins.CallLabeler = (function () {
   return /** @lends OX.Mixins.CallLabeler# */{
     /**
      * Label a call with a short string.
@@ -726,8 +747,9 @@ OX.Mixins.CallLabeler = function () {
       iq.addChild(cmd.addChild(xData));
 
       this.connection.send(iq.convertToString(), function (packet) {
-        if (!packet)
+        if (!packet) {
           return;
+        }
 
         if (packet.getType() === 'error' && callbacks.onError) {
           callbacks.onError(packet);
@@ -737,7 +759,7 @@ OX.Mixins.CallLabeler = function () {
       }, []);
     }
   };
-}();
+}());
 
 /**
  * Subscribable mixin.
@@ -747,17 +769,17 @@ OX.Mixins.CallLabeler = function () {
  * @requires pubSubURI The URI of the PubSub service.
  * @requires itemFromPacket A function which takes a packet argument and returns an item.
  */
-OX.Mixins.Subscribable = function () {
+OX.Mixins.Subscribable = (function () {
   /**#nocode+*/
   function packetType(element) {
     switch (element.tagName) {
     case 'subscription':
       return element.getAttribute('subscription');
     case 'items':
-      if (element.firstChild.tagName === 'retract')
+      if (element.firstChild.tagName === 'retract') {
         return 'retract';
-      else
-        return 'publish';
+      }
+      return 'publish';
     default:
       return undefined;
     }
@@ -771,7 +793,7 @@ OX.Mixins.Subscribable = function () {
       return OX.URI.fromObject({path: from,
                                 query: ';node=' + node + ';item=' + itemID});
     }
-    function publishTime(element) {
+    function getPublishTime(element) {
       var firstChild  = element.firstChild,
           publishTime = firstChild && firstChild.getAttribute('publish-time');
 
@@ -792,14 +814,14 @@ OX.Mixins.Subscribable = function () {
     for (var i = 0, len = items.length; i < len; i++) {
       if (items[i] && items[i].childNodes) {
         var children = items[i].childNodes,
-            node     = items[i].getAttribute('node'),
+            node     = items[i].getAttribute('node') || '/',
             item;
 
         for (var ii = 0, ilen = children.length; ii < ilen; ii++) {
           if (children[ii].tagName && children[ii].tagName === 'item') {
             item = this.itemFromElement(children[ii]);
 
-            item.publishTime = publishTime(children[ii]);
+            item.publishTime = getPublishTime(children[ii]);
             item.uri = itemURI(children[ii].getAttribute('id'),
                                node);
             rc.push(item);
@@ -816,7 +838,7 @@ OX.Mixins.Subscribable = function () {
       var elt    = packet.getNode(),
           from   = elt.getAttribute('from'),
           sub    = elt.firstChild.firstChild,
-          node   = sub.getAttribute('node');
+          node   = sub.getAttribute('node') || '/';
 
       return OX.URI.fromObject({path:   from, query: ';node=' + node});
     }
@@ -825,7 +847,7 @@ OX.Mixins.Subscribable = function () {
       var elt    = packet.getNode(),
           from   = elt.getAttribute('from'),
           items  = elt.getElementsByTagName('items')[0],
-          node   = items.getAttribute('node'),
+          node   = items.getAttribute('node') || '/',
           itemID = items.firstChild.getAttribute('id');
 
       return OX.URI.fromObject({path:  from,
@@ -854,14 +876,14 @@ OX.Mixins.Subscribable = function () {
     case 'publish':
       if (this._subscriptionHandlers.onPublish) {
         var items = convertItems.call(this, packet.getNode());
-        for (var i = 0, len = items.length; i < len; i++)
+        for (var i = 0, len = items.length; i < len; i++) {
           this._subscriptionHandlers.onPublish(items[i]);
+        }
       }
       break;
     case 'retract':
       if (this._subscriptionHandlers.onRetract) {
-        var retractURI = retractURI();
-        this._subscriptionHandlers.onRetract(retractURI);
+        this._subscriptionHandlers.onRetract(retractURI());
       }
       break;
     }
@@ -869,8 +891,9 @@ OX.Mixins.Subscribable = function () {
 
   function jidHandler(packet) {
     var event = packet.getNode().getElementsByTagName('event')[0];
-    if (!event)
+    if (!event) {
       return;
+    }
 
     fireEvent.call(this, packetType(event.firstChild), packet);
   }
@@ -881,8 +904,9 @@ OX.Mixins.Subscribable = function () {
     redirectCount = redirectCount || 0;
     origNode      = origNode      || node;
 
-    if (!packet)
+    if (!packet) {
       return;
+    }
 
     var finalURI = this.pubSubURI,
         reqURI   = this.pubSubURI;
@@ -895,17 +919,19 @@ OX.Mixins.Subscribable = function () {
       reqURI   = reqURI.extend({query: ';node=' + origNode});
     }
 
-    if (packet.getType() == 'error' && callbacks.onError) {
+    if (packet.getType() === 'error' && callbacks.onError) {
       // TODO: handle getSubscriptions redirects
       callbacks.onError(reqURI, finalURI, packet);
-    } else if (packet.getType() == 'result' && callbacks.onSuccess) {
+    } else if (packet.getType() === 'result' && callbacks.onSuccess) {
       var subscriptions = [],
           subElements = packet.getNode().getElementsByTagName('subscription');
-      for (var i=0; i<subElements.length; i++) {
-        if (strict && this.connection.getJID() !== subElements[i].getAttribute('jid'))  continue;
+      for (var i = 0; i < subElements.length; i++) {
+        if (strict && this.connection.getJID() !== subElements[i].getAttribute('jid')) {
+          continue;
+        }
 
         subscriptions.push({
-          node: subElements[i].getAttribute('node'),
+          node: subElements[i].getAttribute('node') || '/',
           jid: subElements[i].getAttribute('jid'),
           subscription: subElements[i].getAttribute('subscription'),
           subid: subElements[i].getAttribute('subid')
@@ -917,7 +943,9 @@ OX.Mixins.Subscribable = function () {
   }
 
   function configureNodeHandler(packet, subscription, options, callbacks) {
-    if (!packet) return;
+    if (!packet) {
+      return;
+    }
 
     if (packet.getType() === 'error') {
       // TODO: handle redirects
@@ -934,8 +962,9 @@ OX.Mixins.Subscribable = function () {
     callbacks = callbacks || {};
     redirects = redirects || 0;
 
-    if (!packet)
+    if (!packet) {
       return;
+    }
 
     var finalURI = this.pubSubURI.extend({query: ';node=' + node}),
         reqURI   = this.pubSubURI.extend({query: ';node=' + (origNode || node)});
@@ -977,8 +1006,9 @@ OX.Mixins.Subscribable = function () {
     var uri = this.pubSubURI.extend({query: ';node=' + node});
     callbacks = callbacks || {};
 
-    if (!packet)
+    if (!packet) {
       return;
+    }
 
     if (packet.getType() === 'error') {
       if (callbacks.onError) {
@@ -994,8 +1024,9 @@ OX.Mixins.Subscribable = function () {
   function getItemsHandler(packet, callbacks) {
     callbacks = callbacks || {};
 
-    if (!packet)
+    if (!packet) {
       return;
+    }
 
     if (packet.getType() === 'error') {
       if (callbacks.onError) {
@@ -1042,12 +1073,14 @@ OX.Mixins.Subscribable = function () {
 
     xData.addField('FORM_TYPE', 'http://jabber.org/protocol/pubsub#subscribe_options');
 
-    for (var o in options) if (options.hasOwnProperty(o)) {
-      var trVal = options[o];
-      if (optionTransforms[o]) {
-        trVal = optionTransforms[o]('toString', trVal);
+    for (var o in options) {
+      if (options.hasOwnProperty(o)) {
+        var trVal = options[o];
+        if (optionTransforms[o]) {
+          trVal = optionTransforms[o]('toString', trVal);
+        }
+        xData.addField('pubsub#' + o, trVal);
       }
-      xData.addField('pubsub#' + o, trVal);
     }
 
     return opts;
@@ -1071,34 +1104,38 @@ OX.Mixins.Subscribable = function () {
     pubsub.addChild(opts);
 
     var that = this;
-    var wrappedCb = function() { configureNodeHandler.apply(that, arguments); },
+    var wrappedCb = function () {
+          configureNodeHandler.apply(that, arguments);
+        },
         wrappedArgs = [subscription, options, callbacks];
 
     this.connection.send(iq.convertToString(), wrappedCb, wrappedArgs);
   }
 
   function doSubscribe(node, options, callbacks, origNode, redirectCount) {
-      var iq        = OX.XMPP.IQ.extend(),
-          pubsub    = OX.XML.Element.extend({name:  'pubsub',
-                                             xmlns: 'http://jabber.org/protocol/pubsub'}),
-          subscribe = OX.XML.Element.extend({name: 'subscribe'});
+    var iq        = OX.XMPP.IQ.extend(),
+        pubsub    = OX.XML.Element.extend({name:  'pubsub',
+                                       xmlns: 'http://jabber.org/protocol/pubsub'}),
+        subscribe = OX.XML.Element.extend({name: 'subscribe'});
 
-      iq.to(this.pubSubURI.path);
-      iq.type('set');
-      subscribe.attr('node', node);
-      subscribe.attr('jid', this.connection.getJID());
-      pubsub.addChild(subscribe);
-      if (options) {
-        var opts = objectToOptionsForm.call(this, options);
-        pubsub.addChild(opts);
-      }
-      iq.addChild(pubsub);
+    iq.to(this.pubSubURI.path);
+    iq.type('set');
+    subscribe.attr('node', node);
+    subscribe.attr('jid', this.connection.getJID());
+    pubsub.addChild(subscribe);
+    if (options) {
+      var opts = objectToOptionsForm.call(this, options);
+      pubsub.addChild(opts);
+    }
+    iq.addChild(pubsub);
 
-      var that = this;
-      var cb = function () { subscriptionHandler.apply(that, arguments); };
+    var that = this;
+    var cb = function () {
+      subscriptionHandler.apply(that, arguments);
+    };
 
-      this.connection.send(iq.convertToString(), cb,
-                           [node, options, callbacks, origNode, redirectCount]);
+    this.connection.send(iq.convertToString(), cb,
+                         [node, options, callbacks, origNode, redirectCount]);
   }
 
   function doGetSubcriptions(node, callbacks, origNode, redirectCount, strict) {
@@ -1109,13 +1146,17 @@ OX.Mixins.Subscribable = function () {
     iq.to(this.pubSubURI.path);
     iq.type('get');
 
-    if (node) sub.attr('node', node);
+    if (node) {
+      sub.attr('node', node);
+    }
 
     pub.addChild(sub);
     iq.addChild(pub);
 
     var that = this;
-    var wrappedCb = function() { getSubscriptionsHandler.apply(that, arguments); },
+    var wrappedCb = function () {
+          getSubscriptionsHandler.apply(that, arguments);
+        },
         wrappedArgs = [node, callbacks, origNode, redirectCount, strict];
 
     this.connection.send(iq.convertToString(), wrappedCb, wrappedArgs);
@@ -1123,7 +1164,7 @@ OX.Mixins.Subscribable = function () {
   /**#nocode-*/
 
   return /** @lends OX.Mixins.Subscribable# */{
-    init: function() {
+    init: function () {
       var tpl = OX.Mixins.Subscribable._subscriptionHandlers;
       this._subscriptionHandlers = OX.Base.extend(tpl);
     },
@@ -1144,22 +1185,22 @@ OX.Mixins.Subscribable = function () {
      *
      * @example
      * service.getSubscriptions('/', {
-     *   onSuccess: function(requestedURI, finalURI, subscriptions, packet) {},
-     *   onError: function(requestedURI, finalURI, packet)
+     *   onSuccess: function (requestedURI, finalURI, subscriptions, packet) {},
+     *   onError: function (requestedURI, finalURI, packet)
      * })
      *
      * @example
      * service.getSubscriptions({
-     *   onSuccess: function(requestedURI, finalURI, subscriptions, packet) {},
-     *   onError: function(requestedURI, finalURI, packet)
+     *   onSuccess: function (requestedURI, finalURI, subscriptions, packet) {},
+     *   onError: function (requestedURI, finalURI, packet)
      * })
      */
-    getSubscriptions: function(node, callbacks, strictJIDMatch) {
-      if (arguments.length == 1) {
+    getSubscriptions: function (node, callbacks, strictJIDMatch) {
+      if (arguments.length === 1) {
         callbacks = arguments[0];
         node = undefined;
         strictJIDMatch = undefined;
-      } else if (arguments.length == 2 &&
+      } else if (arguments.length === 2 &&
                  (arguments[0].hasOwnProperty('onSucess') || arguments[0].hasOwnProperty('onError'))) {
         callbacks = arguments[0];
         strictJIDMatch = arguments[1];
@@ -1169,7 +1210,7 @@ OX.Mixins.Subscribable = function () {
       doGetSubcriptions.call(this, node, callbacks, node, 0, strictJIDMatch);
     },
 
-    configureNode: function(subscription, options, callbacks) {
+    configureNode: function (subscription, options, callbacks) {
       doConfigureNode.apply(this, arguments);
     },
 
@@ -1193,7 +1234,7 @@ OX.Mixins.Subscribable = function () {
      * });
      */
     subscribe: function (node, options, callbacks) {
-      if (arguments.length == 2) {
+      if (arguments.length === 2) {
         callbacks = options;
         options   = undefined;
       }
@@ -1213,10 +1254,8 @@ OX.Mixins.Subscribable = function () {
      *   onError:   function (uri) {}
      * });
      */
-    unsubscribe: function (node, callbacks, item) {
- 
-
-        var iq          = OX.XMPP.IQ.extend(),
+    unsubscribe: function (node, callbacks) {
+      var iq          = OX.XMPP.IQ.extend(),
           pubsub      = OX.XML.Element.extend({name:  'pubsub',
                                                xmlns: 'http://jabber.org/protocol/pubsub'}),
           unsubscribe = OX.XML.Element.extend({name: 'unsubscribe'});
@@ -1224,24 +1263,13 @@ OX.Mixins.Subscribable = function () {
       iq.to(this.pubSubURI.path);
       iq.type('set');
       unsubscribe.attr('node', node);
-
-      if(item.jid){
-
-          unsubscribe.attr('jid',  item.jid);
-      }else{
-
-          unsubscribe.attr('jid',  this.connection.getJID());
-      }
-
-      if(item.sid){
-          unsubscribe.attr('subid', item.sid);
-      }
-
+      unsubscribe.attr('jid',  this.connection.getJID());
       iq.addChild(pubsub.addChild(unsubscribe));
 
       var that = this;
-      var cb = function () { unsubscriptionHandler.apply(that, arguments); };
-
+      var cb = function () {
+        unsubscriptionHandler.apply(that, arguments);
+      };
       this.connection.send(iq.convertToString(), cb, [node, callbacks]);
     },
 
@@ -1269,7 +1297,9 @@ OX.Mixins.Subscribable = function () {
       iq.addChild(pubsub.addChild(items));
 
       var that = this;
-      var cb = function () { getItemsHandler.apply(that, arguments); };
+      var cb = function () {
+        getItemsHandler.apply(that, arguments);
+      };
       this.connection.send(iq.convertToString(), cb, [callbacks]);
     },
 
@@ -1282,7 +1312,9 @@ OX.Mixins.Subscribable = function () {
     registerSubscriptionHandlers: function () {
       var uri = this.pubSubURI;
       var that = this;
-      var handler = function () { jidHandler.apply(that, arguments); };
+      var handler = function () {
+        jidHandler.apply(that, arguments);
+      };
       this.connection.registerJIDHandler(uri.path, handler);
     },
 
@@ -1362,7 +1394,7 @@ OX.Mixins.Subscribable = function () {
       onRetract: function (uri) {}
     }
   };
-}();
+}());
 /**
  * Item abstract object.
  *
@@ -1400,7 +1432,7 @@ OX.Services = {};
  */
 OX.Services.Auth = OX.Base.extend(OX.Mixins.EntityTime, /** @lends OX.Services.Auth */{
 
-  entityTime: function(cb) {
+  entityTime: function (cb) {
     return this.getTime(OX.Settings.URIs.entity.auth, cb);
   },
 
@@ -1432,10 +1464,18 @@ OX.Services.Auth = OX.Base.extend(OX.Mixins.EntityTime, /** @lends OX.Services.A
         (arguments[arguments.length - 1].onSucess || arguments[arguments.length - 1].onError)) {
       callbacks = arguments[arguments.length - 1];
 
-      if (authForAll == callbacks) authForAll = null;
-      if (jid == callbacks)        jid = null;
-      if (password == callbacks)   password = null;
-      if (address == callbacks)    address = null;
+      if (authForAll === callbacks) {
+        authForAll = null;
+      }
+      if (jid === callbacks) {
+        jid = null;
+      }
+      if (password === callbacks) {
+        password = null;
+      }
+      if (address === callbacks) {
+        address = null;
+      }
     }
 
     iq.to(uri.path);
@@ -1445,14 +1485,15 @@ OX.Services.Auth = OX.Base.extend(OX.Mixins.EntityTime, /** @lends OX.Services.A
     xData.addField('sip-address', address);
     xData.addField('password', password);
     xData.addField('auth-for-all', authForAll ? 'true' : 'false');
-    if (jid)
+    if (jid) {
       xData.addField('jid', jid);
-
+    }
     iq.addChild(cmd.addChild(xData));
 
     this.connection.send(iq.convertToString(), function (packet) {
-      if (!packet)
+      if (!packet) {
         return;
+      }
 
       if (packet.getType() === 'error' && callbacks.onError) {
         callbacks.onError(packet);
@@ -1512,20 +1553,20 @@ OX.Services.ActiveCalls = OX.Base.extend(OX.Mixins.Subscribable, /** @lends OX.S
     /** The tag inserted into the call-setup-id field */
     callSetupID: null,
 
-    isFromCallSetup: function() {
+    isFromCallSetup: function () {
       return !!this.callSetupID;
     },
 
-    isCreated: function() {
-      return this.dialogState == 'created';
+    isCreated: function () {
+      return this.dialogState === 'created';
     },
 
-    isRequested: function() {
-      return this.dialogState == 'requested';
+    isRequested: function () {
+      return this.dialogState === 'requested';
     },
 
-    isConfirmed: function() {
-      return this.dialogState == 'confirmed';
+    isConfirmed: function () {
+      return this.dialogState === 'confirmed';
     },
 
     /**
@@ -1534,7 +1575,7 @@ OX.Services.ActiveCalls = OX.Base.extend(OX.Mixins.Subscribable, /** @lends OX.S
      * This is a convenience funtion to make the correct API call based
      * upon the dialog state of the current this object.
      */
-    hangup: function() {
+    hangup: function () {
       return this.isConfirmed() ? this.terminate() : this.cancel();
     }
 
@@ -1550,20 +1591,22 @@ OX.Services.ActiveCalls = OX.Base.extend(OX.Mixins.Subscribable, /** @lends OX.S
    * @returns {OX.Services.ActiveCalls.Item} item
    */
   itemFromElement: function (element) {
-    if (!element)
+    if (!element) {
       return undefined;
+    }
 
     var activeCallNode = element.getElementsByTagName('active-call'),
         attrs          = {connection: this.connection};
 
-    if (!activeCallNode || !activeCallNode[0])
+    if (!activeCallNode || !activeCallNode[0]) {
       return undefined;
+    }
 
     var childNodes = activeCallNode[0].childNodes;
 
     function getFirstNodeValue(node) {
       var child = node.firstChild;
-      if (child && child.nodeValue == null && child.firstChild) {
+      if (child && child.nodeValue === null && child.firstChild) {
         return arguments.callee(child);
       } else if (child && child.nodeValue) {
         return child.nodeValue;
@@ -1574,8 +1617,9 @@ OX.Services.ActiveCalls = OX.Base.extend(OX.Mixins.Subscribable, /** @lends OX.S
     for (var i = 0, len = childNodes.length; i < len; i++) {
       var node = childNodes[i];
 
-      if (!node.nodeName)
+      if (!node.nodeName) {
         continue;
+      }
 
       switch (node.nodeName.toLowerCase()) {
       case 'dialog-state':
@@ -1632,14 +1676,15 @@ OX.Services.ActiveCalls = OX.Base.extend(OX.Mixins.Subscribable, /** @lends OX.S
 
     cb = cb || {};
 
-    this.connection.send(iq.convertToString(), function(packet) {
-      if(!packet)
+    this.connection.send(iq.convertToString(), function (packet) {
+      if (!packet) {
         return;
+      }
 
-      if (packet.getType() === 'error'
-          && cb.onError && cb.onError.constructor == Function) {
-          cb.onError(packet);
-      } else if (cb.onSuccess && cb.onSuccess.constructor == Function) {
+      if (packet.getType() === 'error' &&
+          cb.onError && cb.onError.constructor === Function) {
+        cb.onError(packet);
+      } else if (cb.onSuccess && cb.onSuccess.constructor === Function) {
         cb.onSuccess(packet);
       }
     }, []);
@@ -1683,22 +1728,25 @@ OX.Services.UserAgents = OX.Base.extend(OX.Mixins.Subscribable, /** @lends OX.Se
   }),
 
   itemFromElement: function (element) {
-    if (!element)
+    if (!element) {
       return undefined;
+    }
 
     var userAgentNode = element.getElementsByTagName('user-agent'),
         attrs         = {connection: this.connection};
 
-    if (!userAgentNode || !userAgentNode[0])
+    if (!userAgentNode || !userAgentNode[0]) {
       return undefined;
+    }
     var children = userAgentNode[0].childNodes;
 
     for (var i = 0, len = children.length; i < len; i++) {
       var node = children[i],
           value;
 
-      if (!node.nodeName)
+      if (!node.nodeName) {
         continue;
+      }
 
       value = (node.firstChild && node.firstChild.nodeValue) || undefined;
       switch (node.nodeName.toLowerCase()) {
@@ -1733,36 +1781,40 @@ OX.Services.UserAgents = OX.Base.extend(OX.Mixins.Subscribable, /** @lends OX.Se
  */
 OX.Services.Voicemail = OX.Base.extend(OX.Mixins.Subscribable, function () {
   function itemType(element) {
-    if (!element)
+    if (!element) {
       return undefined;
-    else if (element.getElementsByTagName('voicemail').length > 0)
+    } else if (element.getElementsByTagName('voicemail').length > 0) {
       return 'voicemail';
-    else if (element.getElementsByTagName('labels').length > 0)
+    } else if (element.getElementsByTagName('labels').length > 0) {
       return 'labels';
-    else
+    } else {
       return undefined;
+    }
   }
 
   function voicemailItem(element) {
-    if (!element)
+    if (!element) {
       return undefined;
+    }
 
     var rc = {};
     var voicemailNode = element.getElementsByTagName('voicemail');
 
-    if (!voicemailNode || !voicemailNode[0])
+    if (!voicemailNode || !voicemailNode[0]) {
       return undefined;
+    }
 
     var children = voicemailNode[0].childNodes;
     for (var i = 0, len = children.length; i < len; i++) {
       var node = children[i];
 
-      if (!node.nodeName || !node.firstChild)
+      if (!node.nodeName || !node.firstChild) {
         continue;
+      }
 
       switch (node.nodeName.toLowerCase()) {
       case 'mailbox':
-        rc.mailbox = parseInt(node.firstChild.nodeValue);
+        rc.mailbox = parseInt(node.firstChild.nodeValue, 10);
         break;
       case 'caller-id':
         rc.callerID = node.firstChild.nodeValue;
@@ -1774,14 +1826,15 @@ OX.Services.Voicemail = OX.Base.extend(OX.Mixins.Subscribable, function () {
         rc.sipfrom = node.firstChild.nodeValue;
         break;
       case 'duration':
-        rc.duration = parseInt(node.firstChild.nodeValue);
+        rc.duration = parseInt(node.firstChild.nodeValue, 10);
         break;
       case 'labels':
         var labels = [];
         for (var j = 0, jlen = node.childNodes.length; j < jlen; j++) {
           var elt = node.childNodes[j];
-          if (elt.tagName && elt.tagName == 'label')
+          if (elt.tagName && elt.tagName === 'label') {
             labels.push(elt.firstChild.nodeValue);
+          }
         }
         rc.labels = labels;
         break;
@@ -1791,21 +1844,24 @@ OX.Services.Voicemail = OX.Base.extend(OX.Mixins.Subscribable, function () {
   }
 
   function labelItem(element) {
-    if (!element)
+    if (!element) {
       return undefined;
+    }
 
     var rc = {labels: []};
     var labelsNode = element.getElementsByTagName('labels');
 
-    if (!labelsNode || !labelsNode[0])
+    if (!labelsNode || !labelsNode[0]) {
       return undefined;
+    }
 
     var children = labelsNode[0].childNodes;
     for (var i = 0, len = children.length; i < len; i++) {
       var node = children[i];
 
-      if (node.nodeName && node.nodeName == 'label')
+      if (node.nodeName && node.nodeName === 'label') {
         rc.labels.push(node.firstChild.nodeValue);
+      }
     }
     return rc;
   }
@@ -1868,10 +1924,13 @@ OX.Services.Voicemail = OX.Base.extend(OX.Mixins.Subscribable, function () {
         iq.addChild(cmd.addChild(xData));
 
         this.connection.send(iq.convertToString(), function (packet) {
-          if (!packet) return;
-          if (packet.getType() === 'error' && callbacks.onError && callbacks.onError.constructor == Function) {
+          if (!packet) {
+            return;
+          }
+          if (packet.getType() === 'error' && callbacks.onError &&
+              callbacks.onError.constructor === Function) {
             callbacks.onError(packet);
-          } else if (callbacks.onSuccess && callbacks.onSuccess.constructor == Function) {
+          } else if (callbacks.onSuccess && callbacks.onSuccess.constructor === Function) {
             callbacks.onSuccess(packet);
           }
         }, []);
@@ -1907,10 +1966,13 @@ OX.Services.Voicemail = OX.Base.extend(OX.Mixins.Subscribable, function () {
         iq.addChild(cmd.addChild(xData));
 
         this.connection.send(iq.convertToString(), function (packet) {
-          if (!packet) return;
-          if (packet.getType() === 'error' && callbacks.onError && callbacks.onError.constructor == Function) {
+          if (!packet) {
+            return;
+          }
+          if (packet.getType() === 'error' && callbacks.onError &&
+              callbacks.onError.constructor === Function) {
             callbacks.onError(packet);
-          } else if (callbacks.onSuccess && callbacks.onSuccess.constructor == Function) {
+          } else if (callbacks.onSuccess && callbacks.onSuccess.constructor === Function) {
             callbacks.onSuccess(packet);
           }
         }, []);
@@ -1936,13 +1998,15 @@ OX.Services.Voicemail = OX.Base.extend(OX.Mixins.Subscribable, function () {
       switch (itemType(element)) {
       case 'voicemail':
         item = voicemailItem(element);
-        if (item)
+        if (item) {
           rc = this.Item.extend(item, {connection: this.connection});
+        }
         break;
       case 'labels':
         item = labelItem(element);
-        if (item)
+        if (item) {
           rc = this.LabelItem.extend(item, {connection: this.connection});
+        }
         break;
       }
 
@@ -1968,8 +2032,8 @@ OX.Services.Directories = OX.Base.extend(OX.Mixins.Subscribable, /** @lends OX.S
   AliasItem: OX.Item.extend(/** @lends OX.Service.Directories.AliasItem# */{
     sipURI: null,
     xmppURI: null,
-    id: function() {
- 
+    id: function () {
+      console.log(this);
       return this.uri.queryParam('item');
     }
   }),
@@ -1977,33 +2041,36 @@ OX.Services.Directories = OX.Base.extend(OX.Mixins.Subscribable, /** @lends OX.S
   EntityItem: OX.Item.extend(/** @lends OX.Service.Directories.EntityItem# */{
     sipURI: null,
     name: null,
-    id: function() {
-   
+    id: function () {
+      console.log(this);
       return this.uri.queryParam('item');
     }
   }),
 
-  itemFromElement: function(element) {
-    if (!element)
+  itemFromElement: function (element) {
+    if (!element) {
       return undefined;
+    }
 
     var aliasNode =  element.getElementsByTagName('alias'),
         entityNode = element.getElementsByTagName('entity'),
         node       = aliasNode[0] || entityNode[0],
         attrs      = { connection: this.connection };
 
-    if (!node)
+    if (!node) {
       return undefined;
+    }
 
     var childNodes = node.childNodes;
 
-    for (var i=0, len=childNodes.length; i<len; i++) {
+    for (var i = 0, len = childNodes.length; i < len; i++) {
       var childNode = childNodes[i],
           childNodeName = childNode.nodeName,
           value = (childNode && childNode.firstChild && childNode.firstChild.nodeValue) || undefined;
 
-      if (!childNode)
+      if (!childNode) {
         continue;
+      }
 
       switch (childNodeName.toLowerCase()) {
       case 'sip-uri':
@@ -2071,21 +2138,24 @@ OX.Services.Rosters = OX.Base.extend(OX.Mixins.Subscribable, /** @lends OX.Servi
         uri   = OX.Settings.URIs.command.pushRosterGroups;
 
     var callbacks = {};
-    if (arguments.length > 0 && arguments[arguments.length - 1])
+    if (arguments.length > 0 && arguments[arguments.length - 1]) {
       callbacks = arguments[arguments.length - 1];
+    }
 
     iq.to(uri.path);
     iq.type('set');
     cmd.node(uri.queryParam('node'));
     xData.type('submit');
-    if (jid)
+    if (jid) {
       xData.addField('jid', jid);
+    }
 
     iq.addChild(cmd.addChild(xData));
 
     this.connection.send(iq.convertToString(), function (packet) {
-      if (!packet)
+      if (!packet) {
         return;
+      }
 
       if (packet.getType() === 'error' && callbacks.onError) {
         callbacks.onError(packet);
@@ -2147,16 +2217,20 @@ OX.Connection = OX.Base.extend(/** @lends OX.Connection# */{
    * @return {OX.Connection}
    */
   initConnection: function () {
-    if (!this.getJID() || this.getJID() == '') throw new OX.Error('missing JID');
+    if (!this.getJID() || this.getJID() === '') {
+      throw new OX.Error('missing JID');
+    }
 
     var serviceMap = {};
 
-    for (var s in this.services) if (this.services.hasOwnProperty(s)) {
-      var service = this.services[s];
+    for (var s in this.services) {
+      if (this.services.hasOwnProperty(s)) {
+        var service = this.services[s];
 
-      this[s] = service.extend({connection: this});
-      if (service.pubSubURI) {
-        serviceMap[service.pubSubURI] = service;
+        this[s] = service.extend({connection: this});
+        if (service.pubSubURI) {
+          serviceMap[service.pubSubURI] = service;
+        }
       }
     }
 
@@ -2271,9 +2345,9 @@ OX.XML.Element = OX.Base.extend(/** @lends OX.XML.Element# */{
    * @param {String} [value] If value is supplied, the attribute will be set.
    * @returns {String} the value of the attribute.
    */
-  attr: function(name,value) {
+  attr: function (name, value) {
     this.attributes = this.attributes || {};
-    if(value) {
+    if (value) {
       this.attributes[name] = value;
     }
     return this.attributes[name];
@@ -2285,9 +2359,9 @@ OX.XML.Element = OX.Base.extend(/** @lends OX.XML.Element# */{
    * @param {OX.XML.Element} child The XML element to add as a child.
    * @returns {OX.XML.Element} The receiver.
    */
-  addChild: function(child) {
+  addChild: function (child) {
     this.children = this.children || [];
-    if(child) {
+    if (child) {
       this.children.push(child);
     }
     return this;
@@ -2298,20 +2372,26 @@ OX.XML.Element = OX.Base.extend(/** @lends OX.XML.Element# */{
    *
    * @returns {String} This XML element as XML text.
    */
-  convertToString: function() {
+  convertToString: function () {
     var ret = "";
     var attrs = [];
 
-    if (this.xmlns) this.attr('xmlns',this.xmlns);
-
-    if(this.attributes) for(var name in this.attributes) {
-      var val = this.attributes[name];
-      if(!val) continue;
-
-      attrs.push(name + '="' + val + '"');
+    if (this.xmlns) {
+      this.attr('xmlns', this.xmlns);
     }
 
-    ret += "<" + this.name + " _realname='" + this.name + "'";
+    if (this.attributes) {
+      for (var name in this.attributes) {
+        var val = this.attributes[name];
+        if (!val) {
+          continue;
+        }
+
+        attrs.push(name + '="' + val + '"');
+      }
+    }
+
+    ret += "<" + this.name;
     ret += (attrs.length > 0) ? ' ' + attrs.join(' ') : '';
     ret += ">";
 
@@ -2320,7 +2400,9 @@ OX.XML.Element = OX.Base.extend(/** @lends OX.XML.Element# */{
       ret += this.children[i].convertToString();
     }
 
-    if(this.text) ret += this.text;
+    if (this.text) {
+      ret += this.text;
+    }
 
     ret += "</" + this.name + ">";
 
@@ -2336,20 +2418,26 @@ OX.XML.Element = OX.Base.extend(/** @lends OX.XML.Element# */{
    * @param {OX.XML.Element[]} [elements] An array of OX.XML.Element to assign as children.
    * @returns {OX.XML.Element}
    */
-  create: function(attrs, elements) {
+  create: function (attrs, elements) {
     var ret = this.extend();
 
-    if (attrs) for(var k in attrs) {
-      if (attrs.hasOwnProperty(k)) {
-        var v = attrs[k];
-        if (!v) continue;
-        ret.attr(k,v);
+    if (attrs) {
+      for (var k in attrs) {
+        if (attrs.hasOwnProperty(k)) {
+          var v = attrs[k];
+          if (!v) {
+            continue;
+          }
+          ret.attr(k, v);
+        }
       }
     }
 
     elements = (elements && elements.addChild) ? [elements] : elements;
-    if (elements && elements.length) for(var i=0,len=elements.length; i < len; i++) {
-      ret.addChild(elements[i]);
+    if (elements && elements.length) {
+      for (var i = 0, len = elements.length; i < len; i++) {
+        ret.addChild(elements[i]);
+      }
     }
 
     return ret;
@@ -2369,11 +2457,11 @@ OX.XMPP = {};
  * @class
  */
 OX.XMPP.Stanza = OX.XML.Element.extend(/** @lends OX.XMPP.Stanza# */{
-  to: function(val) {
+  to: function (val) {
     return this.attr('to', val);
   },
 
-  from: function(val) {
+  from: function (val) {
     return this.attr('from', val);
   }
 });
@@ -2387,7 +2475,7 @@ OX.XMPP.Stanza = OX.XML.Element.extend(/** @lends OX.XMPP.Stanza# */{
 OX.XMPP.IQ = OX.XMPP.Stanza.extend(/** @lends OX.XMPP.IQ# */{
   name: 'iq',
 
-  type: function(val) {
+  type: function (val) {
     return this.attr('type', val);
   }
 });
@@ -2423,11 +2511,11 @@ OX.XMPP.Command = OX.XML.Element.extend(/** @lends OX.XMPP.Command# */{
   name: 'command',
   xmlns: 'http://jabber.org/protocol/commands',
 
-  node: function(val) {
+  node: function (val) {
     return this.attr('node', val);
   },
 
-  action: function(val) {
+  action: function (val) {
     return this.attr('action', val);
   }
 });
@@ -2442,7 +2530,7 @@ OX.XMPP.XDataForm = OX.XML.Element.extend(/** @lends OX.XMPP.XDataForm# */{
   name: 'x',
   xmlns: 'jabber:x:data',
 
-  type: function(val) {
+  type: function (val) {
     return this.attr('type', val);
   },
 
@@ -2456,22 +2544,226 @@ OX.XMPP.XDataForm = OX.XML.Element.extend(/** @lends OX.XMPP.XDataForm# */{
    * @param {String} type XDataField type see XEP: 0004.
    * @returns {OX.XMPP.XDataForm} The receiver.
    */
-  addField: function(name,value,type) {
-    var f,v;
+  addField: function (name, value, type) {
+    var f, v;
     f = OX.XML.Element.extend({name: 'field'});
-    f.attr('var',name);
+    f.attr('var', name);
 
-    if(value) {
+    if (value) {
       v = OX.XML.Element.extend({name: 'value', text: value});
       f.addChild(v);
     }
 
-    if(type) f.attr('type',type);
+    if (type) {
+      f.attr('type', type);
+    }
 
     return this.addChild(f);
   }
 });
+/**
+ * Strophe Connection Adapter
+ * @class
+ * @extends OX.ConnectionAdapter
+ */
+OX.StropheAdapter = OX.ConnectionAdapter.extend(
+  /** @lends OX.StropheAdapter# */{
 
+  /** @private */
+  _callbacks: {},
+  /** @private */
+  _handlers: {},
 
-/* End ------------------------------------------------------- ox.js*/
+  _callbackQueue: [],
+  MAX_QUEUE_SIZE: 100,
 
+  /** @private */
+  init: function () {
+    this._callbacks = {};
+    this._handlers = {};
+    this._callbackQueue = [];
+  },
+
+  /**
+   * @returns {String} The JID associated with the connection.
+   */
+  jid: function () {
+    return this.strophe.jid;
+  },
+
+  /**
+   * Subscribe to stanza via top-level XMPP tag name.
+   *
+   * @param {String} event The top level XMPP tag name to register for.
+   * @param {Function} handler The function handler for the event.
+   */
+  registerHandler: function (event, handler) {
+    var that = this;
+
+    var wrapper = function (stanza) {
+      var packetAdapter = that.toPacket(stanza),
+          newArgs = [packetAdapter];
+
+      for (var i = 1, len = arguments.length; i < len; i++) {
+        newArgs.push(arguments[i]);
+      }
+
+      try {
+        handler.apply(this, newArgs);
+      } catch (e) {
+        OX.error('Error in OX handler: ' + handler +
+                 '; Error: ' + e + '; response stanza: ' + stanza);
+      }
+      return true;
+    };
+
+    this.unregisterHandler(event);
+    this._handlers[event] = this.strophe.addHandler(wrapper, null, event,
+                                                    null, null, null);
+  },
+
+  /**
+   * Unsubscribe from corresponding event.
+   *
+   * @param {String} event The event to unsubscribe from.
+   */
+  unregisterHandler: function (event) {
+    var queue = this._callbackQueue, i, len = queue.length, rest;
+
+    if (this._handlers[event]) {
+      this.strophe.deleteHandler(this._handlers[event]);
+      delete this._handlers[event];
+
+      // Remove from the callback queue
+      for (i = 0; i < len; i++) {
+        if (queue[i] === event) {
+          rest = queue.slice(i + 1, queue.length);
+          queue.length = i;
+          queue.push(rest);
+          break;
+        }
+      }
+    }
+  },
+
+  /**
+   * Create a DOM node via XML.
+   *
+   * @private
+   * @param {String} xml The xml string to convert into an object.
+   * @returns {Element} The document fragment that represents the xml string.
+   */
+  createNode: function (xml) {
+    var node = null, parser = null;
+    if (window.ActiveXObject) {
+      parser = new ActiveXObject("Microsoft.XMLDOM");
+      parser.async = "false";
+      parser.setProperty("SelectionLanguage", "XPath");
+      parser.loadXML(xml);
+      node = parser.firstChild;
+    } else {
+      parser = new DOMParser();
+      node = parser.parseFromString(xml, 'text/xml');
+      node = node.firstChild;
+      document.adoptNode(node);
+    }
+    return node;
+  },
+
+  /**
+   * Send the xml fragment over the connection.
+   *
+   * @param {String} xml The xml to send.
+   * @param {Function} callback The function to call when done.
+   * @param {Array} args A list of arguments to provide to the callback.
+   */
+  send: function (xml, callback, args) {
+    var node = this.createNode(xml),
+        that = this;
+
+    if (!this.strophe.connected || this.strophe.disconnecting) {
+      OX.log('Prevented "' + xml + '" from being sent because ' +
+             'the BOSH connection is being disposed / is disposed.');
+      return false;
+    }
+
+    if (callback) {
+      var wrapper = function (stanza) {
+        var packetAdapter = that.toPacket(stanza),
+            newArgs = [packetAdapter],
+            queue = that._callbackQueue, rest,
+            event = node.getAttribute('id'), i, len;
+        args = args || [];
+        for (i = 0, len = args.length; i < len; i++) {
+          newArgs.push(args[i]);
+        }
+
+        try {
+          callback.apply(this, newArgs);
+        } catch (e) {
+          OX.error('Error in OX handler: ' + callback +
+                   '; Error: ' + e + '; response stanza: ' + stanza);
+        }
+
+        // Remove from the callback queue
+        for (i = 0, len = queue.length; i < len; i++) {
+          if (queue[i].toString() === event) {
+            rest = queue.slice(i + 1, queue.length);
+            queue.length = i;
+            queue.push.apply(queue, rest);
+            break;
+          }
+        }
+
+        delete that._callbacks[event];
+
+        return false;
+      };
+
+      var id = node.getAttribute('id');
+      if (!id) {
+        id = this.strophe.getUniqueId();
+        node.setAttribute('id', id);
+      }
+
+      this._callbacks[id] = this.strophe.addHandler(wrapper, null, null,
+                                                       null, id, null);
+      this._callbackQueue.unshift(id);
+      if (this._callbackQueue.length > this.MAX_QUEUE_SIZE) {
+        OX.warn("You have too many callbacks waiting for a response, so I'm getting rid of the oldest one.\n" +
+                "If this isn't desired, override the MAX_QUEUE_SIZE of OX.StropheAdapter.");
+        delete this._callbacks[this._callbackQueue.pop()];
+      }
+    }
+    node.setAttribute('xmlns', 'jabber:client');
+    return this.strophe.send(node);
+  },
+
+  /**
+   * Convert a stanza into an object that implements {@link OX.PacketAdapter}.
+   *
+   * @private
+   * @param {Element} stanza The XMPP stanza to pack.
+   *
+   * @returns {OX.PacketAdapter} The stanza wrapped as a packet.
+   */
+  toPacket: function (stanza) {
+    var to = stanza.getAttribute('to'),
+        from = stanza.getAttribute('from'),
+        type = stanza.getAttribute('type');
+    return {
+      getFrom: function () {
+        return from;
+      },
+      getType: function () {
+        return type;
+      },
+      getTo: function () {
+        return to;
+      },
+      getNode: function () {
+        return stanza;
+      }
+    };
+  }
+});

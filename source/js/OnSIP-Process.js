@@ -3,8 +3,8 @@ var OnSIP_Process = function() {
     var updateBadge = function(text, color, icon, title) {
 	chrome.browserAction.setBadgeBackgroundColor ({ 'color' : color });
 	chrome.browserAction.setBadgeText ({ 'text': text });
-	chrome.browserAction.setIcon  ({ path  : icon  });
 	chrome.browserAction.setTitle ({ title : title });
+	chrome.browserAction.setIcon  ({ path  : icon  });
     };
 	
     var sendPageRequest = function (request) {

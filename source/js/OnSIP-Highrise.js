@@ -3,19 +3,19 @@
 var HIGHRISE = {
     'companies': [],
     'contacts' : [],
+    'ts'       : null,
     'base_url' : 'https://onsip.highrisehq.com/',
     'token'    : 'b96bb6e88495f36d855e9c166993386b'
 };
 
 HIGHRISE.verifyToken = function (call) {
-
    var xhr = new XMLHttpRequest ();
    
    xhr.onreadystatechange = function () {
       if (xhr.readyState === 4) {
          if (xhr.status === 200) {
 	     call.onSuccess ();
-	 }else{
+	 } else {
 	     call.onError (xhr.status);
 	 }
       } 
@@ -23,75 +23,68 @@ HIGHRISE.verifyToken = function (call) {
 
    xhr.open('GET', this.base_url + 'people.xml', false, this.token, 'X');
    xhr.send();
-
 };
 
 HIGHRISE.postNote = function (phone_number, note) {
-    var clean_phone_num = null, customer = null;
-    if (companies || contacts) {
-	clean_phone_number = this._normalizePhoneNumber (phone_number);
-	costumer = this._findContact (clean_phone_number);
-	if (costumer) {
-	    // create note 
-	    var note = "";
-	    this._postNoteToProfile (costumer, note, null);       
-	}
+    var clean_phone_num, customer;
+    clean_phone_number = this._normalizePhoneNumber (phone_number);
+    costumer           = this.findContact (clean_phone_number);
+    if (costumer) {
+       // create note 
+       var note = "";
+       this._postNoteToProfile (costumer, note, null);       
     }    
 };
 
-/** Find the person or company **/
-HIGHRISE._findContact = function (phone_number) {
-
-    var  i = 0, j = 0, costumer = null;
-    for (i = 0; i < contacts.length; i += 1) {
-        for (j = 0; j < contacts[i].phone_numbers.length; j += 1) {
-	    if (contacts[i].phone_numbers[j].phone_number === phone_number) {
-		costumer = contacts[i];
-		costumer.type = 'people';
-		return costumer;
-	    }    
-	}    	
+/** Find the person or company by phone number **/
+HIGHRISE.findContact = function (phone_number) {
+    var  i, j, costumer;
+    //this.init();
+    /** Find people first **/
+    for (i = 0; i < this.contacts.length; i += 1) {
+       for (j = 0; j < this.contacts[i].phone_numbers.length; j += 1) {
+          if (this.contacts[i].phone_numbers[j].phone_number === phone_number) {
+	     costumer      = this.contacts[i];
+	     costumer.type = 'people';
+	     return costumer;
+	  }    
+       }    	
     }
     
-    for (i = 0; i < companies.length; i += 1) {
-        for (j = 0; j < companies[i].phone_numbers.length; j += 1) {
-            if (companies[i].phone_numbers[j].phone_number === phone_number) {
-		costumer= companies[i];
+    for (i = 0; i < this.companies.length; i += 1) {
+	for (j = 0; j < this.companies[i].phone_numbers.length; j += 1) {
+	    if (this.companies[i].phone_numbers[j].phone_number === phone_number) {
+		costumer      = this.companies[i];
 		costumer.type = 'companies';
 		return costumer;
-            }
-        }
+	    }
+	}
     }
-    
-    return null;
-
+    return;
 };
 
 /** Normalize the phone number **/ 
 HIGHRISE._normalizePhoneNumber = function (phone_number) {
-
     var clean_phone_num = null,
         clean_phone_ext = null;
 
-
-    clean_phone_ext = getPhoneExtension( phone_num );
-    clean_phone_num = removeExtention ( phone_number );
-    clean_phone_num = cleanPhoneNo (clean_phone_num);
-    if(clean_phone_num.length === 10) {
+    clean_phone_ext = getPhoneExtension( phone_number );
+    clean_phone_num = removeExtention  ( phone_number );
+    clean_phone_num = cleanPhoneNo     (clean_phone_num);
+    if (clean_phone_num.length === 10) {
 	clean_phone_num = '1' + clean_phone_num;
     }
-    if(clean_phone_ext ){
+    if (clean_phone_ext) {
 	clean_phone_num += cleanPhoneNo (clean_phone_ext);
     }
 	
     return clean_phone_num;
-
 };
 
 HIGHRISE._postNoteToProfile = function (customer, note, call) {
-
     var xhr  = new XMLHttpRequest();
     var that = this;
+
     xhr.onreadystatechange = function () {	
 	if (xhr.readyState !== 4) {
 	    return false;
@@ -110,11 +103,34 @@ HIGHRISE._postNoteToProfile = function (customer, note, call) {
         
     xhr.open ("PUT", this.base_url + customer.type + "/" + customer.id + "/notes.xml", true, this.token, 'X');    
     xhr.send (note);
+};
 
+HIGHRISE.init        =  function () {
+    if ( !(this.ts) ) {
+	console.log ('Time stamp is not set');
+       that = this;
+       this._getContacts ({
+          onSuccess : function (c) {
+	     that.ts = new Date();
+	     console.log ('Got Contacts');
+          },
+          onError   : function (status) {
+             console.log ('Error ' + status);
+          }
+       });
+       this._getCompanies ({
+         onSuccess : function (c) {
+	    that.ts = new Date();
+            console.log ('Got Companies');
+         },
+         onError   : function (status) {
+            console.log ('Error ' + status);
+         }
+       });
+    }
 };
 
 HIGHRISE._getContacts = function (call) {
-
    var xhr  = new XMLHttpRequest();
    var that = this;
    xhr.onreadystatechange = function () {
@@ -132,13 +148,11 @@ HIGHRISE._getContacts = function (call) {
 
    xhr.open ("GET", this.base_url + 'people.xml', true, this.token, 'X');
    xhr.send ();
-
 };
 
                                                                                                                                                                                          
-// Retrieve companies from highrise                                                                                                                                                        
+/** Retrieve companies from highrise **/                                                                                                                                                        
 HIGHRISE._getCompanies = function (call) {   
-
    var xhr  = new XMLHttpRequest();
    var that = this;
    xhr.onreadystatechange = function () {
@@ -156,17 +170,15 @@ HIGHRISE._getCompanies = function (call) {
 
    xhr.open ("GET", this.base_url + 'companies.xml', true, this.token, 'X');
    xhr.send ();  
-
 };
 
 HIGHRISE._parseContactsXML = function (xml) {
-
     var xmlobject      = (new DOMParser()).parseFromString(xml, "text/xml");
     var root_node      = xmlobject.getElementsByTagName("people")[0];
     var person_nodes   = root_node.getElementsByTagName("person");
     var node_len       = person_nodes.length;
     var i = 0, first_name = null, last_name  = null, phone_number_nodes = [],
-    j = 0, phone_num  = null, location   = null, person_id = null;
+        j = 0, phone_num  = null, location   = null, person_id = null;
 
     this.contacts = [];
     for (i = 0 ; i < node_len ; i += 1) {
@@ -193,11 +205,9 @@ HIGHRISE._parseContactsXML = function (xml) {
 	};
       	this.contacts.push (person_obj);
     }
-
 };
 
 HIGHRISE._parseCompaniesXML = function (xml) {   
-
    var xmlobject      = (new DOMParser()).parseFromString(xml, "text/xml");
    var root_node      = xmlobject.getElementsByTagName("companies")[0];
    var company_nodes  = root_node.getElementsByTagName("company");
@@ -227,5 +237,4 @@ HIGHRISE._parseCompaniesXML = function (xml) {
       };
       this.companies.push (company_obj);
    }
-
 };

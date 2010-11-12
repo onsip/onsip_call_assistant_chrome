@@ -4,7 +4,7 @@ var dbg = {
     }
 };
 // Turn off debugging when on production
-dbg.log = function(){};
+//dbg.log = function(){};
 
 
 /**
