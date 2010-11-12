@@ -15,39 +15,47 @@ var HIGHRISE_APP = {
 };
 
 HIGHRISE_APP.activeCallCreated   = function ( items ) {
-    dbg.log ('HIGHRISE LOG :: Active Call Createds');
-    var i = 0, item;
+    dbg.log ('HIGHRISE LOG :: Active Call Created');
+    var i = 0, item = null, args = null, n = null, phone_num = null;
     for (i = 0; i < items.length; i++) {
 	item = items[i];
-	//var n = webkitNotifications.createNotification(
-	//   '', 'notificattion', 'To : ' + (item.toURI || 'Unknown') 
-	//);
-	var arg = 'ds=created&toURI=' + escape(item.toURI);
-	var n   = webkitNotifications.createHTMLNotification ('notification.html?' + arg);
-	
+	//args = 'ds=created&toURI=' + escape(item.toURI);
+	//n    = webkitNotifications.createHTMLNotification ('notification.html?' + arg);	
+	phone_num = extractPhoneNumber(item.toURI);
+	n = webkitNotifications.createNotification ('images/i_calling.png', 'Calling', 
+						    'To: ' + (phone_num || 'Unknown'));  
+	n.uri   = item.uri.query;	
         n.show();
+
 	this.notifications.push (n);	
     }    
 };
 
 HIGHRISE_APP.activeCallRequested = function ( items ) {
     dbg.log ('HIGHRISE LOG :: Active Call Requested');
-    var i = 0, item;
+    var i = 0, item, args = null, n = null;
     for (i = 0;i < items.length; i++) {
 	item = items[i];
-	var arg = 'ds=requested&fromURI=' + escape (item.fromURI);
-        var n   =  webkitNotifications.createHTMLNotification ('notification.html?' + arg);
-	
-        // var n = webkitNotifications.createNotification ('', 'Incoming Call', 
-	//     'From: ' + (item.fromURI || 'Unknown'));
-
+	//arg = 'ds=requested&fromURI=' + escape (item.fromURI);
+        //n   =  webkitNotifications.createHTMLNotification ('notification.html?' + arg);
+	phone_num = extractPhoneNumber(item.fromURI);
+        n = webkitNotifications.createNotification ('images/i_calling.png', 'Incoming Call', 
+						    'From: ' + (phone_num || 'Unknown'));
+	n.uri   = item.uri.query;
         n.show();
+
 	this.notifications.push (n);
     }
 };
 
 HIGHRISE_APP.activeCallConfirmed = function ( item ) {
-    dbg.log ('HIGHRISE LOG :: Active Call Confirmed');
+   dbg.log ('HIGHRISE LOG :: Active Call Confirmed');
+   console.log ('There are ' + this.notifications.length + ' notifications ');
+   var i = 0;
+   for (i = 0; i < item.length; i += 1) {   
+       this._cancelNotifications (item[i].uri.query);
+   }
+   
 };
 
 HIGHRISE_APP.strophe_Connected  = function ( item ) {
@@ -58,35 +66,48 @@ HIGHRISE_APP.activeCallPending   = function ( item ) {
     dbg.log ('HIGHRISE LOG :: Active Call Pending');
 };
 
-HIGHRISE_APP.activeCallRetract   = function () {
-    dbg.log ('HIGHRISE LOG :: Active Call Retracted = ' + this.notifications.length);
-    /**
-    var i, len = this.notifications.length;
-    for (i = 0; i < len; i += 1) {
-	this.notifications[i].cancel ();
+HIGHRISE_APP.activeCallRetract   = function (itemURI) {
+    dbg.log ('HIGHRISE LOG :: Active Call Retracted = ' + this.notifications);
+    var i;
+    for (i = 0; i < itemURI.length;i += 1) {
+       this._cancelNotifications (itemURI[i].query);
     }
-    for(i = 0;i < len; i += 1) {
-	delete this.notifications[i];
+};
+
+HIGHRISE_APP._cancelNotifications = function (item) {
+    console.log ('There are ' + this.notifications.length + ' notifications ');
+    var n = this.notifications.pop();
+    var a = [];
+    while (n) {	
+	if (item === n.uri) {
+	    n.cancel();
+	} else {
+	    a.push (n);
+	}
+	n = this.notifications.pop();
     }
-    **/
+    this.notifications = a;
+    
+    //console.log ('toURI : ' + toURI + ' --- fromURI ' + fromURI);
 };
 
 OX_EXT.apps = [HIGHRISE_APP];
-//OX_EXT.init();
+OX_EXT.init();
 
 // Turn extension ON / OFF
 ext = new OnSIP_Process();
-//ext.init();
+ext.init();
 
 
+/**
 var n = '<note><body> Test Note </body></note>';
 var customer = {
     type : "people",
     id   : 49406880
 };
-
+**/
 //HIGHRISE.addNodeToProfile (customer, n);
-//HIGHRISE.verify();
+
 /**
 HIGHRISE.getContact({
 	onSuccess : function (res) {
@@ -101,7 +122,7 @@ HIGHRISE.getContact({
 function doThing () {
     console.log ('This is a nice test');
 }
-return;
+
 // Add event listener for clicks on the extension icon
 chrome.browserAction.onClicked.addListener ( function (TAB) {
    dbg.log ('CHROME :: clicked enable / disable icon');
@@ -175,12 +196,6 @@ chrome.extension.onRequest.addListener (function (request, sender, sendResponse)
  * @param url
  * @param token
  */
-
-console.log ('testing bg');
-getHighriseMe({
-	onSuccess : function (txt) {
-	    console.log ('HIGHRISE :: callback ' + txt);
-	}}, 'https://onsip.highrisehq.com', 'b96bb6e88495f36d855e9c166993386b');
 
 function getHighriseMe(callback, url, token){
    dbg.log('SETTING :: get highrise ME');
