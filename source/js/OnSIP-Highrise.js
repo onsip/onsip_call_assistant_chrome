@@ -25,14 +25,28 @@ HIGHRISE.verifyToken = function (call) {
    xhr.send();
 };
 
-HIGHRISE.postNote = function (phone_number, note) {
-    var clean_phone_num, customer;
+HIGHRISE.postNote = function (phone_number, note, user_tz) {
+    var clean_phone_num, customer, nt, full_name;
     clean_phone_number = this._normalizePhoneNumber (phone_number);
     costumer           = this.findContact (clean_phone_number);
     if (costumer) {
-       // create note 
-       var note = "";
-       this._postNoteToProfile (costumer, note, null);       
+	if ( costumer.first_name && costumer.last_name ) {
+	    full_name = costumer.first_name + ' ' + costumer.last_name;
+	    if (trim (full_name).length === 0) {
+		full_name = undefined;
+	    }
+	}
+	if ( !name && (costumer.company_name) ) {
+	    full_name = costumer.company_name;
+	    if (trim (full_name).length === 0) {
+		full_name = undefined;
+	    }
+	}
+	if (full_name && full_name.length > 0) {
+	    var tz = getDateAndTime(getTimezoneAbbrevation(user_tz));
+	    nt     = "<note><body>testing note from " + full_name + " timezone " + tz + "</body></note>";
+	    this.postNoteToProfile (costumer, nt); 
+	}
     }    
 };
 
@@ -81,7 +95,7 @@ HIGHRISE._normalizePhoneNumber = function (phone_number) {
     return clean_phone_num;
 };
 
-HIGHRISE._postNoteToProfile = function (customer, note, call) {
+HIGHRISE.postNoteToProfile = function (customer, note, call) {
     var xhr  = new XMLHttpRequest();
     var that = this;
 
@@ -90,18 +104,18 @@ HIGHRISE._postNoteToProfile = function (customer, note, call) {
 	    return false;
 	}
 	if (xhr.status !== 200) {
-	    if (call && call.onError) {
-	        call.onError (xhr.status);
+	    if (that.call && that.call.onError) {
+	        that.call.onError (xhr.status);
 	    }
 	} else{
-	    if (call && call.onSuccess) {
-	        call.onSuccess ();
+	    if (that.call && that.call.onSuccess) {
+	        that.call.onSuccess ();
 	    }
 	}
 	return true;
     };
         
-    xhr.open ("PUT", this.base_url + customer.type + "/" + customer.id + "/notes.xml", true, this.token, 'X');    
+    xhr.open ("POST", this.base_url + customer.type + "/" + customer.id + "/notes.xml", true, this.token, 'X');    
     xhr.send (note);
 };
 
@@ -198,7 +212,7 @@ HIGHRISE._parseContactsXML = function (xml) {
 	    phone_numbers_list.push (ph_obj);
 	}
 	var person_obj = {
-	    "person_id"    : person_id,
+	    "id"           : person_id,
 	    "first_name"   : first_name,
 	    "last_name"    : last_name,	    
 	    "phone_numbers": phone_numbers_list
@@ -231,8 +245,8 @@ HIGHRISE._parseCompaniesXML = function (xml) {
 	  phone_numbers_list.push (ph_obj);
       }
       var company_obj = {
+	  "id"           : company_id,
 	  "company_name" : company_name,
-	  "company_id"   : company_id,
 	  "phone_numbers": phone_numbers_list
       };
       this.companies.push (company_obj);

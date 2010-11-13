@@ -18,23 +18,27 @@ HIGHRISE_APP.activeCallCreated   = function ( items ) {
 	//n    = webkitNotifications.createHTMLNotification ('notification.html?' + arg);	
 	item   = items[i];
 	phone  = extractPhoneNumber(item.toURI);
-	cont   = HIGHRISE.findContact (phone + '');
-	console.log (cont + ' for phone number ' + phone);
-	name   = null;
+	cont   = HIGHRISE.findContact (phone + '');	
 	if ( cont && cont.first_name && cont.last_name ) {
 	    name = cont.first_name + ' ' + cont.last_name;
 	    if (trim (name).length === 0) {
-		name = null;
+		name = undefined;
 	    }
 	}	
-	phone  = name || (cont && cont.company_name) || phone || 'Unknown';
+	if ( !name && (cont && cont.company_name) ) {
+	    name = cont.company_name;
+	}
+		
+	phone  = name || phone;
 	n      = webkitNotifications.createNotification ('images/i_calling.png', 
 							 'Calling', 
 							 '' + phone);  
-	n.uri  = item.uri.query;	
+	n.uri           = item.uri.query;
+	n.contact       = cont;
         n.show();
 
-	this.notifications.push (n);	
+	this.notifications.push (n);
+
     }    
 };
 
@@ -47,20 +51,27 @@ HIGHRISE_APP.activeCallRequested = function ( items ) {
 	//arg = 'ds=requested&fromURI=' + escape (item.fromURI);
         //n   =  webkitNotifications.createHTMLNotification ('notification.html?' + arg);
 	phone = extractPhoneNumber(item.fromURI);
-	cont  = HIGHRISE.findContact (phone + ''); 
-	phone = (cont && cont.company_name) || phone;
-        name  = null;
+	cont  = HIGHRISE.findContact (phone + ''); 	        
         if ( cont && cont.first_name && cont.last_name ) {
             name = cont.first_name + ' ' + cont.last_name;
             if (trim (name).length === 0) {
-		name = null;
+		name = undefined;
             }
-        }	
-	phone = name || (cont && cont.company_name) || phone || 'Unknown';
+        } 
+        if ( !name && (cont && cont.company_name) ) {
+	    name = cont.company_name;
+	    if (trim (name).length === 0) {
+		name = undefined;
+	    }
+	}	
+	
+	//console.log (' NAME is ' + name+ ' - phone is ' + phone);
+	phone = name || phone;
         n     = webkitNotifications.createNotification ('images/i_calling.png', 
 							'Incoming Call', 
 							'From: ' + phone);
-	n.uri = item.uri.query;
+	n.uri           = item.uri.query;
+	n.contact       = cont;
         n.show();
 
 	this.notifications.push (n);
@@ -69,8 +80,9 @@ HIGHRISE_APP.activeCallRequested = function ( items ) {
 
 HIGHRISE_APP.activeCallConfirmed = function ( items ) {
    dbg.log ('HIGHRISE LOG :: Active Call Confirmed');
-   var i, len;
-   for (i = 0, len = items.length; i < len; i += 1) {   
+   var i, len, name;
+   for (i = 0, len = items.length; i < len; i += 1) {               
+       this._postNotetoProfile   (items[i].uri.query)
        this._cancelNotifications (items[i].uri.query);
    }
 };
@@ -91,12 +103,40 @@ HIGHRISE_APP.activeCallRetract   = function (itemURI) {
     }
 };
 
+HIGHRISE_APP._postNotetoProfile  = function (item) {
+    var i, len, costumer, full_name;
+    for (i = 0, len = this.notifications.length; i < len; i += 1) {
+	if (item === this.notifications[i].uri) {
+	    costumer = this.notifications[i].contact;
+	    if (costumer && costumer.id) {		
+		var tz = getDateAndTime(getTimezoneAbbrevation(pref.get('userTimezone')));
+		if ( costumer.first_name && costumer.last_name ) {
+		    full_name = costumer.first_name + ' ' + costumer.last_name;
+		    if (trim (full_name).length === 0) {
+			full_name = undefined;
+		    }
+		}
+		if ( !name && (costumer.company_name) ) {
+		    full_name = costumer.company_name;
+		    if (trim (full_name).length === 0) {
+			full_name = undefined;
+		    }
+		}
+		if (full_name && full_name.length > 0) {
+		    nt     = "<note><body>testing note from " + full_name + "  timezone " + tz + "</body></note>";
+		    HIGHRISE.postNoteToProfile (costumer, nt);
+		}                                
+	    }
+	}	
+    }
+};
+
 HIGHRISE_APP._cancelNotifications = function (item) {
     dbg.log ('There are ' + this.notifications.length + ' notifications ');    
     var a = [];
     var n = this.notifications.pop();
     while (n) {	
-	if (item === n.uri) {
+	if (item === n.uri) {	   
 	    n.cancel();
 	} else {
 	    a.push (n);
