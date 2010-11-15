@@ -1,12 +1,12 @@
 $(function(){
-	// alias for the OnSIP_Preferences object
-	var pref = OnSIP_Preferences;
+    /** Alias for the OnSIP_Preferences object **/
+    var pref = OnSIP_Preferences;
 
-    // set initial settings
+    /** Set initial settings **/
     setDefaultSettings();
     setToolTips();
 
-    // Set a field behaivior
+    /** Set a field behaivior **/
     SetHelperBehaivior('#options');
     
 	// Save settings
@@ -189,10 +189,10 @@ function updateAllTabs(fromAddress){
 function validateHighriseCredentials(callback){
     console.log('*** sending a request to bg ***');
     var url = formatUrl($('#highriseUrl').val());
-    url += '/me.xml';
+    //url += '/me.xml';
     var token = $('#highriseToken').val();
     
-    chrome.extension.sendRequest({validateHighriseAccount:true, highriseUrl: url, highriseToken: token},
+    chrome.extension.sendRequest({ verifyHighrise : true, highriseUrl : url, highriseToken : token},
         function (response) {
             console.log('response.tokenValid');
             console.log(response.tokenValid);
@@ -213,61 +213,25 @@ function validateHighriseCredentials(callback){
  *  Get User Info From Onsip
  *  @param callback
  */
-function getOnsipUser(callback){
- 
-    var pref = OnSIP_Preferences;
-    var sessionId = null;
-    var userId = null;
-    var userInfo = null;
-    
-    // Get session first
-    $.ajax({
-        url : pref.get('apiUrl'),
-        data : {
-            'Action' : 'SessionCreate',
-            'Username' : $('#fromAddress').val(),
-            'Password' : $('#onsipPassword').val(),
-            'Output'   : 'json'
-        },
-        dataType: 'json',
-        timeout	: pref.get('apiTimeout'),
-        success: function(data, status, xhr){
-            console.log('session is successfully retrieved');
-            console.log(xhr.status);
-            if(xhr.status == 200){
-                if(data.Response.Context.Session.IsEstablished == 'true'){
-                    // Save a session id
-                    sessionId = data.Response.Context.Session.SessionId;
-                    userId = data.Response.Context.Session.UserId;
-                    // Get the User info
-                    $.ajax({
-                        url: pref.get('apiUrl'),
-                        data : {
-                            'Action' : 'UserRead',
-                            'Output' : 'json',
-                            'UserId' : userId,
-                            'SessionId' : sessionId
-                        },
-                        dataType : 'json',
-                        success: function(data, status, xhr){
-                            if(data.Response.Context.Action.IsCompleted == 'true'){
-                                // Save User Contact Info
-                                userInfo = data.Response.Result.UserRead.User.Contact;
-                                pref.set('userInfo', userInfo);
-                                console.log('Onsip user info is saved');
-                                // Execute Callback
-                                if(callback){callback.onSuccess();}
-                            }
-                        },
-                        error: function(data, status, xhr){console.log('get user info error');}
-                    });
-                }else{
-                    if(callback){callback.onError();}
-                }
-            }
-        },
-        error: function(data, status, xhr){console.log('get session error');}
-    });
+function getOnsipUser (callback) {
+    var pref     = OnSIP_Preferences;
+    var username = $('#fromAddress')  .val();                                                                                                                                                 
+    var password = $('#onsipPassword').val();
+    var userinfo = null;
+
+    chrome.extension.sendRequest({ verifyOnSipUser : true, username : username, password : password},
+        function (response) {
+	    if (response.tokenValid){
+		if(callback){
+		    callback.onSuccess();
+		}
+	    } else {
+		if (callback){
+		    callback.onError();
+		}
+	    }
+	}
+    );
 }
 
 /**

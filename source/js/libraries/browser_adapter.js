@@ -9,16 +9,21 @@ var OX_EXT = {
 };
 
 OX_EXT.createStropheConnection = function (url) {
-    console.log( 'ON_EXT :: Initialized Strophe Connection' );
+    console.log( 'ON_EXT :: Initialized Strophe Connection  ');
     this.strophe_conn = new Strophe.Connection( url );   
 }
 
-OX_EXT.init = function () {    
-    var jid        = 'oren@junctionnetworks.com/chrome-ox-plugin';
-    var pwd        = 'wvF9gskFEyGmrwsS';
-    
-    //this.createStropheConnection( 'http://localhost/http-bind/' );  
-    this.createStropheConnection ( 'https://dashboard.onsip.com/http-bind' );
+OX_EXT.init = function (pref, callback) {    
+    //var jid        = 'oren@junctionnetworks.com/chrome-ox-plugin';
+    //var pwd        = 'wvF9gskFEyGmrwsS';
+    //var bnd        = 'http://localhost/http-bind/';
+
+    var from_address = pref.get ('fromAddress');
+    var jid          = from_address + '/chrome-ox-plugin'; 
+    var pwd          = pref.get ('onsipPassword');
+    var url          = pref.get ('onsipHttpBase');
+       
+    this.createStropheConnection ( url );
     this.strophe_conn.rawInput = function (data) {
 	console.log( 'STROPHE RAW INPUT  :: ' + data );
     };
@@ -34,23 +39,31 @@ OX_EXT.init = function () {
     };
 
     OX.StropheAdapter.strophe = this.strophe_conn;    
-
     this.strophe_conn.connect(jid, pwd, function( status ) {
        switch ( status ){
            case Strophe.Status.CONNECTING : 
 	       console.log( 'STROPHE :: Connecting ... ' );
 	       break;
 	   case Strophe.Status.CONNFAIL :
+	       if (callback && callback.onError) {
+		   callback.onError ('Connection Failed');
+	       }
 	       console.log( 'STROPHE :: Connection failed' );
 	       break;
 	   case Strophe.Status.ERROR :
+	       if (callback && callback.onError) {
+                   callback.onError ('Connection Error through Strophe');
+               }
 	       console.log( 'STROPHE :: Connection Error' );
 	       break;
-	   case Strophe.Status.AUTHENTICATING :
+	   case Strophe.Status.AUTHENTICATING :	       
 	       console.log( 'STROPHE :: Authenticating' );
 	       break;
 	   case Strophe.Status.AUTHFAIL:
-	       console.log( 'STROPHE :: Authentication Failed' );
+	       if (callback && callback.onError) {
+		   callback.onError ('Connection Error - Authenticating');
+	       }
+	       console.log( 'STROPHE :: Authentication Failed ' );
 	       break;
 	   case Strophe.Status.CONNECTED:
 	       console.log( 'STROPHE :: Connected' );
@@ -64,13 +77,8 @@ OX_EXT.init = function () {
 	       this.ox_conn.ActiveCalls.registerHandler( "onPending",      this.handleActiveCallPending.bind (this));
 	       this.ox_conn.ActiveCalls.registerHandler( "onSubscribed",   this.handleActiveCallSubscribe.bind (this));
 	       this.ox_conn.ActiveCalls.registerHandler( "onUnsubscribed", this.handleActiveCallUnsubscribed.bind (this));
-
-	       var i;
-	       for (i = 0; i < this.apps.length; i+= 1){
-		   this.apps[i].strophe_Connected();
-	       }
-
-	       this.authorizePlain ();
+	       
+	       this.authorizePlain (pref, callback);
 	       break;
 	   default :
 	       console.log ('STROPHE :: Something else' );
@@ -99,6 +107,97 @@ OX_EXT.createCall = function (from_address, to_address) {
 
 };
 
+
+OX_EXT.authorizePlain = function (pref, callback) {    
+    //var sip = 'oren@junctionnetworks.com';
+    //var pwd = 'wvF9gskFEyGmrwsS';
+    //var jid = 'oren@junctionnetworks.com';
+ 
+    var sip = pref.get ('fromAddress');
+    var jid = sip + '/chrome-ox-plugin';
+    var pwd = pref.get ('onsipPassword');    
+
+    console.log ( 'OX_EXT :: Authorize ' );
+    var that = this;
+    var call = {
+       onSuccess : function () {
+	   console.log ( '+++++++++++++++++++++  Successfully Authorized' );
+	   that.subscribe (pref, callback);
+       },
+       onError  : function (error) {
+	   if (callback && callback.onError) {
+	       callback.onError ('Connection Error through Athorize Plain');
+	   } 
+	   console.log ( '+++++++++++++++++++++  Error in Authorize Plain' );           
+       }
+    };
+        
+    this.ox_conn.Auth.authorizePlain (sip, pwd, jid, true, call);
+};
+
+
+OX_EXT.subscribe = function (pref, callback) {
+    var sip      = pref.get ('fromAddress');
+    var node     = '/me/' + sip;
+    var that     = this;
+    var call     = {
+        onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
+            var subscription,
+            expiration = new Date(),
+            options = {}, i = 0;
+
+            if ( subscriptions.length === 0 ) {
+		that.ox_conn.ActiveCalls.subscribe (node, {
+			onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
+			    if (callback && callback.onSuccess) {
+                                callback.onSuccess ();
+                            }
+			    console.log ( '+++++++++++++++++++++  Successfully Subscribed' );
+			},
+			onError  : function (requestedURI, finalURI, packet) {
+			    if (callback && callback.onError) {
+                                callback.onError ('Error while subscribing');
+                            }
+			    console.log ( '+++++++++++++++++++++  Error while Subscribing' );
+			}
+		    });
+            } else {
+		expiration.setDate (expiration.getDate() + 1);
+		console.log ('Number of subscriptions ' + subscriptions.length);
+
+		subscription = subscriptions[0];
+		subscription = { node    : node, jid: subscription.jid, subid: subscription.subid };
+		options      = { expires : expiration };
+		that.ox_conn.ActiveCalls.configureNode (subscription, options, {
+			onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
+			    if (callback && callback.onSuccess) {
+                                callback.onSuccess ();
+                            }
+			    console.log ( '+++++++++++++++++++++  Successfully Got Subscriptions' );
+			},
+			onError   : function (requestedURI, finalURI, packet) {
+			    if (callback && callback.onError) {
+				callback.onError ('Error while trying to retrieve subscriptions');
+			    }
+			    console.log ( '+++++++++++++++++++++  Error in Subscriptions' );
+			}
+		    });
+            }
+        },
+        onError  : function (requestedURI, finalURI, packet) {
+	    if (callback && callback.onError) {
+		callback.onError ('Error while trying to retrieve subscriptions');
+	    }
+            console.log ( '+++++++++++++++++++++  Error while retrieving subscriptions   ' );
+        }
+    };
+
+    this.ox_conn.ActiveCalls.getSubscriptions (node, call);
+};
+
+
+/** Temporarily non-functional **/
+/**
 OX_EXT.cancelCall = function () {
 
     if (this.call_handle) {
@@ -106,28 +205,7 @@ OX_EXT.cancelCall = function () {
     }
 
 };
-
-OX_EXT.authorizePlain = function () {
-    
-    var sip = 'oren@junctionnetworks.com';
-    var pwd = 'wvF9gskFEyGmrwsS';
-    var jid = 'oren@junctionnetworks.com';
-    
-    console.log ( 'OX_EXT :: Authorize ' );
-    var that = this;
-    var callback = {
-       onSuccess : function () {
-	   console.log ( '+++++++++++++++++++++  Successfully Authorized' );
-	   that.subscribe ();
-       },
-       onError  : function (error) {
-	  console.log ( '+++++++++++++++++++++  Error in authorization' );
-       }
-    };
-        
-    this.ox_conn.Auth.authorizePlain (sip, pwd, jid, true, callback);
-
-};
+**/
 
 /**
 OX_EXT.getSubscriptions = function () {
@@ -198,50 +276,6 @@ OX_EXT.unsubscribe = function () {
 
 };
 **/
-
-OX_EXT.subscribe = function () {
-        
-    var that     = this;
-    var callback = {
-        onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
-            var subscription,
-	    expiration = new Date(),
-	    options = {}, i = 0;
-
-	    if ( subscriptions.length === 0 ) {
-	       that.ox_conn.ActiveCalls.subscribe ('/me/oren@junctionnetworks.com', {
-	          onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
-                     console.log ( '+++++++++++++++++++++  Successfully Subscribed' );
-                  },
-                  onError  : function (requestedURI, finalURI, packet) {
-                     console.log ( '+++++++++++++++++++++  Error while Subscribing' );
-                  }
-	       });
-	    } else { 
-               expiration.setDate (expiration.getDate() + 1);
-               console.log ('Number of subscriptions ' + subscriptions.length);
-	      
-	       subscription = subscriptions[0];
-	       subscription = { node    : "/me/oren@junctionnetworks.com", jid: subscription.jid, subid: subscription.subid };
-	       options      = { expires : expiration };
-	       that.ox_conn.ActiveCalls.configureNode (subscription, options, {
-	          onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
-		     console.log ( '+++++++++++++++++++++  Successfully Got Subscriptions' );
-		  },
-		  onError   : function (requestedURI, finalURI, packet) {
-		     console.log ( '+++++++++++++++++++++  Error in Subscriptions' );
-		  }
-	       });               
-            }            
-        },
-        onError  : function (requestedURI, finalURI, packet) {
-            console.log ( '+++++++++++++++++++++  Error while retrieing subscriptions   ' );
-        }
-    };
-
-    this.ox_conn.ActiveCalls.getSubscriptions ('/me/oren@junctionnetworks.com', callback);
-
-};
 
 OX_EXT.handleActiveCallUnsubscribed = function () {
     

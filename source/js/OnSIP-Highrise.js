@@ -4,11 +4,11 @@ var HIGHRISE = {
     'companies': [],
     'contacts' : [],
     'ts'       : null,
-    'base_url' : 'https://onsip.highrisehq.com/',
-    'token'    : 'b96bb6e88495f36d855e9c166993386b'
+    'base_url' : '',
+    'token'    : ''
 };
 
-HIGHRISE.verifyToken = function (call) {
+HIGHRISE.verifyToken = function (call, highrise_url, token) {
    var xhr = new XMLHttpRequest ();
    
    xhr.onreadystatechange = function () {
@@ -21,7 +21,10 @@ HIGHRISE.verifyToken = function (call) {
       } 
    }
 
-   xhr.open('GET', this.base_url + 'people.xml', false, this.token, 'X');
+   this.base_url = highrise_url;
+   this.token    = token;
+
+   xhr.open('GET', this.base_url + '/people.xml', false, this.token, 'X');
    xhr.send();
 };
 
@@ -115,12 +118,21 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
 	return true;
     };
         
-    xhr.open ("POST", this.base_url + customer.type + "/" + customer.id + "/notes.xml", true, this.token, 'X');    
+    xhr.open ("POST", this.base_url + "/" +  customer.type + "/" + customer.id + "/notes.xml", true, this.token, 'X');    
     xhr.send (note);
 };
 
-HIGHRISE.init        =  function () {
-    if ( !(this.ts) ) {
+HIGHRISE.init        =  function (pref) {
+    this.base_url = pref.get ('highriseUrl');
+    this.token    = pref.get ('highriseToken');
+
+    if (!(this.base_url && this.token)) {
+	console.log ('FAILED HIGHRISE INIT ' + this.base_url + ' --> ' + this.token);
+	return;
+    }
+
+    console.log ('HIGHRISE INIT ' + this.base_url + ' --> ' + this.token);
+    if (!(this.ts)) {
 	console.log ('Time stamp is not set');
        that = this;
        this._getContacts ({
@@ -160,7 +172,7 @@ HIGHRISE._getContacts = function (call) {
       return true;
    };
 
-   xhr.open ("GET", this.base_url + 'people.xml', true, this.token, 'X');
+   xhr.open ("GET", this.base_url + '/people.xml', true, this.token, 'X');
    xhr.send ();
 };
 
@@ -182,7 +194,7 @@ HIGHRISE._getCompanies = function (call) {
       return true;
    };   
 
-   xhr.open ("GET", this.base_url + 'companies.xml', true, this.token, 'X');
+   xhr.open ("GET", this.base_url + '/companies.xml', true, this.token, 'X');
    xhr.send ();  
 };
 

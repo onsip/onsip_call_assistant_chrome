@@ -18,6 +18,7 @@ HIGHRISE_APP.activeCallCreated   = function ( items ) {
 	//n    = webkitNotifications.createHTMLNotification ('notification.html?' + arg);	
 	item   = items[i];
 	phone  = extractPhoneNumber(item.toURI);
+	console.log ('Number of contacts is ' + HIGHRISE.contacts.length + ' -- ' + HIGHRISE.companies.length);
 	cont   = HIGHRISE.findContact (phone + '');	
 	if ( cont && cont.first_name && cont.last_name ) {
 	    name = cont.first_name + ' ' + cont.last_name;
@@ -38,7 +39,6 @@ HIGHRISE_APP.activeCallCreated   = function ( items ) {
         n.show();
 
 	this.notifications.push (n);
-
     }    
 };
 
@@ -122,6 +122,7 @@ HIGHRISE_APP._postNotetoProfile  = function (item) {
 			full_name = undefined;
 		    }
 		}
+		console.log ('Post note with Full name ' + full_name);
 		if (full_name && full_name.length > 0) {
 		    nt     = "<note><body>testing note from " + full_name + "  timezone " + tz + "</body></note>";
 		    HIGHRISE.postNoteToProfile (costumer, nt);
@@ -148,14 +149,21 @@ HIGHRISE_APP._cancelNotifications = function (item) {
 
 /** Connect, subscribe, and register to XMPP API **/
 OX_EXT.apps = [HIGHRISE_APP];
-OX_EXT.init();
+OX_EXT.init (pref, {
+      	onSuccess : function () { 
+
+	},
+	onError   : function (error) {
+            dbg.log ('Error IN CONNECT --> ' + error);
+	}
+    });
 
 /** Turn extension on / off **/
 extension = new OnSIP_Process();
-extension.init();
+extension.init ();
 
 /** Load contact information from Highrise **/
-HIGHRISE.init();
+HIGHRISE.init (pref);
 
 /** Add event listener for clicks on the extension icon **/
 chrome.browserAction.onClicked.addListener ( function (TAB) {
@@ -185,6 +193,42 @@ chrome.extension.onRequest.addListener ( function (request, sender, sendResponse
 	dbg.log ('CHROME Background :: Call requested FROM: ' + from_address + ' - TO: ' + to_address);
 	OX_EXT.createCall (from_address, to_address);
     }
+
+    
+    /** Verify SIP User **/
+    if ( request.verifyOnSipUser ) {
+	dbg.log ('CHROME Request verify on sip user '  + request.username + ', ' + request.password + ' -- ' + pref.get ('onsipHttpBase'));
+	pref.set ('fromAddress'  , request.username);
+	pref.set ('onsipPassword', request.password);
+
+	OX_EXT.init (pref, {
+	    onSuccess : function () {
+		sendResponse ({ tokenValid : true  });	    
+	    },
+	    onError   : function (error) {
+	        dbg.log ('Error ' + error);
+		sendResponse ({ tokenValid : false });
+	    }
+	});
+    }
+
+    /** Verify Highrise Account **/
+    if ( request.verifyHighrise ){
+	dbg.log('CHROME Background :: Verifying Highrise Credentials');
+	var highriseResult = {};
+    
+	HIGHRISE.verifyToken ({
+	    onSuccess : function (data) {
+	        dbg.log('APP :: highrise credentials OK');
+	        sendResponse ({ tokenValid : true });
+	    },
+	    onError   : function () {
+	        dbg.log('APP :: highrise credentials NOT OK');
+		sendResponse ({ tokenValid : false });
+	    }},
+	    request.highriseUrl,
+            request.highriseToken);	
+    } 
 });
 
 

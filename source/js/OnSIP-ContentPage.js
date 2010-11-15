@@ -176,35 +176,37 @@ function parseDOM (node) {
 /** Replace phone numbers **/
 function parsePhoneNumbers (node) {
     var isStringNumber = false;
-    // SIP adress
+
+    /** SIP address **/
     var sipAddressNumber = /sip:[a-zA-Z09_]+@[a-zA-Z09_]+\.[a-z]{1,4}/;
 
-	// Eliminate the obvious cases
+    /** Eliminate the obvious cases **/
     if (!node || node.nodeValue.length < 10 ||
-    node.nodeValue.search(/\d/) == -1 && node.nodeValue.match(sipAddressNumber) == null) {
+	node.nodeValue.search(/\d/) == -1 && 
+	node.nodeValue.match(sipAddressNumber) == null) {
         return 0;
     }
-
     var phoneNumber = /((((\+|(00))[1-9]\d{0,3}[\s\-.]?)?\d{2,4}[\s\/\-.]?)|21)\d{5,9}/;
     var phoneNumberNorthAmerica = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}/;
-    // phone number with an extension
+
+    /** Phone number with an extension **/
     var phoneNumberNorthAmericaWithExtension = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}\s{1,5}(ext|x|ex)\s{0,3}.{0,3}\d{2,5}/;
     var phoneNumberExtension = /(ext|x|ex)\s{0,3}.{0,3}\d{2,5}/g;
-    var phoneNumberDelimiter = /[\s.,;:|]/;
-    
+    var phoneNumberDelimiter = /[\s.,;:|]/;    
     var text = node.nodeValue;
     var offset = 0;
     var number = "";
-    // extension
+
+    /** Extension **/
     var extension = null;
     var found = false;
     var foundNorthAmerica = false;
  
-    // find the first phone number in the text node
+    /** Find the first phone number in the text node **/
     while (!found) {        
         var result = text.match(phoneNumberNorthAmerica);
 
-        // handling extension
+        /** Handling extension **/
         var resultWithExtension = text.match(phoneNumberNorthAmericaWithExtension);
         if (resultWithExtension) {
             extension  = text.match(phoneNumberExtension);
@@ -228,14 +230,12 @@ function parsePhoneNumbers (node) {
         if (!result) {
             return 0;
         }
-
-        number = result[0];
-   
+        number = result[0];  
         if (!isStringNumber) {
             var pos = result.index;
             offset += pos;
 
-            // make sure we have a resonable delimiters around our matching number
+            /** Make sure we have a resonable delimiters around our matching number **/
             if (pos && !text.substr(pos - 1, 1).match(phoneNumberDelimiter) 
                 || pos + number.length < text.length
                 && !text.substr(pos + number.length, 1).match(phoneNumberDelimiter)) {
