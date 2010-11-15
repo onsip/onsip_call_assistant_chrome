@@ -192,16 +192,14 @@ function validateHighriseCredentials(callback){
     //url += '/me.xml';
     var token = $('#highriseToken').val();
     
-    chrome.extension.sendRequest({ verifyHighrise : true, highriseUrl : url, highriseToken : token},
+    chrome.extension.sendRequest({ verifyHighrise : true, highrise_url : url, highrise_token : token},
         function (response) {
-            console.log('response.tokenValid');
-            console.log(response.tokenValid);
-            if( response.tokenValid ){
-                if(callback){
+            if (response.ok) {
+                if (callback) {
                     callback.onSuccess();
                 }
-            }else{
-                if(callback){
+            } else {
+                if (callback) {
                     callback.onError();
                 }
             }
@@ -217,11 +215,10 @@ function getOnsipUser (callback) {
     var pref     = OnSIP_Preferences;
     var username = $('#fromAddress')  .val();                                                                                                                                                 
     var password = $('#onsipPassword').val();
-    var userinfo = null;
 
     chrome.extension.sendRequest({ verifyOnSipUser : true, username : username, password : password},
         function (response) {
-	    if (response.tokenValid){
+	    if (response.ok){
 		if(callback){
 		    callback.onSuccess();
 		}

@@ -46,17 +46,14 @@ HIGHRISE.postNote = function (phone_number, note, user_tz) {
 	    }
 	}
 	if (full_name && full_name.length > 0) {
-	    var tz = getDateAndTime(getTimezoneAbbrevation(user_tz));
-	    nt     = "<note><body>testing note from " + full_name + " timezone " + tz + "</body></note>";
-	    this.postNoteToProfile (costumer, nt); 
+	    this.postNoteToProfile (costumer, note); 
 	}
     }    
 };
 
 /** Find the person or company by phone number **/
 HIGHRISE.findContact = function (phone_number) {
-    var  i, j, costumer;
-    //this.init();
+    var  i, j, costumer;    
     /** Find people first **/
     for (i = 0; i < this.contacts.length; i += 1) {
        for (j = 0; j < this.contacts[i].phone_numbers.length; j += 1) {

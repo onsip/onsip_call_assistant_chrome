@@ -1,25 +1,28 @@
 /** Chrome Background Page **/
 
 /** Alias for the OnSIP_Preferences object **/
-var pref       = OnSIP_Preferences; 
-var extension  = null;
+var pref         = OnSIP_Preferences; 
+var highrise_app = HIGHRISE;
+var extension    = null;
 
 /** Setup Highrise callback hooks **/
-var HIGHRISE_APP = {
+var BG_APP = {
     "notifications" : []
 };
 
-HIGHRISE_APP.activeCallCreated   = function ( items ) {    
+BG_APP.activeCallCreated   = function ( items ) {    
     var i, item, args, n, phone, len, name;
-    dbg.log ('HIGHRISE LOG :: Active Call Created');
+    dbg.log ('BG_APP LOG :: Active Call Created');
     for (i = 0, len = items.length; i < len; i++) {
 	/** save this bit of code for upgrading to HTML based notifications **/
 	//args = 'ds=created&toURI=' + escape(item.toURI);
 	//n    = webkitNotifications.createHTMLNotification ('notification.html?' + arg);	
 	item   = items[i];
 	phone  = extractPhoneNumber(item.toURI);
-	console.log ('Number of contacts is ' + HIGHRISE.contacts.length + ' -- ' + HIGHRISE.companies.length);
-	cont   = HIGHRISE.findContact (phone + '');	
+        dbg.log ('"BG_APP LOG :: Number of contacts is ' + 
+		     highrise_app.contacts.length + ' -- ' + 
+		     highrise_app.companies.length);
+	cont   = highrise_app.findContact (phone + '');	
 	if ( cont && cont.first_name && cont.last_name ) {
 	    name = cont.first_name + ' ' + cont.last_name;
 	    if (trim (name).length === 0) {
@@ -42,16 +45,16 @@ HIGHRISE_APP.activeCallCreated   = function ( items ) {
     }    
 };
 
-HIGHRISE_APP.activeCallRequested = function ( items ) {
+BG_APP.activeCallRequested = function ( items ) {
     var i, item, args, n, phone, len, cont;
-    dbg.log ('HIGHRISE LOG :: Active Call Requested');
+    dbg.log ('BG_APP LOG :: Active Call Requested');
     for (i = 0, len = items.length; i < len; i++) {
 	item  = items[i];
 	/** save this bit of code for upgrading to HTML based notifications **/
 	//arg = 'ds=requested&fromURI=' + escape (item.fromURI);
         //n   =  webkitNotifications.createHTMLNotification ('notification.html?' + arg);
 	phone = extractPhoneNumber(item.fromURI);
-	cont  = HIGHRISE.findContact (phone + ''); 	        
+	cont  = highrise_app.findContact (phone + ''); 	        
         if ( cont && cont.first_name && cont.last_name ) {
             name = cont.first_name + ' ' + cont.last_name;
             if (trim (name).length === 0) {
@@ -64,22 +67,22 @@ HIGHRISE_APP.activeCallRequested = function ( items ) {
 		name = undefined;
 	    }
 	}	
-	
-	//console.log (' NAME is ' + name+ ' - phone is ' + phone);
-	phone = name || phone;
-        n     = webkitNotifications.createNotification ('images/i_calling.png', 
+		
+	phone     = name || phone;
+        n         = webkitNotifications.createNotification ('images/i_calling.png', 
 							'Incoming Call', 
 							'From: ' + phone);
-	n.uri           = item.uri.query;
-	n.contact       = cont;
+	n.uri     = item.uri.query;
+	n.contact = cont;
         n.show();
 
 	this.notifications.push (n);
     }
 };
 
-HIGHRISE_APP.activeCallConfirmed = function ( items ) {
-   dbg.log ('HIGHRISE LOG :: Active Call Confirmed');
+/** A phone connection has been established **/
+BG_APP.activeCallConfirmed = function ( items ) {
+   dbg.log ('BG_APP LOG :: Active Call Confirmed');
    var i, len, name;
    for (i = 0, len = items.length; i < len; i += 1) {               
        this._postNotetoProfile   (items[i].uri.query)
@@ -87,29 +90,26 @@ HIGHRISE_APP.activeCallConfirmed = function ( items ) {
    }
 };
 
-HIGHRISE_APP.strophe_Connected  = function ( item ) {
-    dbg.log ('HIGHRISE LOG :: Stophe Connected');
+BG_APP.activeCallPending   = function ( item ) {
+    dbg.log ('BG_APP LOG :: Active Call Pending');
 };
 
-HIGHRISE_APP.activeCallPending   = function ( item ) {
-    dbg.log ('HIGHRISE LOG :: Active Call Pending');
-};
-
-HIGHRISE_APP.activeCallRetract   = function (itemURI) {    
+BG_APP.activeCallRetract   = function (itemURI) {    
     var i, len;
-    dbg.log ('HIGHRISE LOG :: Active Call Retracted = ' + this.notifications);
+    dbg.log ('BG_APP LOG :: Active Call Retracted = ' + this.notifications);
     for (i = 0, len = itemURI.length; i < len; i += 1) {
        this._cancelNotifications (itemURI[i].query);
     }
 };
 
-HIGHRISE_APP._postNotetoProfile  = function (item) {
+/** Helper method. Post a note through the Highrise API **/
+BG_APP._postNotetoProfile  = function (item) {
     var i, len, costumer, full_name;
     for (i = 0, len = this.notifications.length; i < len; i += 1) {
 	if (item === this.notifications[i].uri) {
 	    costumer = this.notifications[i].contact;
 	    if (costumer && costumer.id) {		
-		var tz = getDateAndTime(getTimezoneAbbrevation(pref.get('userTimezone')));
+		var tz = getDateAndTime (getTimezoneAbbrevation (pref.get('userTimezone')));
 		if ( costumer.first_name && costumer.last_name ) {
 		    full_name = costumer.first_name + ' ' + costumer.last_name;
 		    if (trim (full_name).length === 0) {
@@ -122,18 +122,18 @@ HIGHRISE_APP._postNotetoProfile  = function (item) {
 			full_name = undefined;
 		    }
 		}
-		console.log ('Post note with Full name ' + full_name);
 		if (full_name && full_name.length > 0) {
-		    nt     = "<note><body>testing note from " + full_name + "  timezone " + tz + "</body></note>";
-		    HIGHRISE.postNoteToProfile (costumer, nt);
+		    nt = "<note><body>Conversed with " + full_name + " @ " + tz + "</body></note>";
+		    highrise_app.postNoteToProfile (costumer, nt);
 		}                                
 	    }
 	}	
     }
 };
 
-HIGHRISE_APP._cancelNotifications = function (item) {
-    dbg.log ('There are ' + this.notifications.length + ' notifications ');    
+/** Helper method. hide / cancel and remove desktop notifications **/
+BG_APP._cancelNotifications = function (item) {
+    dbg.log ('BG_APP :: ' + this.notifications.length + ' notifications ');    
     var a = [];
     var n = this.notifications.pop();
     while (n) {	
@@ -148,31 +148,30 @@ HIGHRISE_APP._cancelNotifications = function (item) {
 };
 
 /** Connect, subscribe, and register to XMPP API **/
-OX_EXT.apps = [HIGHRISE_APP];
-OX_EXT.init (pref, {
-      	onSuccess : function () { 
+OX_EXT.apps = [BG_APP];
+OX_EXT.init   (pref, {
+    onSuccess : function () {},
+    onError   : function (error) {	    
+        /** In case of failure, display settings in a new tab **/
+        chrome.tabs.create ({ "url" : "index.html" });
+    }
+});
 
-	},
-	onError   : function (error) {
-            dbg.log ('Error IN CONNECT --> ' + error);
-	}
-    });
-
-/** Turn extension on / off **/
+/** An extension to this background page with helper methods **/
 extension = new OnSIP_Process();
 extension.init ();
 
-/** Load contact information from Highrise **/
-HIGHRISE.init (pref);
+/** Load and initialize Highrise with contacts **/
+highrise_app.init (pref);
 
 /** Add event listener for clicks on the extension icon **/
 chrome.browserAction.onClicked.addListener ( function (TAB) {
-    dbg.log ('CHROME :: clicked enable / disable icon');
-    extension.toggle();
+    dbg.log ('CHROME Background :: clicked enable / disable icon');
+    extension.toggle ();
  });
 
 /** Add listener for requests from the pages **/          
-chrome.extension.onRequest.addListener ( function (request, sender, sendResponse) {    
+chrome.extension.onRequest.addListener    ( function (request, sender, sendResponse) {    
     dbg.log ('CHROME Background :: request ');
 
     /** On load parse request **/                                                                                                              
@@ -190,44 +189,46 @@ chrome.extension.onRequest.addListener ( function (request, sender, sendResponse
     if ( request.setupCall && pref.get ('enabled') ) {
 	var from_address = pref.get('fromAddress');	
         var to_address   = request.phone_no; 	
-	dbg.log ('CHROME Background :: Call requested FROM: ' + from_address + ' - TO: ' + to_address);
+	dbg.log ('CHROME Background :: Call requested FROM: ' + 
+		 from_address + ' - TO: ' + to_address);
 	OX_EXT.createCall (from_address, to_address);
     }
-
     
     /** Verify SIP User **/
     if ( request.verifyOnSipUser ) {
-	dbg.log ('CHROME Request verify on sip user '  + request.username + ', ' + request.password + ' -- ' + pref.get ('onsipHttpBase'));
+	dbg.log ('CHROME BACKGROUND :: Request verify on sip user  ' + 
+		 request.username + ', ' + request.password + ' -- ' + 
+		 pref.get ('onsipHttpBase'));
+
 	pref.set ('fromAddress'  , request.username);
 	pref.set ('onsipPassword', request.password);
 
 	OX_EXT.init (pref, {
 	    onSuccess : function () {
-		sendResponse ({ tokenValid : true  });	    
+		sendResponse ({ ok : true  });	    
 	    },
 	    onError   : function (error) {
-	        dbg.log ('Error ' + error);
-		sendResponse ({ tokenValid : false });
+	        dbg.log ("CHROME BACKGROUND :: Error in verifying SIP User [ " + error + " ]");
+		sendResponse ({ ok : false });
 	    }
 	});
     }
 
     /** Verify Highrise Account **/
     if ( request.verifyHighrise ){
-	dbg.log('CHROME Background :: Verifying Highrise Credentials');
 	var highriseResult = {};
-    
-	HIGHRISE.verifyToken ({
+	dbg.log('CHROME Background :: Verifying Highrise Credentials');    
+        highrise_app.verifyToken ({
 	    onSuccess : function (data) {
-	        dbg.log('APP :: highrise credentials OK');
-	        sendResponse ({ tokenValid : true });
+	        dbg.log('CHROME BACKGROUND :: HIGHRISE API :: Highrise credentials OK');
+	        sendResponse ({ ok : true });
 	    },
 	    onError   : function () {
-	        dbg.log('APP :: highrise credentials NOT OK');
-		sendResponse ({ tokenValid : false });
+	        dbg.log('CHROME Background :: HIGHRISE API :: Highrise credentials NOT OK');
+		sendResponse ({ ok : false });
 	    }},
-	    request.highriseUrl,
-            request.highriseToken);	
+	    request.highrise_url,
+            request.highrise_token);	
     } 
 });
 
