@@ -10,6 +10,7 @@ var HIGHRISE = {
     'timeout'  : 60000 * 45 // 45 min
 };
 
+/** Tries to retrieve /people.xml and looks for error code 200 **/
 HIGHRISE.verifyToken = function (call, highrise_url, token) {
    var xhr = new XMLHttpRequest ();
    
@@ -30,6 +31,7 @@ HIGHRISE.verifyToken = function (call, highrise_url, token) {
    xhr.send();
 };
 
+/** Note has the convention <note><body> {STUFF} </body></note> **/
 HIGHRISE.postNote = function (phone_number, note, user_tz) {
     var clean_phone_num, customer, nt, full_name;
     clean_phone_number = this._normalizePhoneNumber (phone_number);
