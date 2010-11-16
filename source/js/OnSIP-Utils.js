@@ -5,7 +5,7 @@ var dbg = {
 };
 
 // Turn off debugging when on production
-//dbg.log = function(){};
+// dbg.log = function(){};
 
 
 /** Is provided element in array **/
@@ -93,10 +93,25 @@ Array.prototype.unique = function () {
     return r;
 }
 
-/** Format Url **/
-function formatUrl (str){
+/** Format URL **/
+function formatUrl (str) {
     var res = str.replace(/(http[s]?:\/\/)+/, '');
     return 'https://' + res;
+}
+
+/** 
+*   Expects a non-formatted phone number (e.g. 17321234567) 
+*   This will return (732) 123-4567.
+*   If the pattern is not matched it will simply return the
+*   supplied phone number 
+**/
+function formatPhoneNum (phone_number) {
+    var matches   = phone_number.match(/(^\d{1})(\d{3})(\d{3})(\d{4})/);
+    var rev_phone = phone_number;
+    if (matches && matches.length === 5) {
+        rev_phone  = "(" + matches[2] + ") " + matches[3] + "-" + matches[4];
+    }
+    return rev_phone;
 }
 
 function isArray (obj) {
@@ -112,10 +127,10 @@ function getDateAndTime (timezone){
     if (!timezone) {
         timezone = '';
     }
-    var m_names = new Array("January", "February", "March",
-			    "April"  , "May"     , "June" , 
-			    "July"   , "August"  , "September",
-			    "October", "November", "December");
+    var m_names   = new Array("January", "February", "March",
+			      "April"  , "May"     , "June" , 
+			      "July"   , "August"  , "September",
+			      "October", "November", "December");
     var d         = new Date();
     var a_p       = '';
     var curr_hour = d.getHours();

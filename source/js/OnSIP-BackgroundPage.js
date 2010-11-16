@@ -35,8 +35,7 @@ BG_APP.activeCallCreated   = function ( items ) {
 		
 	phone  = name || phone;
 	n      = webkitNotifications.createNotification ('images/i_calling.png', 
-							 'Calling', 
-							 '' + phone);  
+							 'Calling', formatPhoneNum('' + phone));  
 	n.uri           = item.uri.query;
 	n.contact       = cont;
         n.show();
@@ -70,8 +69,8 @@ BG_APP.activeCallRequested = function ( items ) {
 		
 	phone     = name || phone;
         n         = webkitNotifications.createNotification ('images/i_calling.png', 
-							'Incoming Call', 
-							'From: ' + phone);
+							    'Incoming Call', 
+							    'From: ' + formatPhoneNum('' + phone));
 	n.uri     = item.uri.query;
 	n.contact = cont;
         n.show();

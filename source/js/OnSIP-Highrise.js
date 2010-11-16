@@ -7,7 +7,7 @@ var HIGHRISE = {
     'base_url' : '',
     'token'    : '',
     'attempts' : 0,
-    'timeout'  : 60000 * 45 // 45 min
+    'refresh'  : 60000 * 45 // Refresh every 45 min
 };
 
 /** Tries to retrieve /people.xml and looks for error code 200 **/
@@ -140,7 +140,7 @@ HIGHRISE.init        =  function (pref) {
 	     to_func       = that._recycle.bind (that); 
 	     that.ts       = new Date();	
 	     that.attempts = 0;
-	     setTimeout  (to_func, that.timeout);
+	     setTimeout  (to_func, that.refresh);
 	     console.log ('HIGHRISE APP :: Got contacts @ ' + that.ts);	     
           },
           onError   : function (status) {
@@ -168,7 +168,7 @@ HIGHRISE._recycle       = function () {
 	    delete that.ts;	
 	    to_func       = that._recycle.bind (that);
 	    that.attempts = 0;
-	    setTimeout  (to_func, that.timeout);	    
+	    setTimeout  (to_func, that.refresh);	    
 	    console.log ('HIGHRISE APP :: Recycled ' + c.length + ' contacts @ ' + new Date());
 	},
 	onError   : function (status) {
