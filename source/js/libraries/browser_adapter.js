@@ -87,7 +87,6 @@ OX_EXT.init = function (pref, callback) {
 };
 
 OX_EXT._recycle   = function () {
-    clearTimeout (this._recycle);
     this.authorizePlain ({
         onSuccess : function () {
 	    console.log ('OX_EXT :: Successfully Re-Authorized & Re-Subscribed');
@@ -149,27 +148,27 @@ OX_EXT.subscribe = function (pref, callback) {
     var sip      = this.from_address; //pref.get ('fromAddress');
     var node     = '/me/' + sip;
     var that     = this;
-    var timeout  = 60000 * 10;  // 10 min
+    var timeout  = 60000 * 45;  // 45 min
     var call     = {
         onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
             var subscription, expiration = new Date(), options = {}, i = 0;
             if ( subscriptions.length === 0 ) {
 		that.ox_conn.ActiveCalls.subscribe (node, {
-			onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
-			    var f = that._recycle.bind (that);
-			    setTimeout (m, timeout);
-			    if (callback && callback.onSuccess) {
-                                callback.onSuccess ();
-                            }
-			    console.log ('OX_EXT ::  Successfully Subscribed');
-			},
-			onError  : function (requestedURI, finalURI, packet) {
-			    if (callback && callback.onError) {
-                                callback.onError ('Error while subscribing');
-                            }
-			    console.log ('OX_EXT ::  Error while Subscribing');
+		    onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
+		        var f = that._recycle.bind (that);
+			setTimeout (f, timeout);
+			if (callback && callback.onSuccess) {
+			    callback.onSuccess ();
 			}
-		    });
+			console.log ('OX_EXT ::  Successfully Subscribed');
+		    },
+		    onError  : function (requestedURI, finalURI, packet) {
+		        if (callback && callback.onError) {
+			    callback.onError ('Error while subscribing');
+                        }
+			console.log ('OX_EXT ::  Error while Subscribing');
+		    }
+	        });
             } else {
 		expiration.setDate (expiration.getDate() + 1);
 		console.log ('OX_EXT :: Number of subscriptions ' + subscriptions.length);
@@ -178,21 +177,21 @@ OX_EXT.subscribe = function (pref, callback) {
 		subscription = { node    : node, jid: subscription.jid, subid: subscription.subid };
 		options      = { expires : expiration };
 		that.ox_conn.ActiveCalls.configureNode (subscription, options, {
-			onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
-			    var m = that._recycle.bind (that);
-			    setTimeout (m, timeout);
-			    if (callback && callback.onSuccess) {
-                                callback.onSuccess ();
-                            }
-			    console.log ('OX_EXT :: Successfully Got Subscriptions' );
-			},
-			onError   : function (requestedURI, finalURI, packet) {
-			    if (callback && callback.onError) {
-				callback.onError ('Error while trying to retrieve subscriptions');
-			    }
-			    console.log ('OX_EXT :: Error in Subscriptions');
+		    onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
+		        var m = that._recycle.bind (that);
+			setTimeout (m, timeout);
+			if (callback && callback.onSuccess) {
+			    callback.onSuccess ();
 			}
-		    });
+			console.log ('OX_EXT :: Successfully Got Subscriptions' );
+		    },
+		    onError   : function (requestedURI, finalURI, packet) {
+		        if (callback && callback.onError) {
+			    callback.onError ('Error while trying to retrieve subscriptions');
+			}
+			console.log ('OX_EXT :: Error in Subscriptions');
+		    }
+		});
             }
         },
         onError  : function (requestedURI, finalURI, packet) {
