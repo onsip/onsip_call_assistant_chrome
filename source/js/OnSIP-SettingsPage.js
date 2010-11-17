@@ -239,13 +239,13 @@ function isHighriseDataEntered(){
     token  = trim(token);
 
     console.log ('Highrise URL ' + $('#highriseUrl').val() + ' -- ' + $('#highriseToken').val());
-    if(hr_url.length === 0 || hr_url !== pref.defaults['highriseUrl']){
+    if(hr_url.length === 0 || hr_url === pref.defaults['highriseUrl']){
 	pref.set('highriseUrl'  , pref.defaults['highriseUrl'  ]);
 	pref.set('highriseToken', pref.defaults['highriseToken']);
 	pref.set('userTimezone' , pref.defaults['userTimezone' ]);
         return false;
     }
-    if(token.length  === 0 || token !== pref.defaults['highriseToken']){
+    if(token.length  === 0 || token === pref.defaults['highriseToken']){
 	pref.set('highriseUrl'  , pref.defaults['highriseUrl'  ]);
         pref.set('highriseToken', pref.defaults['highriseToken']);
         pref.set('userTimezone' , pref.defaults['userTimezone' ]);
