@@ -25,11 +25,12 @@ OX_EXT.init = function (pref, callback) {
  
     if (this.strophe_conn) {
 	console.log ('OX_EXT :: Resetting Connection');
-	this.strophe_conn.disconnect ('Resetting connection');
-	this.strophe_conn.reset();
-    } else {
-	this.createStropheConnection ( url );
-    }
+	this.strophe_conn.disconnect();	
+	this.strophe_conn.reset();	
+    } 
+	
+    this.createStropheConnection ( url );
+
     this.strophe_conn.rawInput = function (data) {
 	console.log( 'STROPHE RAW INPUT  :: ' + data );
     };
@@ -44,6 +45,12 @@ OX_EXT.init = function (pref, callback) {
 	}
     };
     
+    that._connect (callback);   
+};
+
+OX_EXT._connect   = function (callback) {
+
+    var that = this;
     OX.StropheAdapter.strophe = this.strophe_conn;    
     this.strophe_conn.connect(this.jid, this.pwd, function( status ) {
        switch ( status ){
@@ -93,6 +100,7 @@ OX_EXT.init = function (pref, callback) {
     });
 };
 
+
 OX_EXT._recycle   = function () {
     this.authorizePlain ({
         onSuccess : function () {
@@ -105,7 +113,7 @@ OX_EXT._recycle   = function () {
     });
 };
 
-OX_EXT.createCall = function (from_address, to_address) {    
+OX_EXT.createCall = function (from_address, to_address, call_setup_id) {    
     if ( isNumberFormatted (to_address) ) {
 	to_address = 'sip:' + to_address;
     } else {
@@ -114,7 +122,7 @@ OX_EXT.createCall = function (from_address, to_address) {
     from_address = 'sip:' + from_address;
     console.log ('OX_EXT :: Create Call - ' + from_address + ' ^ ' + to_address);
 
-    this.ox_conn.ActiveCalls.create(to_address, from_address, null, {
+    this.ox_conn.ActiveCalls.create(to_address, from_address, call_setup_id, {
        onSuccess : function (packet) {	 
 	  console.log('OX_EXT :: create call success');
        },
@@ -225,7 +233,7 @@ OX_EXT.handleActiveCallSubscribe = function () {
 
 OX_EXT.handleActiveCallPending = function () {
     console.log ( 'OX_EXT :: PENDING' );
-    this.__publishEventToApps (activeCallPending);
+    this.__publishEventToApps ('activeCallPending');
 };
 
 OX_EXT.handleActiveCallPublish = function ( item ) {    

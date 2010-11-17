@@ -15,10 +15,10 @@ BG_APP.activeCallCreated   = function ( items ) {
     dbg.log ('BG_APP LOG :: Active Call Created');
     for (i = 0, len = items.length; i < len; i++) {
 	/** save this bit of code for upgrading to HTML based notifications **/
-	//args = 'ds=created&toURI=' + escape(item.toURI);
-	//n    = webkitNotifications.createHTMLNotification ('notification.html?' + arg);	
-	item   = items[i];
-	phone  = extractPhoneNumber(item.toURI);
+	//args   = 'ds=created&toURI=' + escape(item.toURI);
+	//n      = webkitNotifications.createHTMLNotification ('notification.html?' + arg);	
+	item     = items[i];
+	phone    = extractPhoneNumber(item.toURI);
         dbg.log ('"BG_APP LOG :: Number of contacts is ' + 
 		     highrise_app.contacts.length + ' -- ' + 
 		     highrise_app.companies.length);
@@ -33,9 +33,9 @@ BG_APP.activeCallCreated   = function ( items ) {
 	    name = cont.company_name;
 	}
 		
-	phone  = name || phone;
-	n      = webkitNotifications.createNotification ('images/i_calling.png', 
-							 'Calling', formatPhoneNum('' + phone));  
+	phone   = name || phone;
+	n       = webkitNotifications.createNotification ('images/i_calling.png', 
+							 "Calling", formatPhoneNum('' + phone));  
 	n.uri           = item.uri.query;
 	n.contact       = cont;
         n.show();
@@ -45,15 +45,16 @@ BG_APP.activeCallCreated   = function ( items ) {
 };
 
 BG_APP.activeCallRequested = function ( items ) {
-    var i, item, args, n, phone, len, cont;
+    var i, item, args, n, phone, len, cont, caption;
     dbg.log ('BG_APP LOG :: Active Call Requested');
     for (i = 0, len = items.length; i < len; i++) {
 	item  = items[i];
 	/** save this bit of code for upgrading to HTML based notifications **/
 	//arg = 'ds=requested&fromURI=' + escape (item.fromURI);
         //n   =  webkitNotifications.createHTMLNotification ('notification.html?' + arg);
-	phone = extractPhoneNumber(item.fromURI);
-	cont  = highrise_app.findContact (phone + ''); 	        
+	caption = isSetupCall (item.fromURI) ? "Call Setup" : "Incoming Call";	
+	phone   = extractPhoneNumber(item.fromURI);
+	cont    = highrise_app.findContact (phone + ''); 	        
         if ( cont && cont.first_name && cont.last_name ) {
             name = cont.first_name + ' ' + cont.last_name;
             if (trim (name).length === 0) {
@@ -69,7 +70,7 @@ BG_APP.activeCallRequested = function ( items ) {
 		
 	phone     = name || phone;
         n         = webkitNotifications.createNotification ('images/i_calling.png', 
-							    'Incoming Call', 
+							    caption, 
 							    'From: ' + formatPhoneNum('' + phone));
 	n.uri     = item.uri.query;
 	n.contact = cont;
@@ -191,15 +192,16 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
     if ( request.setupCall && pref.get ('enabled') ) {
 	var from_address = pref.get('fromAddress');	
         var to_address   = request.phone_no; 	
+	// var clean_no     = formatPhoneNum (to_address);
 	dbg.log ('CHROME Background :: Call requested FROM: ' + 
 		 from_address + ' - TO: ' + to_address);
-	OX_EXT.createCall (from_address, to_address);
+	OX_EXT.createCall (from_address, to_address, to_address);
     }
     
     /** Verify SIP User **/
     if ( request.verifyOnSipUser ) {
 	dbg.log ('CHROME BACKGROUND :: Request verify on sip user  ' + 
-		 request.username + ', ' + request.password + ' -- ' + 
+		 request.username + ', ***  -- ' + 
 		 pref.get ('onsipHttpBase'));
 
 	pref.set ('fromAddress'  , request.username);

@@ -2692,11 +2692,12 @@ Strophe.Connection.prototype = {
 					  .prependArg(this._dataRecv.bind(this)),
 				      body.tree().getAttribute("rid"));
 	
+
 	// abort and clear all waiting requests
 	var r;
-	while (this._requests.length > 0) {
+	while (this._requests.length > 0) {	    
 	    r = this._requests.pop();
-	    r.xhr.abort();
+	    r.xhr.abort();	    
 	    r.abort = true;
 	}
 

@@ -194,10 +194,29 @@ function rtrim(str, chars) {
 }
 
 /** Extract phone number **/
+/** "sip:call-setup@onsip.com;id=14156265035" **/
 function extractPhoneNumber(str){
-    str = str.replace(/sip:/, '');
+    var rev_str, s_temp;
+    rev_str = str.replace(/sip:/, '');
+    rev_str = rev_str.replace(/@[a-z0-9._]+/, '');
+    rev_str = rev_str.replace( /;\s*[a-z0-9._=]+/ ,'');
+    if (rev_str === 'call-setup') {
+	var idx = str.indexOf (';id=');
+	if (idx > 0) {
+	    s_temp = str.substr (idx + 4);
+	    s_temp = trim (s_temp);
+	    if (s_temp.length === 11) {
+		return s_temp;
+	    }
+	}
+    }
+    return rev_str;
+}
 
-    str = str.replace(/@[a-z0-9._]+/, '');
-    str = str.replace( /;\s*[a-z0-9._=]+/ ,'');
-    return str;
+function isSetupCall (str) {
+    var rev_str;
+    if (str && (str.indexOf (':call-setup@')) > 0) {
+	return true;
+    }
+    return false;
 }
