@@ -149,10 +149,13 @@ BG_APP._cancelNotifications = function (item) {
 /** Connect, subscribe, and register to XMPP API **/
 OX_EXT.apps = [BG_APP];
 OX_EXT.init   (pref, {
-    onSuccess : function () {},
+    onSuccess : function () {
+	dbg.log ('Succeeded in OX_EXT.init for connecting & subscribing');
+    },
     onError   : function (error) {	    
         /** In case of failure, display settings in a new tab **/
-        chrome.tabs.create ({ "url" : "index.html" });
+        dbg.log ('There was an error in OX_EXT INIT ' + error);
+        chrome.tabs.create ({ "url" : "index.html" });	
     }
 });
 
@@ -204,6 +207,7 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 
 	OX_EXT.init (pref, {
 	    onSuccess : function () {
+	        dbg.log ("CHROME BACKGROUND :: SIP user Verified Successfully");
 		sendResponse ({ ok : true  });	    
 	    },
 	    onError   : function (error) {
@@ -216,7 +220,7 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
     /** Verify Highrise Account **/
     if ( request.verifyHighrise ){
 	var highriseResult = {};
-	dbg.log('CHROME Background :: Verifying Highrise Credentials');    
+	dbg.log('CHROME Background :: Verifying Highrise Credentials TOKEN ' + /** request.highrise_token **/ '');    
         highrise_app.verifyToken ({
 	    onSuccess : function (data) {
 	        dbg.log('CHROME BACKGROUND :: HIGHRISE API :: Highrise credentials OK');

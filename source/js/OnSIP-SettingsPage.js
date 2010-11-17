@@ -45,14 +45,14 @@ $(function(){
                 
                 // Proceed if no field Errors
                 if(!error){
-                    // Save other settings that do not need a validation
+                    /** Save other settings that do not need a validation **/
                     pref.set('popupDisabled', $('#disablePopup').is(':checked'));
 
-                    // Show a validating message
+                    /** Show a validating message **/
                     hideAllMessages();
                     $('#validatingMsg').show();
                     
-                    // Remove any previous error messages
+                    /** Remove any previous error messages **/
                     removeErrors();
                     $('#errorMsg').text('');
 
@@ -63,52 +63,52 @@ $(function(){
                     pref.set('highriseEnabled', false);
 
                     // Get onsip user and save it in the local storage
-                    getOnsipUser({
-                        onSuccess: function(){
+                    getOnsipUser ({
+                        onSuccess: function() {
                             console.log('onsip account valid success');
 
                             // Handle initial BOSH connection
-                            chrome.extension.sendRequest({setUpBoshConnection : true}, function (response) {});
+                            //chrome.extension.sendRequest({setUpBoshConnection : true}, function (response) {});
                             pref.set('onsipCredentialsGood', true);
 
-                            // Save sip options
-                            pref.set('fromAddress', $('#fromAddress').val());
-                            pref.set('onsipServer', getDomain($('#fromAddress').val()));
+                            /** Save SIP options **/
+                            pref.set('fromAddress'  , $('#fromAddress').val());
+                            pref.set('onsipServer'  , getDomain($('#fromAddress').val()));
                             pref.set('onsipPassword', $('#onsipPassword').val());
 
-                            // Update tabs
+                            /** Update tabs **/
                             updateAllTabs($('#fromAddress').val());
 
-                            // Before showing success message see if Highrise is validated ok, due to asyncronus nature of js
-                            if( isHighriseDataEntered() ){
-                                console.log('highrisde account info is added');
+                            /** Before showing success message see if Highrise is validated ok, due to asyncronus nature of js **/
+                            if (isHighriseDataEntered()) {
+                                console.log('Highrise account info is added');
  
-                                // Validate provided Credentials
+                                /** Validate provided Credentials **/
                                 validateHighriseCredentials( {
                                     onSuccess : function() {
                                         console.log('highrise account valid success');
 
-                                        // Remove Errors
+                                        /** Remove errors **/
                                         var errorFields = new Array();
                                         errorFields.push($('#highriseUrl'), $('#highriseToken'));
 
-                                        // Set highriseValid flag to true
+                                        /** Set highriseValid flag to true **/
                                         isHighriseValid = true;
 
-                                        // Set Highrise Enabled
+                                        /** Set Highrise Enabled **/
                                         pref.set('highriseEnabled', true);
 
-                                        // save highrise options
-                                        pref.set('highriseUrl', formatUrl($('#highriseUrl').val()));
+                                        /** Save highrise options **/
+                                        pref.set('highriseUrl'  , formatUrl($('#highriseUrl').val()));
                                         pref.set('highriseToken', $('#highriseToken').val());
-                                        pref.set('userTimezone', $('#timezone').val());
+                                        pref.set('userTimezone' , $('#timezone').val());
 
                                         hideAllMessages();
                                         $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
                                         $('#save-options-btn').attr('disabled','');
                                     },
                                     onError : function(){
-                                        console.log('highrise account valid Error');
+                                        console.log('Highrise account valid error');
                                         isHighriseValid = false;
 
                                         hideAllMessages();
@@ -119,9 +119,8 @@ $(function(){
                                         errorFields.push($('#highriseUrl'), $('#highriseToken'));
                                         showErrorFields(errorFields);
                                     }
-                                });
-                                
-                            }else{
+                                });                                
+                            } else {
                                 console.log('highrisde account info is not added');
                                 hideAllMessages();
                                 $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
@@ -139,11 +138,7 @@ $(function(){
                             showErrorFields(errorFields);
                         }
                     });
-
-
-
-
-                }else{
+                } else {
                     $('#save-options-btn').attr('disabled','');
                     removeErrors();
                     hideAllMessages();
@@ -151,21 +146,20 @@ $(function(){
                     showErrorFields(errorFields);
                 }
         
-		// send command to all tabs to update the click-to-call links
+		/** Send command to all tabs to update the click-to-call links **/
 		if (pref.get('enabled')) {
-			chrome.windows.getAll({populate: true}, function(windows){
-				for (var w in windows) {
-					for (var t in windows[w].tabs) {
-						var tabId = windows[w].tabs[t].id;
-						chrome.tabs.sendRequest(tabId, {
-							fromAddress: fromAddress
-						});
-					}
+		    chrome.windows.getAll({populate: true}, function(windows){
+		        for (var w in windows) {
+		            for (var t in windows[w].tabs) {
+			        var tabId = windows[w].tabs[t].id;
+				if (tabId) {
+				    chrome.tabs.sendRequest(tabId, { fromAddress: fromAddress });
 				}
-			});
+			    }
+			}
+		    });
 		}
 	});
-
 });
 
 
@@ -188,9 +182,10 @@ function updateAllTabs(fromAddress){
  */
 function validateHighriseCredentials(callback){
     console.log('*** sending a request to bg ***');
-    var url = formatUrl($('#highriseUrl').val());
-    //url += '/me.xml';
+    var url   = $('#highriseUrl')  .val();
     var token = $('#highriseToken').val();
+    
+    url = formatUrl (url);
     
     chrome.extension.sendRequest({ verifyHighrise : true, highrise_url : url, highrise_token : token},
         function (response) {
@@ -235,15 +230,28 @@ function getOnsipUser (callback) {
  * Check if Highrise options were entered
  */
 function isHighriseDataEntered(){
-    // alias for the OnSIP_Preferences object
-	var pref = OnSIP_Preferences;
-    if($('#highriseUrl').val() != 0 && $('#highriseUrl').val() != pref.defaults['highriseUrl']){
-        return true;
+    /** Alias for the OnSIP_Preferences object **/
+    var pref   = OnSIP_Preferences;
+    var hr_url = $('#highriseUrl')  .val();
+    var token  = $('#highriseToken').val();
+    
+    hr_url = trim(hr_url);
+    token  = trim(token);
+
+    console.log ('Highrise URL ' + $('#highriseUrl').val() + ' -- ' + $('#highriseToken').val());
+    if(hr_url.length === 0 || hr_url !== pref.defaults['highriseUrl']){
+	pref.set('highriseUrl'  , pref.defaults['highriseUrl'  ]);
+	pref.set('highriseToken', pref.defaults['highriseToken']);
+	pref.set('userTimezone' , pref.defaults['userTimezone' ]);
+        return false;
     }
-    if($('#highriseToken').val() != 0 && $('#highriseToken').val() != pref.defaults['highriseToken']){
-        return true;
+    if(token.length  === 0 || token !== pref.defaults['highriseToken']){
+	pref.set('highriseUrl'  , pref.defaults['highriseUrl'  ]);
+        pref.set('highriseToken', pref.defaults['highriseToken']);
+        pref.set('userTimezone' , pref.defaults['userTimezone' ]);
+        return false;
     }
-    return false;
+    return true;
 }
 
 /**
