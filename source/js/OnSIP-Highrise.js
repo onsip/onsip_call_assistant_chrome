@@ -131,8 +131,9 @@ HIGHRISE.init        =  function (pref) {
 	console.log ('HIGHRISE APP :: Init Failed ' + this.base_url + ' -- ' + this.token);
 	return;
     }
+    
     var to_func;
-    if (!(this.ts)) {
+    //if (!(this.ts)) {
        var that = this;
        console.log ('HIGHRISE APP :: Timestamp not set ');
        this._getContacts ({
@@ -156,7 +157,7 @@ HIGHRISE.init        =  function (pref) {
             console.log ('HIGHRISE APP :: Error ' + status);
          }
        });
-    }
+    //}
 };
 
 HIGHRISE._recycle       = function () {

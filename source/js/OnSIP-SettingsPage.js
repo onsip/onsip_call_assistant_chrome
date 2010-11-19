@@ -15,12 +15,15 @@ $(function(){
 		// Remove default behaivior
                 e.preventDefault();
 
-                // error flag
-                var error = false;
-                var errorFields = new Array();
+                /** Error flags **/
+                var error        = false;
                 var enableButton = false;
+                var errorFields  = new Array();
 
-                // If OnSIP fields are not entered we catch a error
+		pref.set('onsipCredentialsGood', false);
+                pref.set('highriseEnabled'     , false);
+
+                /** If OnSIP fields are not entered we catch a error **/
                 if($('#fromAddress').val().length == 0 || $('#fromAddress').val() == pref.defaults['fromAddress']){
                     error = true;
                     errorFields.push( $('#fromAddress'));
@@ -31,7 +34,7 @@ $(function(){
                     errorFields.push( $('#onsipPassword'));
                 }
                 
-                // Check for a highrise field errors
+                /** Check for a highrise field errors **/
                 if(isHighriseDataEntered()){
                     if($('#highriseUrl').val().length == 0 || $('#highriseUrl').val() == pref.defaults['highriseUrl']){
                         error = true;
@@ -43,8 +46,8 @@ $(function(){
                     }
                 }
                 
-                // Proceed if no field Errors
-                if(!error){
+                /** Proceed if no field Errors **/
+                if (!error) {
                     /** Save other settings that do not need a validation **/
                     pref.set('popupDisabled', $('#disablePopup').is(':checked'));
 
@@ -56,25 +59,20 @@ $(function(){
                     removeErrors();
                     $('#errorMsg').text('');
 
-                    var isOnsipValid = null;
-                    var isHighriseValid = null;
-                    // Set highrise disabled;
-                    
-                    pref.set('highriseEnabled', false);
+                    var isHighriseValid = null;                                       
+                    var isOnsipValid    = null;
 
-                    // Get onsip user and save it in the local storage
+		    /** Save SIP options **/
+		    pref.set('fromAddress'  , $('#fromAddress').val());
+		    pref.set('onsipServer'  , getDomain($('#fromAddress').val()));
+		    pref.set('onsipPassword', $('#onsipPassword').val());
+
+                    /** Get onsip user and save it in the local storage **/
                     getOnsipUser ({
                         onSuccess: function() {
-                            console.log('onsip account valid success');
+                            console.log('CONTENT PG :: OnSIP connection succeeded, we store in local storage');
 
-                            // Handle initial BOSH connection
-                            //chrome.extension.sendRequest({setUpBoshConnection : true}, function (response) {});
                             pref.set('onsipCredentialsGood', true);
-
-                            /** Save SIP options **/
-                            pref.set('fromAddress'  , $('#fromAddress').val());
-                            pref.set('onsipServer'  , getDomain($('#fromAddress').val()));
-                            pref.set('onsipPassword', $('#onsipPassword').val());
 
                             /** Update tabs **/
                             updateAllTabs($('#fromAddress').val());
@@ -82,11 +80,11 @@ $(function(){
                             /** Before showing success message see if Highrise is validated ok, due to asyncronus nature of js **/
                             if (isHighriseDataEntered()) {
                                 console.log('Highrise account info is added');
- 
+                                        								
                                 /** Validate provided Credentials **/
                                 validateHighriseCredentials( {
                                     onSuccess : function() {
-                                        console.log('highrise account valid success');
+                                        console.log('CONTENT PG :: Highrise account was verified successfully');
 
                                         /** Remove errors **/
                                         var errorFields = new Array();
@@ -97,12 +95,7 @@ $(function(){
 
                                         /** Set Highrise Enabled **/
                                         pref.set('highriseEnabled', true);
-
-                                        /** Save highrise options **/
-                                        pref.set('highriseUrl'  , formatUrl($('#highriseUrl').val()));
-                                        pref.set('highriseToken', $('#highriseToken').val());
-                                        pref.set('userTimezone' , $('#timezone').val());
-
+                                        
                                         hideAllMessages();
                                         $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
                                         $('#save-options-btn').attr('disabled','');
@@ -181,9 +174,10 @@ function updateAllTabs(fromAddress){
  * @param callback
  */
 function validateHighriseCredentials(callback){
-    console.log('*** sending a request to bg ***');
-    var url   = $('#highriseUrl')  .val();
-    var token = $('#highriseToken').val();
+    console.log('CONTENT PG :: Sending verifyHighrise request to BG-PAGE');
+    var pref  = OnSIP_Preferences;
+    var url   = pref.get ('highriseUrl'); 
+    var token = pref.get ('highriseToken');
     
     url = formatUrl (url);
     
@@ -234,11 +228,12 @@ function isHighriseDataEntered(){
     var pref   = OnSIP_Preferences;
     var hr_url = $('#highriseUrl')  .val();
     var token  = $('#highriseToken').val();
+    var tz     = $('#timezone').val();
     
     hr_url = trim(hr_url);
     token  = trim(token);
-
-    console.log ('Highrise URL ' + $('#highriseUrl').val() + ' -- ' + $('#highriseToken').val());
+    
+    console.log ('Highrise URL ' + $('#highriseUrl').val() + ' -- ' + $('#highriseToken').val() + ' TZ : ' + tz);
     if(hr_url.length === 0 || hr_url === pref.defaults['highriseUrl']){
 	pref.set('highriseUrl'  , pref.defaults['highriseUrl'  ]);
 	pref.set('highriseToken', pref.defaults['highriseToken']);
@@ -251,6 +246,12 @@ function isHighriseDataEntered(){
         pref.set('userTimezone' , pref.defaults['userTimezone' ]);
         return false;
     }
+
+    hr_url = formatUrl (hr_url);
+    pref.set('highriseUrl'  , hr_url);
+    pref.set('highriseToken', token);
+    pref.set('userTimezone' , tz);
+
     return true;
 }
 

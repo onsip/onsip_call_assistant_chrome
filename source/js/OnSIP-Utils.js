@@ -193,8 +193,12 @@ function rtrim(str, chars) {
     return str.replace(new RegExp("[" + chars + "]+$", "g"), "");
 }
 
-/** Extract phone number **/
-/** "sip:call-setup@onsip.com;id=14156265035" **/
+/** 
+ *  Extract phone number
+ *  We extract the number from the id assuming this 
+ *  was a call initiated by the CallCreate API call 
+ *   e.g "sip:call-setup@onsip.com;id=14156265035" 
+**/
 function extractPhoneNumber(str){
     var rev_str, s_temp;
     rev_str = str.replace(/sip:/, '');

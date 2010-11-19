@@ -14,11 +14,8 @@ BG_APP.activeCallCreated   = function ( items ) {
     var i, item, args, n, phone, len, name;
     dbg.log ('BG_APP LOG :: Active Call Created');
     for (i = 0, len = items.length; i < len; i++) {
-	/** save this bit of code for upgrading to HTML based notifications **/
-	//args   = 'ds=created&toURI=' + escape(item.toURI);
-	//n      = webkitNotifications.createHTMLNotification ('notification.html?' + arg);	
-	item     = items[i];
-	phone    = extractPhoneNumber(item.toURI);
+	item    = items[i];
+	phone   = extractPhoneNumber(item.toURI);
         dbg.log ('"BG_APP LOG :: Number of contacts is ' + 
 		     highrise_app.contacts.length + ' -- ' + 
 		     highrise_app.companies.length);
@@ -33,11 +30,16 @@ BG_APP.activeCallCreated   = function ( items ) {
 	    name = cont.company_name;
 	}
 		
-	phone   = name || phone;
-	n       = webkitNotifications.createNotification ('images/i_calling.png', 
+	phone    = name || phone;
+	n        = webkitNotifications.createNotification ('images/i_calling.png', 
 							 "Calling", formatPhoneNum('' + phone));  
-	n.uri           = item.uri.query;
-	n.contact       = cont;
+
+	n.onclick = function () {
+            OX_EXT.cancelCall (item);
+        }
+
+	n.uri     = item.uri.query;
+	n.contact = cont;
         n.show();
 
 	this.notifications.push (n);
@@ -45,13 +47,10 @@ BG_APP.activeCallCreated   = function ( items ) {
 };
 
 BG_APP.activeCallRequested = function ( items ) {
-    var i, item, args, n, phone, len, cont, caption;
+    var i, item, args, n, phone, len, cont, caption, name;
     dbg.log ('BG_APP LOG :: Active Call Requested');
     for (i = 0, len = items.length; i < len; i++) {
-	item  = items[i];
-	/** save this bit of code for upgrading to HTML based notifications **/
-	//arg = 'ds=requested&fromURI=' + escape (item.fromURI);
-        //n   =  webkitNotifications.createHTMLNotification ('notification.html?' + arg);
+	item    = items[i];
 	caption = isSetupCall (item.fromURI) ? "Call Setup" : "Incoming Call";	
 	phone   = extractPhoneNumber(item.fromURI);
 	cont    = highrise_app.findContact (phone + ''); 	        
@@ -68,10 +67,14 @@ BG_APP.activeCallRequested = function ( items ) {
 	    }
 	}	
 		
-	phone     = name || phone;
-        n         = webkitNotifications.createNotification ('images/i_calling.png', 
+	phone    = name || phone;	
+        n        = webkitNotifications.createNotification ('images/i_calling.png', 
 							    caption, 
 							    'From: ' + formatPhoneNum('' + phone));
+
+	n.onclick = function () {
+	    OX_EXT.cancelCall (item);
+	}
 	n.uri     = item.uri.query;
 	n.contact = cont;
         n.show();
@@ -149,23 +152,31 @@ BG_APP._cancelNotifications = function (item) {
 
 /** Connect, subscribe, and register to XMPP API **/
 OX_EXT.apps = [BG_APP];
-OX_EXT.init   (pref, {
-    onSuccess : function () {
-	dbg.log ('Succeeded in OX_EXT.init for connecting & subscribing');
-    },
-    onError   : function (error) {	    
-        /** In case of failure, display settings in a new tab **/
-        dbg.log ('There was an error in OX_EXT INIT ' + error);
-        chrome.tabs.create ({ "url" : "index.html" });	
+if (pref && pref.get('onsipCredentialsGood') === true && pref.get ('onsipPassword') && pref.get ('fromAddress')) {
+    if (pref.get ('onsipPassword').length > 0 && pref.get ('fromAddress').length > 0) {
+        OX_EXT.init   (pref, {
+            onSuccess : function () {
+	        dbg.log ('Succeeded in OX_EXT.init for connecting & subscribing');
+            },
+            onError   : function (error) {	    
+                /** In case of failure, display settings in a new tab **/
+                dbg.log ('There was an error in OX_EXT INIT ' + error);
+                //chrome.tabs.create ({ "url" : "index.html" });	
+            }
+	});
+    } else {
+	dbg.log ('OX_EXT.init NOT called, no credentials found');
     }
-});
+}
 
 /** An extension to this background page with helper methods **/
 extension = new OnSIP_Process();
 extension.init ();
 
 /** Load and initialize Highrise with contacts **/
-highrise_app.init (pref);
+if (pref && pref.get ('highriseEnabled') === true) {
+    highrise_app.init(pref);
+}
 
 /** Add event listener for clicks on the extension icon **/
 chrome.browserAction.onClicked.addListener ( function (TAB) {
@@ -222,11 +233,12 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
     /** Verify Highrise Account **/
     if ( request.verifyHighrise ){
 	var highriseResult = {};
-	dbg.log('CHROME Background :: Verifying Highrise Credentials TOKEN ' + /** request.highrise_token **/ '');    
+	dbg.log('CHROME Background :: Verifying Highrise Credentials TOKEN ' + request.highrise_url + '');    
         highrise_app.verifyToken ({
 	    onSuccess : function (data) {
 	        dbg.log('CHROME BACKGROUND :: HIGHRISE API :: Highrise credentials OK');
-	        sendResponse ({ ok : true });
+	        sendResponse ({ ok : true });		
+		highrise_app.init (pref);		  
 	    },
 	    onError   : function () {
 	        dbg.log('CHROME Background :: HIGHRISE API :: Highrise credentials NOT OK');
@@ -235,7 +247,14 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 	    request.highrise_url,
             request.highrise_token);	
     } 
+
 });
 
+/** Window focus **/
+//chrome.windows.onFocusChanged.addListener ( function (windowId) {
+	//console.log ("WINDOW FOCUS *******************************");
+    //OX_EXT.	
+
+//}); 
 
 

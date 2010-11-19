@@ -86,12 +86,12 @@ document.addEventListener('DOMNodeInserted'         , handleDomChange, true);
 var parsing = false;
 
 function handleDomChange(e) {
-    var ext_enabled = _enabled;
-    console.log ('Handle DOM Change - parsing ' + parsing + ' Extension enabled :: ' + ext_enabled);
+    var ext_enabled = _enabled;    
     if (ext_enabled) {		
         if (parsing) {
 	    return;
 	}	
+	console.log ('Handle DOM Change - parsing ' + parsing + ' Extension enabled :: ' + ext_enabled);	
 	var newNodeClass = e.srcElement.className;		
 	if ( newNodeClass != undefined ) {
 	    if (/onsip\-message\-box/.test(newNodeClass) || newNodeClass == 'onsip-click-to-call-icon') {
@@ -151,7 +151,7 @@ function parseDOM (node) {
     var nodeName         = node.nodeName.toUpperCase();
     var childNodesLength = node.childNodes.length;
 
-    console.log ('CHROME :: Parsing DOM');
+    //console.log ('CHROME :: Parsing DOM');
 
     if ( $.inArray(nodeName, invalidNodes) > -1 || $(node).hasClass('onsip-message-box') ) {
 	return 0;
