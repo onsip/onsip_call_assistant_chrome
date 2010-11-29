@@ -47,13 +47,14 @@ BG_APP.activeCallCreated   = function ( items ) {
 };
 
 BG_APP.activeCallRequested = function ( items ) {
-    var i, item, args, n, phone, len, cont, caption, name;
+    var i, item, args, n, phone, len, cont, caption, name, is_setup;
     dbg.log ('BG_APP LOG :: Active Call Requested');
     for (i = 0, len = items.length; i < len; i++) {
-	item    = items[i];
-	caption = isSetupCall (item.fromURI) ? "Call Setup" : "Incoming Call";	
-	phone   = extractPhoneNumber(item.fromURI);
-	cont    = highrise_app.findContact (phone + ''); 	        
+	item     = items[i];
+	is_setup = isSetupCall (item.fromURI) 
+        caption  = is_setup ? "Call Setup" : "Incoming Call";	
+	phone    = extractPhoneNumber(item.fromURI);
+	cont     = highrise_app.findContact (phone + ''); 	        
         if ( cont && cont.first_name && cont.last_name ) {
             name = cont.first_name + ' ' + cont.last_name;
             if (trim (name).length === 0) {
@@ -75,8 +76,9 @@ BG_APP.activeCallRequested = function ( items ) {
 	n.onclick = function () {
 	    OX_EXT.cancelCall (item);
 	}
-	n.uri     = item.uri.query;
-	n.contact = cont;
+	n.uri      = item.uri.query;
+	n.is_setup = is_setup;
+	n.contact  = cont;
         n.show();
 
 	this.notifications.push (n);
@@ -107,10 +109,11 @@ BG_APP.activeCallRetract   = function (itemURI) {
 
 /** Helper method. Post a note through the Highrise API **/
 BG_APP._postNotetoProfile  = function (item) {
-    var i, len, costumer, full_name;
+    var i, len, costumer, full_name, is_setup;
     for (i = 0, len = this.notifications.length; i < len; i += 1) {
 	if (item === this.notifications[i].uri) {
 	    costumer = this.notifications[i].contact;
+	    is_setup = this.notifications[i].is_setup;
 	    if (costumer && costumer.id) {		
 		var tz = getDateAndTime (getTimezoneAbbrevation (pref.get('userTimezone')));
 		if ( costumer.first_name && costumer.last_name ) {
@@ -125,8 +128,8 @@ BG_APP._postNotetoProfile  = function (item) {
 			full_name = undefined;
 		    }
 		}
-		if (full_name && full_name.length > 0) {
-		    nt = "<note><body>Conversed with " + full_name + " @ " + tz + "</body></note>";
+		if (full_name && full_name.length > 0 && !is_setup) {
+		    nt = "<note><body>Conversed with " + full_name + " @ " + tz + " By OnSIP</body></note>";
 		    highrise_app.postNoteToProfile (costumer, nt);
 		}                                
 	    }
