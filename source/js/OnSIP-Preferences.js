@@ -1,7 +1,5 @@
 var OnSIP_Preferences = {	
-    defaults : {
-        apiUrl		: 'http://www.jnctn.com/restapi', // don't forget to edit the permissions in manifest.json
-	apiAction	: 'CallSetup',
+    defaults : {        
 	apiTimeout	: 30000,
         fromAddress	: 'you@yourdomain.onsip.com',
         onsipPassword   : 'Please enter your password',

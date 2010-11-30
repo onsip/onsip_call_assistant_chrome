@@ -3,6 +3,7 @@
 /** Alias for the OnSIP_Preferences object **/
 var pref         = OnSIP_Preferences; 
 var highrise_app = HIGHRISE;
+//var zendesk_app  = ZENDESK;
 var extension    = null;
 
 /** Setup Highrise callback hooks **/
@@ -16,7 +17,7 @@ BG_APP.activeCallCreated   = function ( items ) {
     for (i = 0, len = items.length; i < len; i++) {
 	item    = items[i];
 	phone   = extractPhoneNumber(item.toURI);
-        dbg.log ('"BG_APP LOG :: Number of contacts is ' + 
+        dbg.log ('BG_APP LOG :: Number of contacts is ' + 
 		     highrise_app.contacts.length + ' -- ' + 
 		     highrise_app.companies.length);
 	cont   = highrise_app.findContact (phone + '');	
@@ -180,6 +181,29 @@ extension.init ();
 if (pref && pref.get ('highriseEnabled') === true) {
     highrise_app.init(pref);
 }
+
+/**
+zendesk_app.verify ({
+    onSuccess : function () {
+        dbg.log ('Succeeded in OX_EXT.init for connecting & subscribing');
+    },
+    onError   : function () {    
+	dbg.log ('There was an error in OX_EXT INIT ');	    
+    }}, 'http://jn.zendesk.com', 'oren@junctionnetworks.com', 'XkWHM8ZJ');
+**/
+
+// zendesk_app.init (pref);
+
+/**
+var fto = function() {    
+    var note = "<ticket><priority-id>1</priority-id>" + 
+    "<subject>The subject of the ticket</subject>" + 
+    "<description>FROM Chrome Plug-in</description><requester_id>21854757</requester_id></ticket>";
+    zendesk_app.postNote ('17328296551', note); 
+}
+**/
+
+// setTimeout(fto, 5000);
 
 /** Add event listener for clicks on the extension icon **/
 chrome.browserAction.onClicked.addListener ( function (TAB) {
