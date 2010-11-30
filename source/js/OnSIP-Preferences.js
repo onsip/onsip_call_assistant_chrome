@@ -5,7 +5,7 @@ var OnSIP_Preferences = {
 	apiTimeout	: 30000,
         fromAddress	: 'you@yourdomain.onsip.com',
         onsipPassword   : 'Please enter your password',
-        onsipHttpBase   : 'https://dashboard.onsip.com/http-bind/',
+        onsipHttpBase   : 'https://my.onsip.com/http-bind/',
         timeout		: 3000,
         enabled		: true,
         phoneExtension  : null,
