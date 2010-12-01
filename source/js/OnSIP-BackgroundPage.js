@@ -3,7 +3,7 @@
 /** Alias for the OnSIP_Preferences object **/
 var pref         = OnSIP_Preferences; 
 var highrise_app = HIGHRISE;
-//var zendesk_app  = ZENDESK;
+var zendesk_app  = ZENDESK;
 var extension    = null;
 
 /** Setup Highrise callback hooks **/
@@ -12,35 +12,35 @@ var BG_APP = {
 };
 
 BG_APP.activeCallCreated   = function ( items ) {    
-    var i, item, args, n, phone, len, name;
+    var i, n, item, phone, len, name, 
+    cont_highrise, cont_zendesk, caption;
     dbg.log ('BG_APP LOG :: Active Call Created');
     for (i = 0, len = items.length; i < len; i++) {
-	item    = items[i];
-	phone   = extractPhoneNumber(item.toURI);
-        dbg.log ('BG_APP LOG :: Number of contacts is ' + 
-		     highrise_app.contacts.length + ' -- ' + 
-		     highrise_app.companies.length);
-	cont   = highrise_app.findContact (phone + '');	
-	if ( cont && cont.first_name && cont.last_name ) {
-	    name = cont.first_name + ' ' + cont.last_name;
-	    if (trim (name).length === 0) {
-		name = undefined;
+	item          = items[i];
+	phone         = extractPhoneNumber(item.toURI);        
+	cont_highrise = highrise_app.findContact (phone + '');
+	cont_zendesk  = zendesk_app .findContact (phone + '');
+	name          = this._normalizeName (cont_zendesk, cont_highrise);
+	phone         = name || phone;
+	caption       = "Calling";
+	if (cont_zendesk && cont_zendesk.id) {
+	    var r = zendesk_app.search ( cont_zendesk.id );
+	    if (r && r.count) {
+		caption += " (OPEN TICKETS : " + r.count + ")";
 	    }
-	}	
-	if ( !name && (cont && cont.company_name) ) {
-	    name = cont.company_name;
 	}
-		
-	phone    = name || phone;
-	n        = webkitNotifications.createNotification ('images/i_calling.png', 
-							 "Calling", formatPhoneNum('' + phone));  
-
+	
+	n        = webkitNotifications.createNotification ('images/icon-48.png', 
+							 caption, formatPhoneNum('' + phone));  
 	n.onclick = function () {
-            OX_EXT.cancelCall (item);
+            //OX_EXT.cancelCall (item);
+	    chrome.tabs.create({url: 'http://jn.zendesk.com/rules/2007686'});
         }
 
 	n.uri     = item.uri.query;
-	n.contact = cont;
+	n.phone   = formatPhoneNum('' + phone);
+	n.contact_highrise  = cont_highrise;
+	n.contact_zendesk   = cont_zendesk;
         n.show();
 
 	this.notifications.push (n);
@@ -48,51 +48,106 @@ BG_APP.activeCallCreated   = function ( items ) {
 };
 
 BG_APP.activeCallRequested = function ( items ) {
-    var i, item, args, n, phone, len, cont, caption, name, is_setup;
+    var i, n, item, phone, len, cont_highrise, 
+        cont_zendesk, caption, name, is_setup, that;
+    var that = this;
     dbg.log ('BG_APP LOG :: Active Call Requested');
     for (i = 0, len = items.length; i < len; i++) {
-	item     = items[i];
-	is_setup = isSetupCall (item.fromURI) 
-        caption  = is_setup ? "Call Setup" : "Incoming Call";	
-	phone    = extractPhoneNumber(item.fromURI);
-	cont     = highrise_app.findContact (phone + ''); 	        
-        if ( cont && cont.first_name && cont.last_name ) {
-            name = cont.first_name + ' ' + cont.last_name;
-            if (trim (name).length === 0) {
-		name = undefined;
-            }
-        } 
-        if ( !name && (cont && cont.company_name) ) {
-	    name = cont.company_name;
-	    if (trim (name).length === 0) {
-		name = undefined;
+	item          = items[i];
+	is_setup      = isSetupCall (item.fromURI) 
+        caption       = is_setup ? "Call Setup" : "Incoming Call";	
+	phone         = extractPhoneNumber(item.fromURI);
+	cont_highrise = highrise_app.findContact (phone + ''); 	        
+	cont_zendesk  = zendesk_app .findContact (phone + '');
+	name          = this._normalizeName (cont_zendesk, cont_highrise);
+	phone         = name || phone;
+	
+	var f_notification = {
+	    onSuccess : function (record_count, subject) {
+		if (record_count) {
+		    caption += " (unresolved: " + record_count + ")";
+		}
+	        n  = webkitNotifications.createNotification ('images/icon-48.png', 
+							 caption,
+							 'From: ' + formatPhoneNum('' + phone));
+		n.onclick = function () {
+	            //OX_EXT.cancelCall (item);
+	            chrome.tabs.create({url: 'http://jn.zendesk.com/rules/2007686'});
+		}
+		n.uri               = item.uri.query;
+		n.phone             = formatPhoneNum('' + phone);
+		n.is_setup          = is_setup;
+		n.contact_highrise  = cont_highrise;
+		n.contact_zendesk   = cont_zendesk;
+		n.show();
+
+		that.notifications.push (n);
+	    },
+	    onError  : function () {
+
 	    }
-	}	
-		
-	phone    = name || phone;	
-        n        = webkitNotifications.createNotification ('images/i_calling.png', 
-							    caption, 
-							    'From: ' + formatPhoneNum('' + phone));
+	};
 
-	n.onclick = function () {
-	    OX_EXT.cancelCall (item);
+	if (cont_zendesk && cont_zendesk.id) {
+            zendesk_app.search ( cont_zendesk.id, f_notification);                
+        } else {
+	    f_notification.onSuccess ();
 	}
-	n.uri      = item.uri.query;
-	n.is_setup = is_setup;
-	n.contact  = cont;
-        n.show();
 
-	this.notifications.push (n);
     }
+};
+
+/** 
+ * Normalize on the variations in the name returned by the various third parties.
+ * The returned normalized value will be display in the notification toast.
+ * Variations include : 
+ * Zendesk, which returns the full name.
+ * Highrise, which returns first and last name
+ * Highrise also returns company. 
+**/
+BG_APP._normalizeName    = function () {
+    var normalized_name, len, i, c;    
+    for (i = 0, len = arguments.length; i < len; i++) {
+	c = arguments[i];
+	if (c && c.full_name) {
+	    normalized_name = trim (c.full_name);
+	    if (normalized_name.length === 0) {
+		normalized_name = undefined;
+	    }
+	} 
+	if (!normalized_name && c && c.first_name && c.last_name) {
+	    normalized_name = c.first_name + ' ' + c.last_name;
+	    normalized_name = trim (normalized_name);
+	    if (normalized_name.length === 0) {
+		normalized_name = undefined;
+            }	    
+	} 
+	if (!normalized_name && c && c.company_name) {
+	    normalized_name = c.first_name + ' ' + c.last_name;
+            normalized_name = trim (normalized_name);
+            if (normalized_name.length === 0) {
+		normalized_name = undefined;
+            }	    
+	}
+	if (normalized_name) {
+	    return normalized_name;
+	}
+    }
+    return;
 };
 
 /** A phone connection has been established **/
 BG_APP.activeCallConfirmed = function ( items ) {
    dbg.log ('BG_APP LOG :: Active Call Confirmed');
    var i, len, name;
+   var that = this;
    for (i = 0, len = items.length; i < len; i += 1) {               
        this._postNotetoProfile   (items[i].uri.query)
-       this._cancelNotifications (items[i].uri.query);
+       var q = items[i].uri.query;
+       var f = function() {
+	   that._cancelNotifications (q);
+       };
+       setTimeout (f, 1000);
    }
 };
 
@@ -102,37 +157,37 @@ BG_APP.activeCallPending   = function ( item ) {
 
 BG_APP.activeCallRetract   = function (itemURI) {    
     var i, len;
+    var that = this;
     dbg.log ('BG_APP LOG :: Active Call Retracted = ' + this.notifications);
     for (i = 0, len = itemURI.length; i < len; i += 1) {
-       this._cancelNotifications (itemURI[i].query);
+	var q = itemURI[i].query;
+	var f = function () {	
+	    that._cancelNotifications (q);
+	};
+	setTimeout(f, 1000);
     }
 };
 
 /** Helper method. Post a note through the Highrise API **/
 BG_APP._postNotetoProfile  = function (item) {
-    var i, len, costumer, full_name, is_setup;
+    var i, len, costumer, full_name, is_setup, phone;
     for (i = 0, len = this.notifications.length; i < len; i += 1) {
 	if (item === this.notifications[i].uri) {
-	    costumer = this.notifications[i].contact;
-	    is_setup = this.notifications[i].is_setup;
-	    if (costumer && costumer.id) {		
-		var tz = getDateAndTime (getTimezoneAbbrevation (pref.get('userTimezone')));
-		if ( costumer.first_name && costumer.last_name ) {
-		    full_name = costumer.first_name + ' ' + costumer.last_name;
-		    if (trim (full_name).length === 0) {
-			full_name = undefined;
+	    costumer_hr = this.notifications[i].contact_highrise;
+	    costumer_zd = this.notifications[i].contact_zendesk;
+	    is_setup    = this.notifications[i].is_setup;
+	    if (!is_setup) {
+		if (pref.get ('highriseEnabled') && costumer_hr && costumer_hr.id) {		
+		    highrise_app.postNote (costumer_hr, pref.get('userTimezone'));		    		
+		}
+		if (pref.get ('zendeskEnabled')) {
+		    if (costumer_zd && costumer_zd.id) {
+			zendesk_app.postNote  (costumer_zd, pref.get('userTimezone'));
+		    } else {
+			phone = this.notifications[i].phone;
+			zendesk_app.postNoteUnknown (phone, pref.get('userTimezone'));
 		    }
 		}
-		if ( !name && (costumer.company_name) ) {
-		    full_name = costumer.company_name;
-		    if (trim (full_name).length === 0) {
-			full_name = undefined;
-		    }
-		}
-		if (full_name && full_name.length > 0 && !is_setup) {
-		    nt = "<note><body>Conversed with " + full_name + " @ " + tz + " By OnSIP</body></note>";
-		    highrise_app.postNoteToProfile (costumer, nt);
-		}                                
 	    }
 	}	
     }
@@ -144,7 +199,7 @@ BG_APP._cancelNotifications = function (item) {
     var a = [];
     var n = this.notifications.pop();
     while (n) {	
-	if (item === n.uri) {	   
+	if (item === n.uri) {	    
 	    n.cancel();
 	} else {
 	    a.push (n);
@@ -165,13 +220,12 @@ if (pref && pref.get('onsipCredentialsGood') === true && pref.get ('onsipPasswor
             onError   : function (error) {	    
                 /** In case of failure, display settings in a new tab **/
                 dbg.log ('There was an error in OX_EXT INIT ' + error);
-                //chrome.tabs.create ({ "url" : "index.html" });	
             }
 	});
     } else {
 	dbg.log ('OX_EXT.init NOT called, no credentials found');
     }
-}
+};
 
 /** An extension to this background page with helper methods **/
 extension = new OnSIP_Process();
@@ -182,28 +236,11 @@ if (pref && pref.get ('highriseEnabled') === true) {
     highrise_app.init(pref);
 }
 
-/**
-zendesk_app.verify ({
-    onSuccess : function () {
-        dbg.log ('Succeeded in OX_EXT.init for connecting & subscribing');
-    },
-    onError   : function () {    
-	dbg.log ('There was an error in OX_EXT INIT ');	    
-    }}, 'http://jn.zendesk.com', 'oren@junctionnetworks.com', 'XkWHM8ZJ');
-**/
-
-// zendesk_app.init (pref);
-
-/**
-var fto = function() {    
-    var note = "<ticket><priority-id>1</priority-id>" + 
-    "<subject>The subject of the ticket</subject>" + 
-    "<description>FROM Chrome Plug-in</description><requester_id>21854757</requester_id></ticket>";
-    zendesk_app.postNote ('17328296551', note); 
+/** Initialize Zendesk with Contacts **/
+dbg.log ('CHROME Background :: Zend DESK ENABLED --> ' + pref.get ('zendeskEnabled'));
+if (pref && pref.get ('zendeskEnabled') === true) {
+    zendesk_app.init (pref);
 }
-**/
-
-// setTimeout(fto, 5000);
 
 /** Add event listener for clicks on the extension icon **/
 chrome.browserAction.onClicked.addListener ( function (TAB) {
@@ -215,18 +252,18 @@ chrome.browserAction.onClicked.addListener ( function (TAB) {
 chrome.extension.onRequest.addListener    ( function (request, sender, sendResponse) {    
     dbg.log ('CHROME Background :: request ');
 
-    /** On load parse request **/                                                                                                              
+    /** On load parse request **/     
     if ( request.pageLoad && pref.get('enabled') ) {
 	dbg.log ('CHROME Background :: Send response to TAB');
         sendResponse ({ parseDOM : true, fromAddress : pref.get('fromAddress')});
     }
 
-    /** Open settings page request **/                                                                                                                                
+    /** Open settings page request **/
     if ( request.openSettingsPage ) {
         chrome.tabs.create ({ "url" : "index.html" });
     }
 
-    /** Make a Call on request **/                                                                                                                                    
+    /** Make a Call on request **/
     if ( request.setupCall && pref.get ('enabled') ) {
 	var from_address = pref.get('fromAddress');	
         var to_address   = request.phone_no; 	
@@ -257,8 +294,23 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 	});
     }
 
+    /** Verify Zendesk User **/
+    if ( request.verifyZendesk ) {
+       zendesk_app.verify ({
+          onSuccess : function () {
+	     sendResponse ({ok : true});
+	     zendesk_app.init (pref);
+             dbg.log ('CHROME Background :: Zendesk Credentials OK');
+	  },
+          onError   : function () { 
+	     sendResponse ({ok : false});
+	     dbg.log ('CHROME Background :: Zendesk Credetials INVALID ');	    
+          }
+       }, 'http://jn.zendesk.com', 'oren@junctionnetworks.com', 'XkWHM8ZJ');
+    }
+
     /** Verify Highrise Account **/
-    if ( request.verifyHighrise ){
+    if ( request.verifyHighrise ) {
 	var highriseResult = {};
 	dbg.log('CHROME Background :: Verifying Highrise Credentials TOKEN ' + request.highrise_url + '');    
         highrise_app.verifyToken ({

@@ -15,7 +15,11 @@ var OnSIP_Preferences = {
         highriseUrl     : 'yourdomain.highrisehq.com',
         highriseToken   : 'your token',
 
-        popupDisabled   : false,
+	zendeskEnabled  : false,
+	zendeskUrl      : 'yourdomain.zendesk.com',
+	zendeskUsr      : 'you@domain.com',
+	zendeskPwd      : 'Please enter your password',
+
         userTimezone    : 0,
 		
 	badgeOnColor	: [0, 46, 98, 100],

@@ -31,25 +31,35 @@ HIGHRISE.verifyToken = function (call, highrise_url, token) {
    xhr.send();
 };
 
+HIGHRISE._createDefaultNote = function (costumer, user_tz) {
+    var nt;
+    var tz = getDateAndTime (getTimezoneAbbrevation (user_tz));
+    if ( costumer.first_name && costumer.last_name ) {
+	full_name = costumer.first_name + ' ' + costumer.last_name;
+	if (trim (full_name).length === 0) {
+	    full_name = undefined;
+	}
+    }
+    if ( !name && (costumer.company_name) ) {
+	full_name = costumer.company_name;
+	if (trim (full_name).length === 0) {
+	    full_name = undefined;
+	}
+    }
+    if (full_name && full_name.length > 0) {
+	nt = "<note><body>Conversed with " + full_name + " @ " + tz + " By OnSIP</body></note>";
+    }
+    return nt;
+};
+
 /** Note has the convention <note><body> {STUFF} </body></note> **/
-HIGHRISE.postNote = function (phone_number, note, user_tz) {
-    var clean_phone_num, customer, nt, full_name;
-    clean_phone_number = this._normalizePhoneNumber (phone_number);
-    costumer           = this.findContact (clean_phone_number);
+HIGHRISE.postNote = function (costumer, user_tz) {
+    var customer, note;
+    //clean_phone_number = this._normalizePhoneNumber (phone_number);
+    //costumer           = this.findContact (clean_phone_number);
     if (costumer) {
-	if ( costumer.first_name && costumer.last_name ) {
-	    full_name = costumer.first_name + ' ' + costumer.last_name;
-	    if (trim (full_name).length === 0) {
-		full_name = undefined;
-	    }
-	}
-	if ( !name && (costumer.company_name) ) {
-	    full_name = costumer.company_name;
-	    if (trim (full_name).length === 0) {
-		full_name = undefined;
-	    }
-	}
-	if (full_name && full_name.length > 0) {
+	note = this._createDefaultNote (costumer, user_tz);
+	if (note && note.length) {
 	    this.postNoteToProfile (costumer, note); 
 	}
     }    

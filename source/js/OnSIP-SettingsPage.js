@@ -76,6 +76,9 @@ $(function(){
 
                             /** Update tabs **/
                             updateAllTabs($('#fromAddress').val());
+			    
+			    pref.set('zendeskEnabled', true);
+			    validateZendeskCredentials ();
 
                             /** Before showing success message see if Highrise is validated ok, due to asyncronus nature of js **/
                             if (isHighriseDataEntered()) {
@@ -173,7 +176,7 @@ function updateAllTabs(fromAddress){
  * Validate Highrise Credentials
  * @param callback
  */
-function validateHighriseCredentials(callback){
+function validateHighriseCredentials (callback){
     console.log('CONTENT PG :: Sending verifyHighrise request to BG-PAGE');
     var pref  = OnSIP_Preferences;
     var url   = pref.get ('highriseUrl'); 
@@ -196,6 +199,28 @@ function validateHighriseCredentials(callback){
     );
 }
 
+/** Validate Zendesk Credentials **/
+function validateZendeskCredentials (callback) {
+    console.log ('CONTENT PG :: Sending verifyZendesk request to BG-PAGE');
+    var pref = OnSIP_Preferences;
+    var url  = pref.get ('zendeskUrl');
+    var usr  = pref.get ('zendeskUsr');
+    var pwd  = pref.get ('zendeskPwd');
+    
+    url = formatUrl (url);
+    chrome.extension.sendRequest({ verifyZendesk : true, zendesk_url : url, zendesk_usr : usr, zendesk_pwd : pwd},
+        function (response) {
+	    if (callback) {
+		if (response.ok) {
+		    callback.onSuccess();
+		} else {
+		    callback.onError();
+		}
+	    }	    
+	}
+    );
+}
+            
 /**
  *  Get User Info From Onsip
  *  @param callback
