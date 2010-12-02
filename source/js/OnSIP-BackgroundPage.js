@@ -108,6 +108,7 @@ BG_APP.activeCallRequested = function ( items ) {
 		n.contact_zendesk   = cont_zendesk;
 		n.init_date         = new Date();
 		n.is_onsip          = (is_onsip) ? is_onsip : false;
+		n.flag_incoming     = true;
 		n.show();
 
 		that.notifications.push (n);
@@ -196,21 +197,22 @@ BG_APP.activeCallRetract   = function (itemURI) {
 
 /** Helper method. Post a note through the Highrise API **/
 BG_APP._postNotetoProfile  = function (item) {
-    var i, len, costumer, full_name, is_setup, phone;
+    var i, len, costumer, full_name, is_setup, phone, notif;
     for (i = 0, len = this.notifications.length; i < len; i += 1) {
 	if (item === this.notifications[i].uri) {
-	    costumer_hr = this.notifications[i].contact_highrise;
-	    costumer_zd = this.notifications[i].contact_zendesk;
-	    is_setup    = this.notifications[i].is_setup;
+	    notif       = this.notifications[i];
+	    costumer_hr = notif.contact_highrise;
+	    costumer_zd = notif.contact_zendesk;
+	    is_setup    = notif.is_setup;
 	    if (!is_setup) {
 		if (pref.get ('highriseEnabled') && costumer_hr && costumer_hr.id) {		
 		    highrise_app.postNote (costumer_hr, pref.get('userTimezone'));		    		
 		}
-		if (pref.get ('zendeskEnabled') && !this.notifications[i].is_onsip) {		    
+		if (pref.get ('zendeskEnabled') && notif.flag_incoming && !notif.is_onsip) {		    
 		    if (costumer_zd && costumer_zd.id) {
 			zendesk_app.postNote  (costumer_zd, pref.get('userTimezone'));
 		    } else {
-			phone = this.notifications[i].phone;
+			phone = notif.phone;
 			zendesk_app.postNoteUnknown (phone, pref.get('userTimezone'));
 		    }
 		}
@@ -322,6 +324,8 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 
     /** Verify Zendesk User **/
     if ( request.verifyZendesk ) {
+       console.log ('CHROME BACKGROUND :: Verifying Zendesk account with ' + 
+		    request.zendesk_url + ' - ' + request.zendesk_usr + ' - ' + request.zendesk_pwd);
        zendesk_app.verify ({
           onSuccess : function () {
 	     sendResponse ({ok : true});
@@ -332,7 +336,7 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 	     sendResponse ({ok : false});
 	     dbg.log ('CHROME Background :: Zendesk Credetials INVALID ');	    
           }
-       }, 'http://jn.zendesk.com', 'oren@junctionnetworks.com', 'XkWHM8ZJ');
+       }, request.zendesk_url, request.zendesk_usr, request.zendesk_pwd);
     }
 
     /** Verify Highrise Account **/

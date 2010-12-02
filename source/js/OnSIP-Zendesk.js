@@ -34,7 +34,7 @@ ZENDESK.verify = function (call, zendesk_url, user, pwd) {
 	 }
       } 
    }
-   
+   console.log ('ZENDESK APP :: Verifying Zendesk account with ' + user + ' - ' + pwd + ' - ' + zendesk_url);
    xhr.open('GET', zendesk_url + '/users/current.xml', false, user, pwd);
    xhr.send();
 };
@@ -236,7 +236,7 @@ ZENDESK._search = function (requester_id, call) {
             }
         } else {
             if (call && call.onSuccess) {
-		console.log ('ZENDESK APP :: search result ' + xhr.responseText);
+		//console.log ('ZENDESK APP :: search result ' + xhr.responseText);
                 call.onSuccess (xhr.responseText);
             }
         }        
