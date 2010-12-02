@@ -2,12 +2,12 @@
 
 var ZENDESK = {
     'contacts' : [],
-    'ts'       : null,
     'base_url' : 'http://jn.zendesk.com',
     'user'     : 'oren@junctionnetworks.com',
     'pwd'      : 'XkWHM8ZJ',
     'attempts' : 0,
-    'refresh'  : 60000 * 45 // Refresh every 45 min
+    'refresh'  : 60000 * 45, // Refresh every 45 min
+    'paginate' : -1
 };
 
 ZENDESK.verify = function (call, zendesk_url, user, pwd) {
@@ -92,15 +92,12 @@ ZENDESK._createDefaultUnknownTicket = function (phone) {
 **/
 ZENDESK.postNote = function (costumer, user_tz) {
     var nt, full_name;
-    //clean_phone_number = this._normalizePhoneNumber (phone_number);
-    //costumer           = this.findContact (clean_phone_number);
     console.log ('ZENDESK APP :: Searching for costumer');
     if (costumer && costumer.full_name) {	
 	full_name = costumer.full_name;
 	if (trim (full_name).length === 0) {
 	    full_name = undefined;
-	}
-		
+	}		
 	if (full_name && full_name.length > 0) {
 	    console.log ('ZENDESK APP :: Found constumer, posting note');
 	    nt = this._createDefaultTicket (costumer);
@@ -182,22 +179,38 @@ ZENDESK.search  = function (requester_id, call) {
 	    var root_node    = xmlobject.getElementsByTagName("records");
 	    var subject      = '';
 	    var record_count = 0;
+	    var tags         = 0;
+	    var is_onsip     = false;
+	    var nice_id ;
+	    var holder;
 	    if (root_node && root_node.length) {
 		record_count = root_node[0].getAttribute ('count');
 		record_nodes = root_node[0].getElementsByTagName("record");		
 		if (record_count > 0) {
-		    subject = record_nodes[0].getElementsByTagName ("subject");
-		    if (subject && subject.length) {
-			if (subject[0].firstChild && subject[0].firstChild.nodeValue) {
-			    subject = subject[0].firstChild.nodeValue;
-			} else {
-			    subject = '';
+		    holder = record_nodes[0].getElementsByTagName ("subject");
+		    if (holder && holder.length) {
+			if (holder[0].firstChild && holder[0].firstChild.nodeValue) {
+			    subject = holder[0].firstChild.nodeValue;
+			} 			    		       
+		    }
+		    tags   = record_nodes[0].getElementsByTagName("current-tags");
+		    if (tags && tags.length) {
+			if (tags[0].firstChild && tags[0].firstChild.nodeValue) {
+			    if (tags[0].firstChild.nodeValue.indexOf('onsip') !== -1) {
+				is_onsip = true;
+			    }
 			}
 		    }
+		    holder  = record_nodes[0].getElementsByTagName("nice-id");
+		    if (holder && holder.length) {
+			if (holder[0].firstChild && holder[0].firstChild.nodeValue) {
+			    nice_id = holder[0].firstChild.nodeValue;
+                        }
+                    }
 		}
 	    }
 	    if (call && call.onSuccess) {
-		call.onSuccess (record_count, subject);
+		call.onSuccess (record_count, subject, is_onsip, nice_id);
 	    }
 	},
         onError   : function (status) {
@@ -223,13 +236,13 @@ ZENDESK._search = function (requester_id, call) {
             }
         } else {
             if (call && call.onSuccess) {
-		//console.log ('ZENDESK APP :: search result ' + xhr.responseText);
+		console.log ('ZENDESK APP :: search result ' + xhr.responseText);
                 call.onSuccess (xhr.responseText);
             }
         }        
     };
 
-    xhr.open ("GET", this.base_url + "/search.xml?query=requester:" + requester_id, false, this.user, this.pwd);
+    xhr.open ("GET", this.base_url + "/search.xml?query=requester:" + requester_id + '+order_by:created_at+sort:desc', true, this.user, this.pwd);
     console.log ('ZENDESK APP :: SEND search request');
     xhr.send ();
 };
@@ -238,75 +251,94 @@ ZENDESK.init        =  function (pref) {
     //this.base_url  = "http://jn.zendesk.com"; //pref.get ('highriseUrl');
     //this.user      = "oren@junctionnetworks.com";
     //this.pwd       = "XkWHM8ZJ";
-    
+ 
     this.attempts = 0;
-    
+    this.contacts = [];
     if (!(this.base_url && this.user && this.pwd)) {
 	console.log ('ZENDESK APP :: Init Failed ' + this.base_url);
 	return;
     }
     
-    var to_func;
+    this.paginate = 1;
+    var to_func, failed_to;
     var that = this;
-    console.log ('ZENDESK APP :: Timestamp not set ');
-    this._getContacts ({
-        onSuccess : function (c) {
-	    to_func       = that._recycle.bind (that); 
-	    that.ts       = new Date();	
+    var f    = function () {
+	if (that.paginate === -1) {
+	    to_func       = that._recycle.bind (that); 	    
 	    that.attempts = 0;
 	    setTimeout  (to_func, that.refresh);
-	    console.log ('ZENDESK APP :: Got contacts count ' + c.length + ' @ ' + that.ts);	     
-        },
-        onError   : function (status) {
-            console.log ('ZENDESK APP :: Error ' + status);
-        }
-    });
+	    return;
+	}
+        that._getContacts ({
+            onSuccess : function (c) {	        	        		    
+	        console.log ('ZENDESK APP :: Got contacts count ' + c.length + ' @ Page ' + that.paginate);
+		setTimeout (f, 2000);
+            },
+            onError   : function (status) {
+                console.log ('ZENDESK APP :: Error ' + status);
+		that.attempts += 1;
+		to_func        = that._recycle.bind (that);
+	        failed_to      = 60000 * that.attempts;
+		setTimeout  (to_func, failed_to);
+            }
+        });
+    };
+    setTimeout (f, 2000);
 };
 
 ZENDESK._recycle       = function () {
     var to_func, failed_to;
-    var that = this;
-    console.log ('ZENDESK APP :: Recycle contacts & companies');
-    this._getContacts ({
-        onSuccess : function (c) {	    
-	    delete that.ts;	
-	    to_func       = that._recycle.bind (that);
+    var that      = this;
+    this.contacts = [];    
+    that.paginate = 1;
+    console.log ('ZENDESK APP :: Recycle people');
+    var f    = function  () {
+	if (that.paginate === -1) {
 	    that.attempts = 0;
+	    to_func       = that._recycle.bind (that);
 	    setTimeout  (to_func, that.refresh);	    
-	    console.log ('ZENDESK APP :: Recycled ' + c.length + ' contacts @ ' + new Date());
-	},
-	onError   : function (status) {
-	    that.attempts += 1;
-	    if (that.attempts <= 5) {
-		failed_to = 60000 * that.attempts; 
-		to_func   = that._recycle.bind (that);		
-                setTimeout  (to_func, failed_to);
-		console.log ('ZENDESK APP :: Failed to connect on ' + that.attempts + ' attempts, will try again');
-	    } else {
-		console.log ('ZENDESK APP :: CRITICAL FAILURE, tried to connect to API more than  5 time(s)');
-	    }
-	    console.log ('ZENDESK APP :: Error ' + status);
+	    return;
 	}
-    });
+	that._getContacts ({
+	    onSuccess : function (c) {	    	        				
+		console.log ('ZENDESK APP :: Recycled ' + c.length + ' contacts @ Page ' + that.paginate);
+		setTimeout (f, 2000);
+	    },
+	    onError   : function (status) {
+		that.attempts += 1;
+		if (that.attempts <= 5) {
+		    failed_to = 60000 * that.attempts; 
+		    to_func   = that._recycle.bind (that);		
+		    setTimeout  (to_func, failed_to);
+		    console.log ('ZENDESK APP :: Failed to connect on ' + that.attempts + ' attempts, will try again');
+		} else {
+		    console.log ('ZENDESK APP :: CRITICAL FAILURE, tried to connect to API more than  5 time(s)');
+		}
+		console.log ('ZENDESK APP :: Error ' + status);
+	    }
+	});
+    };
+    setTimeout (f, 2000);
 };
 
-ZENDESK._getContacts = function (call) {
+ZENDESK._getContacts = function (call, page) {
    var xhr  = new XMLHttpRequest();
    var that = this;
+   var usr_count;
    xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) {
          return false;
       }
       if (xhr.status !== 200) {
-         call.onError (xhr.status);
+         call.onError   (xhr.status);
       } else {	  
 	 that._parseContactsXML (xhr.responseText);
-	 call.onSuccess         (that.contacts);
+	 call.onSuccess (that.contacts);
       }
       return true;
    };
 
-   xhr.open ("GET", this.base_url + '/users.xml?role=0', true, this.user, this.pwd);
+   xhr.open ("GET", this.base_url + '/users.xml?role=0&page=' + this.paginate, true, this.user, this.pwd);
    xhr.send ();
 };
 
@@ -314,30 +346,38 @@ ZENDESK._parseContactsXML = function (xml) {
     var i, j, phone_node, phone, full_name, location, person_id;
     var xmlobject   = (new DOMParser()).parseFromString(xml, "text/xml");
     var root_node   = xmlobject.getElementsByTagName("users")[0];
-    var user_nodes  = root_node.getElementsByTagName("user");
-    var node_len    = user_nodes.length;
-    
-    this.contacts = [];
-    for (i = 0 ; i < node_len ; i += 1) {
-	person_id  = user_nodes[i].getElementsByTagName ("id")   [0].firstChild.nodeValue;
-	full_name  = user_nodes[i].getElementsByTagName ("name") [0].firstChild.nodeValue;
-	phone_node = user_nodes[i].getElementsByTagName ("phone");
-	if (phone_node && phone_node.length) { 
-	    console.log ("ZENDESK APP :: Phone node was found " + user_nodes[i].getElementsByTagName ("phone").length);
-	    if (phone_node[0].firstChild && phone_node[0].firstChild.nodeValue) {	    
-		phone      = phone_node[0].firstChild.nodeValue;
-		phone_num  = this._normalizePhoneNumber (phone);
+    var user_count  = 0, user_nodes, len;
+    if (xmlobject.getElementsByTagName("users") && xmlobject.getElementsByTagName("users").length ) {
+        user_count  = root_node.getAttribute ("count");
+	user_nodes  = root_node.getElementsByTagName("user");
+	user_count  = parseInt(user_count, 10);
+	for (i = 0, len = user_nodes.length  ; i < len ; i += 1) {
+	    person_id  = user_nodes[i].getElementsByTagName ("id")   [0].firstChild.nodeValue;
+	    full_name  = user_nodes[i].getElementsByTagName ("name") [0].firstChild.nodeValue;
+	    phone_node = user_nodes[i].getElementsByTagName ("phone");
+	    if (phone_node && phone_node.length) { 
+		if (phone_node[0].firstChild && phone_node[0].firstChild.nodeValue) {	    
+		    phone      = phone_node[0].firstChild.nodeValue;
+		    phone_num  = this._normalizePhoneNumber (phone);
 	
-		var person_obj = {
-		    "id"           : person_id,
-		    "full_name"    : full_name,	    
-		    "phone_number" : phone_num
-		};
+		    var person_obj = {
+			"id"           : person_id,
+			"full_name"    : full_name,	    
+			"phone_number" : phone_num
+		    };
 
-		if (phone_num) {
-		    this.contacts.push (person_obj);
+		    if (phone_num) {
+			this.contacts.push (person_obj);
+		    }
 		}
 	    }
 	}
+    }
+
+    console.log ("ZENDESK APP :: User count " + user_count);
+    if (user_count < 15) {
+	this.paginate  = -1;
+    } else {
+	this.paginate += 1;
     }
 };

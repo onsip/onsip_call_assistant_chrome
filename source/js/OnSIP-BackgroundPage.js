@@ -13,7 +13,8 @@ var BG_APP = {
 
 BG_APP.activeCallCreated   = function ( items ) {    
     var i, n, item, phone, len, name, 
-    cont_highrise, cont_zendesk, caption;
+        cont_highrise, cont_zendesk, caption;
+    var that = this;
     dbg.log ('BG_APP LOG :: Active Call Created');
     for (i = 0, len = items.length; i < len; i++) {
 	item          = items[i];
@@ -22,29 +23,45 @@ BG_APP.activeCallCreated   = function ( items ) {
 	cont_zendesk  = zendesk_app .findContact (phone + '');
 	name          = this._normalizeName (cont_zendesk, cont_highrise);
 	phone         = name || phone;
-	caption       = "Calling";
-	if (cont_zendesk && cont_zendesk.id) {
-	    var r = zendesk_app.search ( cont_zendesk.id );
-	    if (r && r.count) {
-		caption += " (OPEN TICKETS : " + r.count + ")";
-	    }
-	}
+	caption       = "Calling: ";
 	
-	n        = webkitNotifications.createNotification ('images/icon-48.png', 
-							 caption, formatPhoneNum('' + phone));  
-	n.onclick = function () {
-            //OX_EXT.cancelCall (item);
-	    chrome.tabs.create({url: 'http://jn.zendesk.com/rules/2007686'});
+	var f_notification = {
+            onSuccess : function (record_count, subject, is_onsip, nice_id) {
+                if (record_count) {
+                    caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
+		    subject  = subject.substr (0, 60);
+                } else {
+		    subject  = "To: " + formatPhoneNum('' + phone);
+		}
+                n  = webkitNotifications.createNotification ('images/icon-48.png',
+							     caption, subject);
+                n.onclick = function () {
+                    //OX_EXT.cancelCall (item);
+		    if (!nice_id) {
+			chrome.tabs.create({url: 'http://jn.zendesk.com/rules/2007686'});
+		    } else {
+			chrome.tabs.create({url: 'http://jn.zendesk.com/tickets/' + nice_id});
+		    }
+                }
+                n.uri               = item.uri.query;
+                n.phone             = formatPhoneNum('' + phone);
+                n.contact_highrise  = cont_highrise;
+                n.contact_zendesk   = cont_zendesk;
+		n.init_date         = new Date();
+		n.is_onsip          = (is_onsip) ? is_onsip : false;
+                n.show();
+		
+                that.notifications.push (n);
+            },
+            onError  : function () {}
+        };
+
+        if (cont_zendesk && cont_zendesk.id) {
+            zendesk_app.search ( cont_zendesk.id, f_notification);
+        } else {
+            f_notification.onSuccess ();
         }
-
-	n.uri     = item.uri.query;
-	n.phone   = formatPhoneNum('' + phone);
-	n.contact_highrise  = cont_highrise;
-	n.contact_zendesk   = cont_zendesk;
-        n.show();
-
-	this.notifications.push (n);
-    }    
+    }
 };
 
 BG_APP.activeCallRequested = function ( items ) {
@@ -55,7 +72,7 @@ BG_APP.activeCallRequested = function ( items ) {
     for (i = 0, len = items.length; i < len; i++) {
 	item          = items[i];
 	is_setup      = isSetupCall (item.fromURI) 
-        caption       = is_setup ? "Call Setup" : "Incoming Call";	
+        caption       = is_setup ? "Call Setup: " : "Incoming Call: ";	
 	phone         = extractPhoneNumber(item.fromURI);
 	cont_highrise = highrise_app.findContact (phone + ''); 	        
 	cont_zendesk  = zendesk_app .findContact (phone + '');
@@ -63,29 +80,39 @@ BG_APP.activeCallRequested = function ( items ) {
 	phone         = name || phone;
 	
 	var f_notification = {
-	    onSuccess : function (record_count, subject) {
+	    onSuccess : function (record_count, subject, is_onsip, nice_id) {
 		if (record_count) {
-		    caption += " (unresolved: " + record_count + ")";
-		}
+                    caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
+		    subject  = subject.substr (0, 60);
+                } else {
+		    if (!is_setup) {
+			subject  = "From: " + formatPhoneNum('' + phone);
+		    } else {
+			subject  = "Setup: " + formatPhoneNum('' + phone);
+		    }
+		}                		
 	        n  = webkitNotifications.createNotification ('images/icon-48.png', 
-							 caption,
-							 'From: ' + formatPhoneNum('' + phone));
+							     caption, subject);				      
 		n.onclick = function () {
-	            //OX_EXT.cancelCall (item);
-	            chrome.tabs.create({url: 'http://jn.zendesk.com/rules/2007686'});
+	            //OX_EXT.cancelCall (item);	            
+		    if (!nice_id) {
+			chrome.tabs.create({url: 'http://jn.zendesk.com/rules/2007686'});
+                    } else {
+			chrome.tabs.create({url: 'http://jn.zendesk.com/tickets/' + nice_id});
+                    }
 		}
 		n.uri               = item.uri.query;
 		n.phone             = formatPhoneNum('' + phone);
 		n.is_setup          = is_setup;
 		n.contact_highrise  = cont_highrise;
 		n.contact_zendesk   = cont_zendesk;
+		n.init_date         = new Date();
+		n.is_onsip          = (is_onsip) ? is_onsip : false;
 		n.show();
 
 		that.notifications.push (n);
 	    },
-	    onError  : function () {
-
-	    }
+	    onError  : function () {}
 	};
 
 	if (cont_zendesk && cont_zendesk.id) {
@@ -93,7 +120,6 @@ BG_APP.activeCallRequested = function ( items ) {
         } else {
 	    f_notification.onSuccess ();
 	}
-
     }
 };
 
@@ -147,7 +173,7 @@ BG_APP.activeCallConfirmed = function ( items ) {
        var f = function() {
 	   that._cancelNotifications (q);
        };
-       setTimeout (f, 1000);
+       setTimeout (f, 3000);
    }
 };
 
@@ -164,7 +190,7 @@ BG_APP.activeCallRetract   = function (itemURI) {
 	var f = function () {	
 	    that._cancelNotifications (q);
 	};
-	setTimeout(f, 1000);
+	setTimeout(f, 3000);
     }
 };
 
@@ -180,7 +206,7 @@ BG_APP._postNotetoProfile  = function (item) {
 		if (pref.get ('highriseEnabled') && costumer_hr && costumer_hr.id) {		
 		    highrise_app.postNote (costumer_hr, pref.get('userTimezone'));		    		
 		}
-		if (pref.get ('zendeskEnabled')) {
+		if (pref.get ('zendeskEnabled') && !this.notifications[i].is_onsip) {		    
 		    if (costumer_zd && costumer_zd.id) {
 			zendesk_app.postNote  (costumer_zd, pref.get('userTimezone'));
 		    } else {
@@ -197,7 +223,7 @@ BG_APP._postNotetoProfile  = function (item) {
 BG_APP._cancelNotifications = function (item) {
     dbg.log ('BG_APP :: ' + this.notifications.length + ' notifications ');    
     var a = [];
-    var n = this.notifications.pop();
+    var n = this.notifications.pop();    
     while (n) {	
 	if (item === n.uri) {	    
 	    n.cancel();

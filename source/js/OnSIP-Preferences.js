@@ -19,6 +19,7 @@ var OnSIP_Preferences = {
 	zendeskUrl      : 'yourdomain.zendesk.com',
 	zendeskUsr      : 'you@domain.com',
 	zendeskPwd      : 'Please enter your password',
+	autoGenTickets  : true,
 
         userTimezone    : 0,
 		
