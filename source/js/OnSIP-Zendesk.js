@@ -1,12 +1,12 @@
-/** Highrise library for OnSIP-Click-To-Call **/
+/** ZENDESK library for OnSIP-Click-To-Call **/
 
 var ZENDESK = {
     'contacts' : [],
-    'base_url' : 'http://jn.zendesk.com',
-    'user'     : 'oren@junctionnetworks.com',
-    'pwd'      : 'XkWHM8ZJ',
+    'base_url' : '',
+    'user'     : '',
+    'pwd'      : '',
     'attempts' : 0,
-    'refresh'  : 60000 * 45, // Refresh every 45 min
+    'refresh'  : 60000 * 90, // Refresh every 1.5 hours 
     'paginate' : -1
 };
 
@@ -34,7 +34,7 @@ ZENDESK.verify = function (call, zendesk_url, user, pwd) {
 	 }
       } 
    }
-   console.log ('ZENDESK APP :: Verifying Zendesk account with ' + user + ' - ' + pwd + ' - ' + zendesk_url);
+   console.log ('ZENDESK APP :: Verifying Zendesk account with ' + user + ' - ' + zendesk_url);
    xhr.open('GET', zendesk_url + '/users/current.xml', false, user, pwd);
    xhr.send();
 };
@@ -84,7 +84,7 @@ ZENDESK._createDefaultUnknownTicket = function (phone) {
 
 
 /** Convention 
- *    <ticket>
+ *   <ticket>
  *      <priority-id> {STUFF} </priority-id>
  *      <description> {STUFF} </description>
  *      <requester_id>{STUFF} </requester_id>
@@ -236,6 +236,7 @@ ZENDESK._search = function (requester_id, call) {
             }
         } else {
             if (call && call.onSuccess) {
+		/** Uncomment to print out XML response from Zendesk service **/
 		//console.log ('ZENDESK APP :: search result ' + xhr.responseText);
                 call.onSuccess (xhr.responseText);
             }
@@ -247,10 +248,10 @@ ZENDESK._search = function (requester_id, call) {
     xhr.send ();
 };
 
-ZENDESK.init        =  function (pref) {
-    //this.base_url  = "http://jn.zendesk.com"; //pref.get ('highriseUrl');
-    //this.user      = "oren@junctionnetworks.com";
-    //this.pwd       = "XkWHM8ZJ";
+ZENDESK.init      = function (pref) {
+    this.base_url = pref.get ('zendeskUrl');
+    this.user     = pref.get ('zendeskUsr');
+    this.pwd      = pref.get ('zendeskPwd');
  
     this.attempts = 0;
     this.contacts = [];

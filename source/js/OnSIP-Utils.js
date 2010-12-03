@@ -94,9 +94,13 @@ Array.prototype.unique = function () {
 }
 
 /** Format URL **/
-function formatUrl (str) {
+function formatUrl (str, unsecure) {
     var res = str.replace(/(http[s]?:\/\/)+/, '');
-    return 'https://' + res;
+    if (unsecure) {
+	return 'http://' + res;
+    } else {
+	return 'https://' + res;
+    }
 }
 
 /** 

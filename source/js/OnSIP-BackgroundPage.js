@@ -8,7 +8,8 @@ var extension    = null;
 
 /** Setup Highrise callback hooks **/
 var BG_APP = {
-    "notifications" : []
+    "notifications" : [],
+    "launched_n"    : false
 };
 
 BG_APP.activeCallCreated   = function ( items ) {    
@@ -29,25 +30,27 @@ BG_APP.activeCallCreated   = function ( items ) {
             onSuccess : function (record_count, subject, is_onsip, nice_id) {
                 if (record_count) {
                     caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
-		    subject  = subject.substr (0, 60);
+		    subject  = subject.substr (0, 60).toLowerCase();
                 } else {
 		    subject  = "To: " + formatPhoneNum('' + phone);
 		}
                 n  = webkitNotifications.createNotification ('images/icon-48.png',
-							     caption, subject);
+							     caption, subject);		
                 n.onclick = function () {
-                    //OX_EXT.cancelCall (item);
-		    if (!nice_id) {
-			chrome.tabs.create({url: 'http://jn.zendesk.com/rules/2007686'});
+		    if (pref.get('zendeskEnabled')) {                   
+			if (!nice_id) {
+			    chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
+			} else {
+			    chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
+			}
 		    } else {
-			chrome.tabs.create({url: 'http://jn.zendesk.com/tickets/' + nice_id});
+			OX_EXT.cancelCall (item);
 		    }
                 }
                 n.uri               = item.uri.query;
                 n.phone             = formatPhoneNum('' + phone);
                 n.contact_highrise  = cont_highrise;
                 n.contact_zendesk   = cont_zendesk;
-		n.init_date         = new Date();
 		n.is_onsip          = (is_onsip) ? is_onsip : false;
                 n.show();
 		
@@ -56,22 +59,33 @@ BG_APP.activeCallCreated   = function ( items ) {
             onError  : function () {}
         };
 
-        if (cont_zendesk && cont_zendesk.id) {
-            zendesk_app.search ( cont_zendesk.id, f_notification);
-        } else {
-            f_notification.onSuccess ();
-        }
+	/** On Call Created. If a notification already exists then we won't produce another. **/
+	if (this.notifications.length === 0) {
+	    if (cont_zendesk && cont_zendesk.id) {
+		zendesk_app.search ( cont_zendesk.id, f_notification);
+	    } else {
+		f_notification.onSuccess ();
+	    }
+	}
     }
 };
 
 BG_APP.activeCallRequested = function ( items ) {
-    var i, n, item, phone, len, cont_highrise, 
+    var i, n, item, phone, len, cont_highrise,
         cont_zendesk, caption, name, is_setup, that;
-    var that = this;
+    var that = this;    
+    if (this.notifications.length === 0) {
+	//this.launched_n = false;
+    }
     dbg.log ('BG_APP LOG :: Active Call Requested');
     for (i = 0, len = items.length; i < len; i++) {
-	item          = items[i];
-	is_setup      = isSetupCall (item.fromURI) 
+	item        = items[i];
+	is_setup    = isSetupCall (item.fromURI); 
+	/** Temporarily adding this feature 12/3/2010 **/
+	/** If this is just a call setup, then we don't display notification **/
+	if (is_setup) {
+	    continue;
+	}
         caption       = is_setup ? "Call Setup: " : "Incoming Call: ";	
 	phone         = extractPhoneNumber(item.fromURI);
 	cont_highrise = highrise_app.findContact (phone + ''); 	        
@@ -83,43 +97,53 @@ BG_APP.activeCallRequested = function ( items ) {
 	    onSuccess : function (record_count, subject, is_onsip, nice_id) {
 		if (record_count) {
                     caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
-		    subject  = subject.substr (0, 60);
+		    subject  = subject.substr(0, 60).toLowerCase();
                 } else {
 		    if (!is_setup) {
-			subject  = "From: " + formatPhoneNum('' + phone);
+			subject  = "From: "  + formatPhoneNum('' + phone);
 		    } else {
 			subject  = "Setup: " + formatPhoneNum('' + phone);
 		    }
 		}                		
 	        n  = webkitNotifications.createNotification ('images/icon-48.png', 
 							     caption, subject);				      
-		n.onclick = function () {
-	            //OX_EXT.cancelCall (item);	            
-		    if (!nice_id) {
-			chrome.tabs.create({url: 'http://jn.zendesk.com/rules/2007686'});
-                    } else {
-			chrome.tabs.create({url: 'http://jn.zendesk.com/tickets/' + nice_id});
-                    }
+		n.onclick = function () {	
+		    if (pref.get('zendeskEnabled')) {
+			if (!nice_id) {
+			    chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
+			} else {
+			    chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
+			}
+		    } else {
+			OX_EXT.cancelCall (item);
+		    }
 		}
 		n.uri               = item.uri.query;
 		n.phone             = formatPhoneNum('' + phone);
 		n.is_setup          = is_setup;
 		n.contact_highrise  = cont_highrise;
 		n.contact_zendesk   = cont_zendesk;
-		n.init_date         = new Date();
 		n.is_onsip          = (is_onsip) ? is_onsip : false;
 		n.flag_incoming     = true;
 		n.show();
 
 		that.notifications.push (n);
+		that.launched_n = false;
 	    },
-	    onError  : function () {}
+	    onError  : function () {
+		that.launched_n = false;
+	    }
 	};
 
-	if (cont_zendesk && cont_zendesk.id) {
-            zendesk_app.search ( cont_zendesk.id, f_notification);                
-        } else {
-	    f_notification.onSuccess ();
+	var p = formatPhoneNum('' + phone);
+	console.log ('BG_APP LOG :: Is Launching notification ' + this.launched_n);
+	if (!this._isNotificationShowing (p) && !this.launched_n) {
+	    this.launched_n = true;
+	    if (cont_zendesk && cont_zendesk.id) {
+		zendesk_app.search ( cont_zendesk.id, f_notification);                
+	    } else {
+		f_notification.onSuccess ();
+	    }
 	}
     }
 };
@@ -174,7 +198,7 @@ BG_APP.activeCallConfirmed = function ( items ) {
        var f = function() {
 	   that._cancelNotifications (q);
        };
-       setTimeout (f, 3000);
+       setTimeout (f, 2000);
    }
 };
 
@@ -191,7 +215,7 @@ BG_APP.activeCallRetract   = function (itemURI) {
 	var f = function () {	
 	    that._cancelNotifications (q);
 	};
-	setTimeout(f, 3000);
+	setTimeout(f, 1000);
     }
 };
 
@@ -235,6 +259,18 @@ BG_APP._cancelNotifications = function (item) {
 	n = this.notifications.pop();
     }
     this.notifications = a;        
+};
+
+BG_APP._isNotificationShowing = function (item) {
+    var i, len;
+    var is_showing = false;
+    for (i = 0, len = this.notifications.length; i < len; i += 1) {
+        if (item === this.notifications[i].phone) {
+	    is_showing = true;
+	    break;
+	}
+    }
+    return is_showing;
 };
 
 /** Connect, subscribe, and register to XMPP API **/
