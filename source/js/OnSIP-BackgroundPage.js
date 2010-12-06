@@ -5,6 +5,7 @@ var pref         = OnSIP_Preferences;
 var highrise_app = HIGHRISE;
 var zendesk_app  = ZENDESK;
 var extension    = null;
+var state_log    = [{ 'state':'', 'time':new Date() }];
 
 /** Setup Highrise callback hooks **/
 var BG_APP = {
@@ -74,9 +75,7 @@ BG_APP.activeCallRequested = function ( items ) {
     var i, n, item, phone, len, cont_highrise,
         cont_zendesk, caption, name, is_setup, that;
     var that = this;    
-    if (this.notifications.length === 0) {
-	//this.launched_n = false;
-    }
+
     dbg.log ('BG_APP LOG :: Active Call Requested');
     for (i = 0, len = items.length; i < len; i++) {
 	item        = items[i];
@@ -140,7 +139,7 @@ BG_APP.activeCallRequested = function ( items ) {
 	if (!this._isNotificationShowing (p) && !this.launched_n) {
 	    this.launched_n = true;
 	    if (cont_zendesk && cont_zendesk.id) {
-		zendesk_app.search ( cont_zendesk.id, f_notification);                
+		zendesk_app.search (cont_zendesk.id, f_notification);                
 	    } else {
 		f_notification.onSuccess ();
 	    }
@@ -301,7 +300,7 @@ if (pref && pref.get ('highriseEnabled') === true) {
 }
 
 /** Initialize Zendesk with Contacts **/
-dbg.log ('CHROME Background :: Zend DESK ENABLED --> ' + pref.get ('zendeskEnabled'));
+dbg.log ('CHROME Background :: Zendesk enabled --> ' + pref.get ('zendeskEnabled'));
 if (pref && pref.get ('zendeskEnabled') === true) {
     zendesk_app.init (pref);
 }
@@ -311,6 +310,65 @@ chrome.browserAction.onClicked.addListener ( function (TAB) {
     dbg.log ('CHROME Background :: clicked enable / disable icon');
     extension.toggle ();
  });
+
+/** Stores a state every time an "active" event is sent, up to 20 items. **/
+chrome.idle.onStateChanged.addListener(function(newstate) {
+    var time = new Date();
+    if (state_log.length >= 20) {
+	state_log.pop();
+    }
+    state_log.unshift({'state':newstate, 'time':time});
+    console.log ('CHROME Background :: Logged a new state @ ' + time);
+    /** Rebound BOSH logic **/
+    if (state_log.length >= 2) {
+	var d_past = state_log[1].time;
+	var d_now  = state_log[0].time;	
+	var diff   = d_now.getTime() - d_past.getTime();
+
+	/** These are the minutes in idle **/
+	var min    = Math.floor (diff/1000/60);
+	
+	console.log ('CHROME Background :: Minutes since idle ' + min);
+	if (min >= 2) {
+	    dbg.log ('CHROME Background :: IDLE for ' + min + ' minutes lets RE-ESTABLISH connection');
+	    var do_exec = function () {	        
+		if (OX_EXT.failures === 0 || OX_EXT.failures === OX_EXT.MAX_FAILURES) {		
+		    BG_APP.launched_n = false;
+		    OX_EXT.init   (pref, {
+		        onSuccess : function () {
+		            dbg.log ('CHROME Background :: Succeeded in OX_EXT.init for REBOUND connecting & subscribing');
+		        },
+		        onError   : function (error) {
+		            dbg.log ('CHROME Background :: There was an error in REBOUND OX_EXT INIT ' + error);
+	                }
+	            });
+	        } else {
+		    var wt = 1000 * (OX_EXT.failures * (OX_EXT.failures + 1));
+		    setTimeout (do_exec, wt);
+	        }
+
+		/** Load and initialize Highrise with contacts **/
+		if (pref && pref.get ('highriseEnabled') === true) {
+		    highrise_app.init(pref);
+		}
+
+		/** Initialize Zendesk with Contacts **/		
+		if (pref && pref.get ('zendeskEnabled') === true) {
+		    zendesk_app.init (pref);
+		}
+	    };
+	    do_exec();
+	}
+    }
+});
+
+var sc = function () {
+    chrome.idle.queryState(15, function (newstate) {
+        console.log ('CHROME Background :: State Check -> ' + newstate);
+    });
+    setTimeout (sc, 90000);
+};
+sc();
 
 /** Add listener for requests from the pages **/          
 chrome.extension.onRequest.addListener    ( function (request, sender, sendResponse) {    

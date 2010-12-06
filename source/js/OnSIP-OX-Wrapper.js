@@ -52,36 +52,20 @@ OX_EXT.init = function (pref, callback) {
         
     if (reset) {
         var to = that._connect (callback);   
-	setTimeout (to, 5000);
+	setTimeout (to, that.DEF_TIMEOUT * that.failures);
     } else {
 	that._connect (callback);
     }
 };
 
-/**
-OX_EXT.onApplicationFocus () {
-    var connecting = false;
-    if (this.failures > 0 && this.failures <= MAX_FAILURES && connecting === false) {
-	connecting = true;
-	this._connect (
-	    onSuccess : function () {
-		connecting = false;     		
-	    },
-	    onError   : function (error) {			   
-	        connecting = false;		
-	   }
-	)
-    }  
-};
-**/
-
 OX_EXT._connect   = function (callback) {
     var that      = this;
-    var timeout   = this.DEF_TIMEOUT;
+    var timeout   = this.DEF_TIMEOUT * that.failures;
     var rebound_f = function () {	
 	that.failures += 1;
 	if (that.failures <= that.MAX_FAILURES) {
 	    console.log ('STROPHE :: Trying to re-bound & re-establish connection');
+	    console.log ('STROPHE :: Connecting ' + that.jid + ' - ' + that.from_address);
 	    that._connect (callback);
 	}
     }
