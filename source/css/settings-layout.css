@@ -50,6 +50,12 @@ H4	   { font-weight:bold; font-size:14px; margin:14px 0; padding:0; }
 #footer		{ position:relative; width:100%; height:40px; padding:20px 0 0; margin:-60px 0 0; font-size:12px; color:#FFF; background:#003B73 url(../images/bg-footer.jpg) top left repeat-x; }
 #footerContent	{ position:relative; width:980px; margin:0 auto; text-align:center; }
 
+#header-zendesk  { cursor:pointer; text-decoration:underline }
+#header-highrise { cursor:pointer; text-decoration:underline }
+.checkmark  { background : url(../images/i_ok.png) no-repeat; background-position: 30% 80%; padding-top:5px; padding-bottom:0px;};
+#input-zendesk  { display:none }
+#input-highrise { display:none }
+
 /*highrise modification*/
 select#timezone{
     width: 270px;

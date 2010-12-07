@@ -12,11 +12,14 @@ var HIGHRISE = {
 
 /** Tries to retrieve /people.xml and looks for error code 200 **/
 HIGHRISE.verifyToken = function (call, highrise_url, token) {
-   var xhr = new XMLHttpRequest ();
-   
+   var xhr   = new XMLHttpRequest ();
+   var ok    = false;
+   var tmout = 30000; // 30 sec
+ 
    xhr.onreadystatechange = function () {
       if (xhr.readyState === 4) {
          if (xhr.status === 200) {
+	     ok = true;
 	     call.onSuccess ();
 	 } else {
 	     call.onError (xhr.status);
@@ -27,7 +30,17 @@ HIGHRISE.verifyToken = function (call, highrise_url, token) {
    this.base_url = highrise_url;
    this.token    = token;
 
+   var a = function () {
+       if (!ok) {
+	   xhr.abort();
+	   if (call && call.onError) {
+	       call.onError('aborted');
+	   }
+       }
+   };
+
    xhr.open('GET', this.base_url + '/people.xml', false, this.token, 'X');
+   setTimeout (a, tmout);
    xhr.send();
 };
 
@@ -55,8 +68,6 @@ HIGHRISE._createDefaultNote = function (costumer, user_tz) {
 /** Note has the convention <note><body> {STUFF} </body></note> **/
 HIGHRISE.postNote = function (costumer, user_tz) {
     var customer, note;
-    //clean_phone_number = this._normalizePhoneNumber (phone_number);
-    //costumer           = this.findContact (clean_phone_number);
     if (costumer) {
 	note = this._createDefaultNote (costumer, user_tz);
 	if (note && note.length) {
@@ -111,6 +122,8 @@ HIGHRISE._normalizePhoneNumber = function (phone_number) {
 HIGHRISE.postNoteToProfile = function (customer, note, call) {
     var xhr  = new XMLHttpRequest();
     var that = this;
+    var ok   = false;
+    var tmout= 60000;
 
     xhr.onreadystatechange = function () {	
 	if (xhr.readyState !== 4) {
@@ -120,19 +133,30 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
 	    if (that.call && that.call.onError) {
 	        that.call.onError (xhr.status);
 	    }
-	} else{
+	} else {
 	    if (that.call && that.call.onSuccess) {
 	        that.call.onSuccess ();
 	    }
 	}
 	return true;
     };
+
+    var a = function () {
+	if (!ok) {
+	    xhr.abort();
+	    console.log ('HIGHRISE APP :: ABORTING xhr call to GetCompanies');
+	    if (call && call.onError) {
+		call.onError('aborted getCompanies');
+	    }
+	}
+    };
         
     xhr.open ("POST", this.base_url + "/" +  customer.type + "/" + customer.id + "/notes.xml", true, this.token, 'X');    
+    setTimeout (a, tmout);
     xhr.send (note);
 };
 
-HIGHRISE.init        =  function (pref) {
+HIGHRISE.init     =  function (pref) {    
     this.base_url = pref.get ('highriseUrl');
     this.token    = pref.get ('highriseToken');
     this.attempts = 0;
@@ -141,33 +165,30 @@ HIGHRISE.init        =  function (pref) {
 	console.log ('HIGHRISE APP :: Init Failed ' + this.base_url + ' -- ' + this.token);
 	return;
     }
-    
-    var to_func;
-    //if (!(this.ts)) {
-       var that = this;
-       console.log ('HIGHRISE APP :: Timestamp not set ');
-       this._getContacts ({
-          onSuccess : function (c) {
-	     to_func       = that._recycle.bind (that); 
-	     that.ts       = new Date();	
-	     that.attempts = 0;
-	     setTimeout  (to_func, that.refresh);
-	     console.log ('HIGHRISE APP :: Got contacts @ ' + that.ts);	     
-          },
-          onError   : function (status) {
-             console.log ('HIGHRISE APP :: Error ' + status);
-          }
-       });
-       this._getCompanies ({
-         onSuccess : function (c) {
+    var to_func;     
+    var that = this;
+    console.log ('HIGHRISE APP :: Get Contacts & Company names');
+    this._getContacts ({
+        onSuccess : function (c) {
+	    to_func       = that._recycle.bind (that); 
+	    that.ts       = new Date();	
+	    that.attempts = 0;
+	    setTimeout  (to_func, that.refresh);
+	    console.log ('HIGHRISE APP :: Got contacts @ ' + that.ts);	     
+        },
+        onError   : function (status) {
+            console.log ('HIGHRISE APP :: Error ' + status);
+        }
+    });
+    this._getCompanies ({
+        onSuccess : function (c) {
 	    that.ts = new Date();
             console.log ('HIGHRISE APP :: Got companies @ ' + that.ts);
-         },
-         onError   : function (status) {
+        },
+        onError   : function (status) {
             console.log ('HIGHRISE APP :: Error ' + status);
-         }
-       });
-    //}
+        }
+    });   
 };
 
 HIGHRISE._recycle       = function () {
@@ -208,6 +229,9 @@ HIGHRISE._recycle       = function () {
 HIGHRISE._getContacts = function (call) {
    var xhr  = new XMLHttpRequest();
    var that = this;
+   var ok   = false;
+   var tmout= 90000;
+
    xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) {
          return false;
@@ -215,102 +239,166 @@ HIGHRISE._getContacts = function (call) {
       if (xhr.status !== 200) {
          call.onError (xhr.status);
       } else{	  
+	 ok = true;
 	 that._parseContactsXML (xhr.responseText);
 	 call.onSuccess         (that.contacts);
       }
       return true;
    };
 
+   var a = function () {
+       if (!ok) {
+           xhr.abort();
+	   console.log ('HIGHRISE APP :: ABORTING xhr call to GetContacts');
+           if (call && call.onError) {
+               call.onError('aborted getContacts');
+           }
+       }
+   };
+
    xhr.open ("GET", this.base_url + '/people.xml', true, this.token, 'X');
+   setTimeout (a, tmout);
    xhr.send ();
 };
 
-                                                                                                                                                                                         
-/** Retrieve companies from highrise **/                                                                                                                                                        
+/** Retrieve companies from highrise **/
 HIGHRISE._getCompanies = function (call) {   
    var xhr  = new XMLHttpRequest();
    var that = this;
+   var ok   = false;
+   var tmout= 90000;
+
    xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) {
          return false;
       }
       if (xhr.status !== 200) {
 	  call.onError (xhr.status);         	  
-      } else{      	  
+      } else {      	
+	  ok = true;
 	  that._parseCompaniesXML (xhr.responseText);
 	  call.onSuccess          (that.companies);
       }
       return true;
    };   
 
+   var a = function () {
+       if (!ok) {
+	   xhr.abort();
+	   console.log ('HIGHRISE APP :: ABORTING xhr call to GetCompanies');
+	   if (call && call.onError) {
+	       call.onError('aborted getCompanies');
+	   }
+       }
+   };
+
    xhr.open ("GET", this.base_url + '/companies.xml', true, this.token, 'X');
+   setTimeout (a, tmout);
    xhr.send ();  
 };
 
 HIGHRISE._parseContactsXML = function (xml) {
-    var i, j, phone_num, first_name, last_name, phone_number_nodes = [],
-        location, person_id;
-    var xmlobject      = (new DOMParser()).parseFromString(xml, "text/xml");
-    var root_node      = xmlobject.getElementsByTagName("people")[0];
-    var person_nodes   = root_node.getElementsByTagName("person");
-    var node_len       = person_nodes.length;
-    
+    var i, j, phone_num, first_name, last_name, pn_nodes = [],
+        location, person_id, len;
+    var xmlobject = (new DOMParser()).parseFromString(xml, "text/xml");
+    var root_node = xmlobject.getElementsByTagName("people");
     this.contacts = [];
-    for (i = 0 ; i < node_len ; i += 1) {
-	person_id           = person_nodes[i].getElementsByTagName ("id")[0].firstChild.nodeValue;
-	last_name           = person_nodes[i].getElementsByTagName ("last-name")[0].firstChild.nodeValue;
-	first_name          = person_nodes[i].getElementsByTagName ("first-name")[0].firstChild.nodeValue;
-	phone_number_nodes  = person_nodes[i].getElementsByTagName ("phone-number");
-	var phone_numbers_list = [];
-	for (j = 0; j < phone_number_nodes.length; j += 1) {
-	    phone_num  = phone_number_nodes[j].getElementsByTagName ("number")  [0].firstChild.nodeValue;
-	    location   = phone_number_nodes[j].getElementsByTagName ("location")[0].firstChild.nodeValue;	   
-	    phone_num  = this._normalizePhoneNumber (phone_num);
-	    var ph_obj = {
-		phone_number : phone_num,
-		location     : location
-	    };
-	    phone_numbers_list.push (ph_obj);
+    if (root_node && root_node.length > 0) {
+	root_node = root_node[0];
+    } else {
+	return;
+    }  
+    var person_nodes  = root_node.getElementsByTagName("person");    
+    for (i = 0,   len = person_nodes.length; i < len ; i += 1) {
+	person_id     = person_nodes[i].getElementsByTagName ("id")[0].firstChild.nodeValue;
+	last_name     = person_nodes[i].getElementsByTagName ("last-name");
+	if (last_name && last_name.length > 0 && last_name[0].firstChild) {
+	    last_name = last_name[0].firstChild.nodeValue;
+	} else {
+	    last_name  = '';
 	}
-	var person_obj = {
-	    "id"           : person_id,
-	    "first_name"   : first_name,
-	    "last_name"    : last_name,	    
-	    "phone_numbers": phone_numbers_list
-	};
-      	this.contacts.push (person_obj);
+	first_name     = person_nodes[i].getElementsByTagName ("first-name");
+	if (first_name && first_name.length > 0 && first_name[0].firstChild) {
+	    first_name = first_name[0].firstChild.nodeValue;	   
+	} else {
+	    first_name = '';
+	}
+	pn_nodes       = person_nodes[i].getElementsByTagName ("phone-number");
+	var phone_numbers_list = [];
+	for (j = 0;  j < pn_nodes.length; j += 1) {
+	    phone_num     = pn_nodes[j].getElementsByTagName ("number");
+	    if (phone_num && phone_num.length > 0 && phone_num[0].firstChild) {
+		phone_num = phone_num[0].firstChild.nodeValue;	   			   	   
+		location  = pn_nodes[j].getElementsByTagName ("location");
+		if (location && location.length > 0 && location[0].firstChild) {
+		    location = location[0].firstChild.nodeValue;
+		} else {
+		    location = '';
+		}	   
+		phone_num  = this._normalizePhoneNumber (phone_num);
+		var ph_obj = {
+		    phone_number : phone_num,
+		    location     : location
+		};
+		phone_numbers_list.push (ph_obj);
+	    }
+	}
+	if (phone_numbers_list.length > 0) {
+	    var person_obj = {
+		"id"           : person_id,
+		"first_name"   : first_name,
+		"last_name"    : last_name,	    
+		"phone_numbers": phone_numbers_list
+	    };	
+	    this.contacts.push (person_obj);
+	}
     }
 };
 
 HIGHRISE._parseCompaniesXML = function (xml) {   
-   var i, j, phone_num, company_name, company_id, 
-   location, phone_number_nodes = [];
-   var xmlobject      = (new DOMParser()).parseFromString(xml, "text/xml");
-   var root_node      = xmlobject.getElementsByTagName("companies")[0];
-   var company_nodes  = root_node.getElementsByTagName("company");
-   var node_len       = company_nodes.length;
-
-   this.companies = [];
-   for (i = 0 ; i < node_len ; i += 1) {      
-      company_name        = company_nodes[i].getElementsByTagName ("name")[0].firstChild.nodeValue;
-      company_id          = company_nodes[i].getElementsByTagName ("id")[0].firstChild.nodeValue;
-      phone_number_nodes  = company_nodes[i].getElementsByTagName ("phone-number");
-      var phone_numbers_list = [];
-      for (j = 0; j < phone_number_nodes.length; j += 1) {
-	  phone_num = phone_number_nodes[j].getElementsByTagName ("number")  [0].firstChild.nodeValue;
-	  location  = phone_number_nodes[j].getElementsByTagName ("location")[0].firstChild.nodeValue;
-	  phone_num  = this._normalizePhoneNumber (phone_num);
-	  var ph_obj = {
-	      phone_number : phone_num,
-	      location     : location
-	  };
-	  phone_numbers_list.push (ph_obj);
+   var i, j, len, company_name, company_id, phone_num, pn_nodes = [], location;
+   var xmlobject     = (new DOMParser()).parseFromString(xml, "text/xml");
+   var root_node     = xmlobject.getElementsByTagName("companies");
+   this.companies    = [];
+   if (root_node && root_node.length > 0) {
+       root_node     = root_node[0];
+   } else {
+       return;
+   }
+   var company_nodes = root_node.getElementsByTagName("company");   
+   for (i = 0,   len = company_nodes.length ; i < len ; i += 1) {      
+      company_id     = company_nodes[i].getElementsByTagName ("id")  [0].firstChild.nodeValue;
+      company_name   = company_nodes[i].getElementsByTagName ("name");
+      if (company_name && company_name.length > 0 && company_name[0].firstChild) {
+	  company_name = company_name [0].firstChild.nodeValue;
+	  pn_nodes     = company_nodes[i].getElementsByTagName ("phone-number");
+	  var phone_numbers_list = [];
+	  for (j = 0; j < pn_nodes.length; j += 1) {
+	      phone_num = pn_nodes[j].getElementsByTagName ("number");
+	      if (phone_num &&  phone_num.length > 0 && phone_num[0].firstChild) {
+		  phone_num = phone_num[0].firstChild.nodeValue;
+		  location  = pn_nodes[j].getElementsByTagName ("location");
+		  if (location && location.length > 0 && location[0].firstChild) {    
+		      location = location[0].firstChild.nodeValue;
+		  } else {
+		      location = '';
+		  }
+		  phone_num  = this._normalizePhoneNumber (phone_num);
+		  var ph_obj = {
+		      phone_number : phone_num,
+		      location     : location
+		  };
+		  phone_numbers_list.push (ph_obj);
+	      }
+	  }
+	  if (phone_numbers_list.length > 0) {
+	      var company_obj = {
+		  "id"           : company_id,
+		  "company_name" : company_name,
+		  "phone_numbers": phone_numbers_list
+	      };
+	      this.companies.push (company_obj);
+	  }
       }
-      var company_obj = {
-	  "id"           : company_id,
-	  "company_name" : company_name,
-	  "phone_numbers": phone_numbers_list
-      };
-      this.companies.push (company_obj);
    }
 };

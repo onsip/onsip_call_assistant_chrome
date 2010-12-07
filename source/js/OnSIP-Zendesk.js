@@ -34,6 +34,7 @@ ZENDESK.verify = function (call, zendesk_url, user, pwd) {
 	 }
       } 
    }
+   
    console.log ('ZENDESK APP :: Verifying Zendesk account with ' + user + ' - ' + zendesk_url);
    xhr.open('GET', zendesk_url + '/users/current.xml', false, user, pwd);
    xhr.send();

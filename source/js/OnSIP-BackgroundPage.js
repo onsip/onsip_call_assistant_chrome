@@ -5,6 +5,7 @@ var pref         = OnSIP_Preferences;
 var highrise_app = HIGHRISE;
 var zendesk_app  = ZENDESK;
 var extension    = null;
+var rebound_to   = 10; /** minutes **/
 var state_log    = [{ 'state':'', 'time':new Date() }];
 
 /** Setup Highrise callback hooks **/
@@ -173,7 +174,7 @@ BG_APP._normalizeName    = function () {
             }	    
 	} 
 	if (!normalized_name && c && c.company_name) {
-	    normalized_name = c.first_name + ' ' + c.last_name;
+	    normalized_name = c.company_name;
             normalized_name = trim (normalized_name);
             if (normalized_name.length === 0) {
 		normalized_name = undefined;
@@ -309,7 +310,7 @@ if (pref && pref.get ('zendeskEnabled') === true) {
 chrome.browserAction.onClicked.addListener ( function (TAB) {
     dbg.log ('CHROME Background :: clicked enable / disable icon');
     extension.toggle ();
- });
+});
 
 /** Stores a state every time an "active" event is sent, up to 20 items. **/
 chrome.idle.onStateChanged.addListener(function(newstate) {
@@ -329,35 +330,42 @@ chrome.idle.onStateChanged.addListener(function(newstate) {
 	var min    = Math.floor (diff/1000/60);
 	
 	console.log ('CHROME Background :: Minutes since idle ' + min);
-	if (min >= 2) {
-	    dbg.log ('CHROME Background :: IDLE for ' + min + ' minutes lets RE-ESTABLISH connection');
+	if (min >= rebound_to && pref && pref.get ('onsipCredentialsGood')) {
+	    dbg.log ('CHROME Background :: IDLE for ' + min + ' minutes lets RE-ESTABLISH connection');	    
 	    var do_exec = function () {	        
-		if (OX_EXT.failures === 0 || OX_EXT.failures === OX_EXT.MAX_FAILURES) {		
-		    BG_APP.launched_n = false;
-		    OX_EXT.init   (pref, {
-		        onSuccess : function () {
-		            dbg.log ('CHROME Background :: Succeeded in OX_EXT.init for REBOUND connecting & subscribing');
-		        },
-		        onError   : function (error) {
-		            dbg.log ('CHROME Background :: There was an error in REBOUND OX_EXT INIT ' + error);
-	                }
-	            });
-	        } else {
-		    var wt = 1000 * (OX_EXT.failures * (OX_EXT.failures + 1));
-		    setTimeout (do_exec, wt);
-	        }
-
+		OX_EXT.failures     = 0;
+		OX_EXT.strophe_conn = undefined;		
+		BG_APP.launched_n   = false;		    
+		OX_EXT.init   (pref, {
+		    onSuccess : function () {
+		        dbg.log ('CHROME Background :: Succeeded in OX_EXT.init for REBOUND connecting & subscribing');
+		    },
+		    onError   : function (error) {
+		        dbg.log ('CHROME Background :: There was an error in REBOUND OX_EXT INIT ' + error);
+	            }
+	        });
+	        		
 		/** Load and initialize Highrise with contacts **/
 		if (pref && pref.get ('highriseEnabled') === true) {
 		    highrise_app.init(pref);
 		}
 
 		/** Initialize Zendesk with Contacts **/		
-		if (pref && pref.get ('zendeskEnabled') === true) {
+		if (pref && pref.get ('zendeskEnabled')  === true) {
 		    zendesk_app.init (pref);
 		}
 	    };
-	    do_exec();
+	    
+	    OX_EXT.iConnectCheck  (pref, {
+	        onSuccess : function () {		    
+		    dbg.log ('CHROME Background :: Successfully connected to BOSH Server, do_exec()');
+		    do_exec ();	
+		},
+                onError   : function () {
+		    dbg.log ('CHROME Background :: Failed to connect to BOSH pop off active node ');
+		    state_log.shift();
+		}
+	    });	    
 	}
     }
 });

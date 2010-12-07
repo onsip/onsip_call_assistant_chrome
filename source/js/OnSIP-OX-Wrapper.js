@@ -17,15 +17,53 @@ var OX_EXT = {
 OX_EXT.createStropheConnection = function (url) {
     console.log('ON_EXT :: Initialized Strophe Connection');
     this.strophe_conn = new Strophe.Connection( url );   
-}
+};
+
+OX_EXT.iConnectCheck = function (pref, call) {
+    var xhr  = new XMLHttpRequest();
+    var url  = pref.get ('onsipHttpBase');
+    var ok   = false;
+    var that = this;
+    var tmout = 30000; // 30 sec
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) {
+            return false;
+        }
+        if (xhr.status === 200) {
+	    ok = true;
+	    if (call && call.onSuccess) {
+		return call.onSuccess();
+	    }
+        } else {
+	    if (call && call.onError) {
+		return call.onError();
+	    }
+        }
+    };
+
+    var a = function () {
+	if (!ok) {
+            xhr.abort();
+	    if (call && call.onError) {
+		call.onError();
+	    }
+	}
+    };
+
+    xhr.open ("GET", url, false);
+    console.log ('OX_EXT APP :: Verifying Internet Connectivity');
+    setTimeout (a, tmout);
+    xhr.send ();
+};
 
 OX_EXT.init = function (pref, callback) {        
     var url           = pref.get ('onsipHttpBase');
     var that          = this;
     var reset         = false;
     this.from_address = pref.get ('fromAddress');
-    this.jid          = this.from_address + '/chrome-ox-plugin'; 
     this.pwd          = pref.get ('onsipPassword');
+    this.jid          = this.from_address + '/chrome-ox-plugin'; 
     
     if (this.strophe_conn) {
 	console.log ('OX_EXT :: Resetting Connection');
@@ -53,7 +91,9 @@ OX_EXT.init = function (pref, callback) {
     if (reset) {
         var to = that._connect (callback);   
 	setTimeout (to, that.DEF_TIMEOUT * that.failures);
+	console.log ('OX_EXT :: Reset BOSH *************************');
     } else {
+	console.log ('OX_EXT :: New BOSH Connection &&&&&&&&&&&&&&&&&&&&&&&&&');
 	that._connect (callback);
     }
 };

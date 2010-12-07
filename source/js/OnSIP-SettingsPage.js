@@ -6,7 +6,7 @@ $(function(){
     setToolTips();
 
     /** Set a field behaivior **/
-    SetHelperBehaivior('#options');
+    SetHelperBehavior('#options');
     
     /** Save settings **/
     $('#options').submit ( function(e) {
@@ -18,6 +18,9 @@ $(function(){
 	pref.set('onsipCredentialsGood', false);
 	pref.set('highriseEnabled'     , false);
 	pref.set('zendeskEnabled'      , false);
+
+	$('#header-zendesk'  ).removeClass('checkmark');
+	$('#header-highrise' ).removeClass('checkmark');
 
 	/** Error flags **/	
 	var error_fields = isOnSIPDataEntered ();
@@ -93,12 +96,12 @@ function handleOnSIPLogin () {
 
 	    /** Before showing success message see if Highrise is validated ok, due to asyncronus nature of js **/
 	    if (entered_highrise || entered_zendesk) {
-		if (entered_zendesk) {
+		if (entered_zendesk && !$('#input-zendesk').is(':hidden')) {
 		    console.log('CONTENT PG :: Zendesk credentials entered');
 		    /** Validate provided Zendesk Credentials **/
 		    validateZendeskCredentials ( handleZendeskLogin () );
 		}
-		else if (entered_highrise) {
+		else if (entered_highrise && !$('#input-highrise').is(':hidden')) {
 		    console.log('CONTENT PG :: Highrise credentials entered');		
 		    /** Validate provided Highrise Credentials **/
 		    validateHighriseCredentials( handleHighriseLogin () );
@@ -135,7 +138,8 @@ function handleZendeskLogin () {
 
             /** Set Zendesk Enabled **/
             preferences.set('zendeskEnabled', true);
-            
+            enableZendesk();
+
             $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
             $('#save-options-btn').attr('disabled','');
         },
@@ -161,10 +165,10 @@ function handleHighriseLogin () {
     var obj  = {
         onSuccess : function() {
 	    console.log('CONTENT PG :: Highrise account was verified successfully');
-
+	    
 	    /** Set Highrise Enabled **/
 	    pref.set('highriseEnabled', true);
-	    
+	    enableHighrise ();
 	    $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
 	    $('#save-options-btn').attr('disabled','');
 	},
@@ -346,7 +350,7 @@ function clearAlerts () {
 function hideAllMessages(){
     $('#savedMsg').hide();
     $('#errorMsg').hide();
-    $('#validatingMsg').hide();
+    $('#validatingMsg').hide();        
 }
 
 /** Make fields border red , indicating that those need to be correctly filled **/
@@ -393,10 +397,10 @@ function setDefaultSettings(){
     var timezoneSetting = pref.get('userTimezone');
     if (timezoneSetting) {
         $('#timezone').val (timezoneSetting);
-    }
+    }   
 }
 
-function SetHelperBehaivior(formID){
+function SetHelperBehavior(formID){
     var pref = OnSIP_Preferences;
     /** Behaivior for a Text fields **/
     $(formID).children('fieldset').children('input[type="text"]').each(function(){
@@ -406,7 +410,8 @@ function SetHelperBehaivior(formID){
            }
         });
     });
-    /** Behaivior for password fields **/
+
+    /** Behavior for password fields **/
     $(formID).children('fieldset').children('input[type="password"]').each(function(){
         $(this).focus(function(){
            if( $(this).val() == pref.defaults[$(this).attr('name')]){
@@ -414,6 +419,50 @@ function SetHelperBehaivior(formID){
            }
         });
     });
+
+    console.log ('Zendesk is enabled :: ' + pref.get('zendeskEnabled'));
+    
+    $('#input-zendesk'   ).hide ();
+    $('#input-highrise'  ).hide ();
+    if (pref && pref.get('zendeskEnabled')) {
+	enableZendesk ();	
+    } else if (pref && pref.get('highriseEnabled')) {
+	enableHighrise();
+    }
+
+    $('#header-zendesk').click( function (e) {
+	    if ($('#input-zendesk').is(':hidden')) {
+		$('#input-zendesk').slideDown('slow', function() {
+		     $('#input-highrise').slideUp('slow');
+		});
+	    } else {
+		$('#input-zendesk').slideUp('slow');
+	    }  	    
+    });
+
+    $('#header-highrise').click( function (e) {
+	    if ($('#input-highrise').is(':hidden')) {
+		$('#input-highrise').slideDown('slow', function () {
+		    $('#input-zendesk').slideUp('slow');	
+		});	     		
+	    } else {
+		$('#input-highrise').slideUp('slow');
+	    }  	    
+    });
+}
+
+function enableHighrise() {        
+    $('#header-zendesk' ).removeClass('checkmark');
+    $('#header-highrise').addClass   ('checkmark');
+    $('#input-zendesk'  ).hide ();
+    $('#input-highrise' ).show ();
+}
+
+function enableZendesk () {
+    $('#header-highrise').removeClass('checkmark');
+    $('#header-zendesk' ).addClass   ('checkmark');
+    $('#input-zendesk'  ).show ();
+    $('#input-highrise' ).hide ();
 }
 
 /** Set up Tooltips **/
