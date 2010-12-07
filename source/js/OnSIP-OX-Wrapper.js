@@ -10,8 +10,9 @@ var OX_EXT = {
     "jid"          : undefined,
     "pwd"          : undefined,
     "failures"     : 0,
+    "connecting"   : false,
     "MAX_FAILURES" : 20,
-    "DEF_TIMEOUT"  : 2000
+    "DEF_TIMEOUT"  : 5000
 };
 
 OX_EXT.createStropheConnection = function (url) {
@@ -51,8 +52,8 @@ OX_EXT.iConnectCheck = function (pref, call) {
 	}
     };
 
-    xhr.open ("GET", url, false);
     console.log ('OX_EXT APP :: Verifying Internet Connectivity');
+    xhr.open ("GET", url, false);
     setTimeout (a, tmout);
     xhr.send ();
 };
@@ -64,7 +65,8 @@ OX_EXT.init = function (pref, callback) {
     this.from_address = pref.get ('fromAddress');
     this.pwd          = pref.get ('onsipPassword');
     this.jid          = this.from_address + '/chrome-ox-plugin'; 
-    
+    this.connecting   = false;
+
     if (this.strophe_conn) {
 	console.log ('OX_EXT :: Resetting Connection');
 	this.strophe_conn.disconnect();	
@@ -104,9 +106,14 @@ OX_EXT._connect   = function (callback) {
     var rebound_f = function () {	
 	that.failures += 1;
 	if (that.failures <= that.MAX_FAILURES) {
-	    console.log ('STROPHE :: Trying to re-bound & re-establish connection');
-	    console.log ('STROPHE :: Connecting ' + that.jid + ' - ' + that.from_address);
-	    that._connect (callback);
+	    if (!that.connecting) {
+		console.log ('STROPHE :: Trying to re-bound & re-establish connection');
+		console.log ('STROPHE :: Connecting ' + that.jid + ' - ' + that.from_address);
+		that._connect (callback);
+	    } else {		
+		console.log ('STROPHE :: HOLD trying to re-bound & re-establish connection, set on timer');	
+		setTimeout (rebound_f, 60000);
+	    }
 	}
     }
     OX.StropheAdapter.strophe = this.strophe_conn;    
@@ -115,13 +122,15 @@ OX_EXT._connect   = function (callback) {
            case Strophe.Status.CONNECTING : 
 	       console.log( 'STROPHE :: Connecting ... ' );
 	       break;
-	   case Strophe.Status.CONNFAIL :	       
+	   case Strophe.Status.CONNFAIL :
+	       that.connecting = false;
 	       if (callback && callback.onError) {
 		   callback.onError ('Connection Failed');
 	       }
 	       console.log( 'STROPHE :: Connection failed' );
 	       break;
 	   case Strophe.Status.ERROR :
+	       that.connecting = false;
 	       setTimeout (rebound_f, timeout);
 	       if (callback && callback.onError) {
                    callback.onError ('Connection Error through Strophe');
@@ -131,7 +140,8 @@ OX_EXT._connect   = function (callback) {
 	   case Strophe.Status.AUTHENTICATING :	       
 	       console.log( 'STROPHE :: Authenticating' );
 	       break;
-	   case Strophe.Status.AUTHFAIL:	       
+	   case Strophe.Status.AUTHFAIL:	    
+	       that.connecting = false;
 	       if (callback && callback.onError) {
 		   callback.onError ('Connection Error - Authenticating');
 	       }
@@ -139,8 +149,9 @@ OX_EXT._connect   = function (callback) {
 	       break;
 	   case Strophe.Status.CONNECTED:
 	       console.log( 'STROPHE :: Connected' );
-	       that.failures = 0;
-       	       that.ox_conn  = OX.Connection.extend( { connection : OX.StropheAdapter } ); 
+	       that.connecting = true;
+	       that.failures   = 0;
+       	       that.ox_conn    = OX.Connection.extend( { connection : OX.StropheAdapter } ); 
 	       that.ox_conn.initConnection(); 
 
 	       that.ox_conn.ActiveCalls.registerSubscriptionHandlers();
@@ -248,6 +259,7 @@ OX_EXT.subscribe = function (callback) {
 		    onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
 		        var m = that._recycle.bind (that);
 			setTimeout (m, timeout);
+			that.connecting = false;
 			if (callback && callback.onSuccess) {
 			    console.log ('OX_EXT :: Calling onSuccess method of callback object');
 			    callback.onSuccess ();
@@ -255,6 +267,7 @@ OX_EXT.subscribe = function (callback) {
 			console.log ('OX_EXT :: Successfully Got Subscriptions ');
 		    },
 		    onError   : function (requestedURI, finalURI, packet) {
+			that.connecting = false;
 		        if (callback && callback.onError) {
 		            callback.onError ('Error while trying to retrieve subscriptions');
 			}
@@ -266,12 +279,14 @@ OX_EXT.subscribe = function (callback) {
 		    onSuccess : function (requestedURI, finalURI, subscriptions, packet) {
 		        var f = that._recycle.bind (that);
 			setTimeout (f, timeout);
+			that.connecting = false;
 			if (callback && callback.onSuccess) {
 			    callback.onSuccess ();
 			}
 			console.log ('OX_EXT ::  Successfully Subscribed');
 		    },
 		    onError  : function (requestedURI, finalURI, packet) {
+			that.connecting = false;
 		        if (callback && callback.onError) {
 			    callback.onError ('Error while subscribing');
 			}

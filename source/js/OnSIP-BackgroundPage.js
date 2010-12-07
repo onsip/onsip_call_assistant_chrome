@@ -5,7 +5,7 @@ var pref         = OnSIP_Preferences;
 var highrise_app = HIGHRISE;
 var zendesk_app  = ZENDESK;
 var extension    = null;
-var rebound_to   = 10; /** minutes **/
+var rebound_to   = 20; /** minutes **/
 var state_log    = [{ 'state':'', 'time':new Date() }];
 
 /** Setup Highrise callback hooks **/
@@ -279,11 +279,11 @@ if (pref && pref.get('onsipCredentialsGood') === true && pref.get ('onsipPasswor
     if (pref.get ('onsipPassword').length > 0 && pref.get ('fromAddress').length > 0) {
         OX_EXT.init   (pref, {
             onSuccess : function () {
-	        dbg.log ('Succeeded in OX_EXT.init for connecting & subscribing');
+	        dbg.log ('CHROME Background :: Succeeded in OX_EXT.init for connecting & subscribing');
             },
             onError   : function (error) {	    
                 /** In case of failure, display settings in a new tab **/
-                dbg.log ('There was an error in OX_EXT INIT ' + error);
+                dbg.log ('CHROME Background :: There was an error in OX_EXT.init ' + error);
             }
 	});
     } else {
@@ -296,12 +296,13 @@ extension = new OnSIP_Process();
 extension.init ();
 
 /** Load and initialize Highrise with contacts **/
+dbg.log ('CHROME Background :: Highrise Enabled --> ' + pref.get ('highriseEnabled'));
 if (pref && pref.get ('highriseEnabled') === true) {
     highrise_app.init(pref);
 }
 
 /** Initialize Zendesk with Contacts **/
-dbg.log ('CHROME Background :: Zendesk enabled --> ' + pref.get ('zendeskEnabled'));
+dbg.log ('CHROME Background :: Zendesk Enabled --> ' + pref.get ('zendeskEnabled'));
 if (pref && pref.get ('zendeskEnabled') === true) {
     zendesk_app.init (pref);
 }
@@ -313,7 +314,7 @@ chrome.browserAction.onClicked.addListener ( function (TAB) {
 });
 
 /** Stores a state every time an "active" event is sent, up to 20 items. **/
-chrome.idle.onStateChanged.addListener(function(newstate) {
+chrome.idle.onStateChanged.addListener     ( function (newstate) {
     var time = new Date();
     if (state_log.length >= 20) {
 	state_log.pop();
@@ -333,8 +334,7 @@ chrome.idle.onStateChanged.addListener(function(newstate) {
 	if (min >= rebound_to && pref && pref.get ('onsipCredentialsGood')) {
 	    dbg.log ('CHROME Background :: IDLE for ' + min + ' minutes lets RE-ESTABLISH connection');	    
 	    var do_exec = function () {	        
-		OX_EXT.failures     = 0;
-		OX_EXT.strophe_conn = undefined;		
+		OX_EXT.failures     = 0;	
 		BG_APP.launched_n   = false;		    
 		OX_EXT.init   (pref, {
 		    onSuccess : function () {
@@ -374,7 +374,7 @@ var sc = function () {
     chrome.idle.queryState(15, function (newstate) {
         console.log ('CHROME Background :: State Check -> ' + newstate);
     });
-    setTimeout (sc, 90000);
+    setTimeout (sc, 60000);
 };
 sc();
 
@@ -460,12 +460,4 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
     } 
 
 });
-
-/** Window focus **/
-//chrome.windows.onFocusChanged.addListener ( function (windowId) {
-	//console.log ("WINDOW FOCUS *******************************");
-    //OX_EXT.	
-
-//}); 
-
 

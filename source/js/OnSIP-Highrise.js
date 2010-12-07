@@ -39,9 +39,9 @@ HIGHRISE.verifyToken = function (call, highrise_url, token) {
        }
    };
 
-   xhr.open('GET', this.base_url + '/people.xml', false, this.token, 'X');
+   xhr.open ('GET', this.base_url + '/people.xml', false, this.token, 'X');
    setTimeout (a, tmout);
-   xhr.send();
+   xhr.send ();
 };
 
 HIGHRISE._createDefaultNote = function (costumer, user_tz) {

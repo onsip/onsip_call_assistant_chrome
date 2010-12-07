@@ -19,8 +19,10 @@ $(function(){
 	pref.set('highriseEnabled'     , false);
 	pref.set('zendeskEnabled'      , false);
 
+	/**
 	$('#header-zendesk'  ).removeClass('checkmark');
 	$('#header-highrise' ).removeClass('checkmark');
+	**/
 
 	/** Error flags **/	
 	var error_fields = isOnSIPDataEntered ();
@@ -92,7 +94,7 @@ function handleOnSIPLogin () {
 	    /** updateAllTabs($('#fromAddress').val()); **/
 
 	    var entered_highrise = isHighriseDataEntered();
-	    var entered_zendesk  = isZendeskDataEntered();
+	    var entered_zendesk  = false; // isZendeskDataEntered();
 
 	    /** Before showing success message see if Highrise is validated ok, due to asyncronus nature of js **/
 	    if (entered_highrise || entered_zendesk) {
@@ -168,7 +170,7 @@ function handleHighriseLogin () {
 	    
 	    /** Set Highrise Enabled **/
 	    pref.set('highriseEnabled', true);
-	    enableHighrise ();
+	    //enableHighrise ();
 	    $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
 	    $('#save-options-btn').attr('disabled','');
 	},
@@ -420,16 +422,23 @@ function SetHelperBehavior(formID){
         });
     });
 
-    console.log ('Zendesk is enabled :: ' + pref.get('zendeskEnabled'));
-    
+    $('#clear-highrise').click (function (e) {
+        $('#highriseUrl'  ).val(pref.defaults['highriseUrl'  ]);
+	$('#highriseToken').val(pref.defaults['highriseToken']);
+	$('#timezone'     ).val("0.0");
+    });
+
+    /**
     $('#input-zendesk'   ).hide ();
     $('#input-highrise'  ).hide ();
+    **/
     if (pref && pref.get('zendeskEnabled')) {
 	enableZendesk ();	
     } else if (pref && pref.get('highriseEnabled')) {
 	enableHighrise();
     }
 
+    /**
     $('#header-zendesk').click( function (e) {
 	    if ($('#input-zendesk').is(':hidden')) {
 		$('#input-zendesk').slideDown('slow', function() {
@@ -449,6 +458,7 @@ function SetHelperBehavior(formID){
 		$('#input-highrise').slideUp('slow');
 	    }  	    
     });
+    **/
 }
 
 function enableHighrise() {        
