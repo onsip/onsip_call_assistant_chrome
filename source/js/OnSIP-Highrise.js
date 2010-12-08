@@ -45,7 +45,7 @@ HIGHRISE.verifyToken = function (call, highrise_url, token) {
    xhr.send ();
 };
 
-HIGHRISE._createDefaultNote = function (costumer, user_tz) {
+HIGHRISE._createDefaultNote = function (costumer, user_tz, incoming) {
     var nt;
     var tz = getDateAndTime (getTimezoneAbbrevation (user_tz));
     if ( costumer.first_name && costumer.last_name ) {
@@ -61,16 +61,20 @@ HIGHRISE._createDefaultNote = function (costumer, user_tz) {
 	}
     }
     if (full_name && full_name.length > 0) {
-	nt = "<note><body>Conversed with " + full_name + " @ " + tz + " By OnSIP</body></note>";
+	if (incoming) {
+	    nt = "<note><body>"        + full_name + " called  @ " + tz + " By OnSIP</body></note>";
+	} else {
+	    nt = "<note><body>Called " + full_name + " @ "          + tz + " By OnSIP</body></note>";
+	}
     }
     return nt;
 };
 
 /** Note has the convention <note><body> {STUFF} </body></note> **/
-HIGHRISE.postNote = function (costumer, user_tz) {
+HIGHRISE.postNote = function (costumer, user_tz, incoming) {
     var customer, note;
     if (costumer) {
-	note = this._createDefaultNote (costumer, user_tz);
+	note = this._createDefaultNote (costumer, user_tz, incoming);
 	if (note && note.length) {
 	    this.postNoteToProfile (costumer, note); 
 	}

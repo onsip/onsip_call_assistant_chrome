@@ -4,14 +4,11 @@ var OX_EXT = {
     "name"         : "OX Based Chrome Plug-in",
     "ox_conn"      : undefined,
     "strophe_conn" : undefined,
-    "call_handle"  : undefined,
     "from_address" : undefined,
     "apps"         : [],
     "jid"          : undefined,
     "pwd"          : undefined,
-    "failures"     : 0,
     "log_context"  : "OX_EXT",
-    "MAX_FAILURES" : 20,
     "DEF_TIMEOUT"  : 7000
 };
 
@@ -91,10 +88,10 @@ OX_EXT.init = function (pref, callback) {
         
     if (reset) {
         var to = that._connect (callback);   
-	setTimeout  (to, that.DEF_TIMEOUT);
-        dbg.log (this.log_context, 'Reset BOSH **********************************');
+	setTimeout  (to, this.DEF_TIMEOUT);
+        dbg.log (this.log_context, 'Reset BOSH in ' + this.DEF_TIMEOUT + ' seconds');
     } else {
-	dbg.log (this.log_context, 'New BOSH Connection &&&&&&&&&&&&&&&&&&&&&&&&&');
+	dbg.log (this.log_context, 'Estalish BOSH Connection &&&&&&&&&&&&&&&&&&&&&');
 	that._connect (callback);
     }
 };
@@ -114,7 +111,6 @@ OX_EXT._connect   = function (callback) {
 	       dbg.log('STROPHE', 'Connection failed' );
 	       break;
 	   case Strophe.Status.ERROR :
-	       /** setTimeout (rebound_f, timeout); **/
 	       if (callback && callback.onError) {
                    callback.onError ('Connection Error through Strophe');
                }
@@ -131,7 +127,6 @@ OX_EXT._connect   = function (callback) {
 	       break;
 	   case Strophe.Status.CONNECTED:
 	       dbg.log('STROPHE', 'Connected' );
-	       that.failures   = 0;
        	       that.ox_conn    = OX.Connection.extend( { connection : OX.StropheAdapter } ); 
 	       that.ox_conn.initConnection(); 
 
@@ -299,7 +294,6 @@ OX_EXT.handleActiveCallPending = function () {
 
 OX_EXT.handleActiveCallPublish = function ( item ) {    
     dbg.log (this.log_context, "Call Dialog State : " + item.dialogState);
-    this.call_handle = item;
     switch ( item.dialogState ) {
      case "created":	
 	this.__publishEventToApps ('activeCallCreated'  , item);
@@ -315,7 +309,6 @@ OX_EXT.handleActiveCallPublish = function ( item ) {
 
 OX_EXT.handleActiveCallRetract = function ( itemURI ) {
     dbg.log (this.log_context, 'RETRACT ' + itemURI );
-    delete this.call_handle;
     this.__publishEventToApps ('activeCallRetract', itemURI);   
 };
 

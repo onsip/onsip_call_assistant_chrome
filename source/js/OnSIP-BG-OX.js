@@ -213,16 +213,17 @@ BG_APP.activeCallRetract   = function (itemURI) {
 
 /** Helper method. Post a note through the Highrise API **/
 BG_APP._postNotetoProfile  = function (item) {
-    var i, len, costumer, full_name, is_setup, phone, notif;
+    var i, len, flag_incoming, costumer, full_name, is_setup, phone, notif;
     for (i = 0, len = this.notifications.length; i < len; i += 1) {
         if (item === this.notifications[i].uri) {
             notif       = this.notifications[i];
             costumer_hr = notif.contact_highrise;
             costumer_zd = notif.contact_zendesk;
             is_setup    = notif.is_setup;
+
             if (!is_setup) {
                 if (pref.get ('highriseEnabled') && costumer_hr && costumer_hr.id) {
-                    highrise_app.postNote (costumer_hr, pref.get('userTimezone'));
+                    highrise_app.postNote (costumer_hr, pref.get('userTimezone'), notif.flag_incoming);
                 }
                 if (pref.get ('zendeskEnabled') && notif.flag_incoming && !notif.is_onsip) {
                     if (costumer_zd && costumer_zd.id) {
