@@ -1,20 +1,21 @@
 /** Highrise library for OnSIP-Click-To-Call **/
 
 var HIGHRISE = {
-    'companies': [],
-    'contacts' : [],
-    'ts'       : null,
-    'base_url' : '',
-    'token'    : '',
-    'attempts' : 0,
-    'refresh'  : 60000 * 45 // Refresh every 45 min
+    'companies'   : [],
+    'contacts'    : [],
+    'ts'          : null,
+    'base_url'    : '',
+    'token'       : '',
+    'attempts'    : 0,
+    'log_context' : 'HIGHRISE',
+    'refresh'     : 60000 * 45 /** Refresh every 45 min **/
 };
 
 /** Tries to retrieve /people.xml and looks for error code 200 **/
 HIGHRISE.verifyToken = function (call, highrise_url, token) {
    var xhr   = new XMLHttpRequest ();
    var ok    = false;
-   var tmout = 30000; // 30 sec
+   var tmout = 30000; /** 30 sec **/
  
    xhr.onreadystatechange = function () {
       if (xhr.readyState === 4) {
@@ -144,7 +145,7 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
     var a = function () {
 	if (!ok) {
 	    xhr.abort();
-	    console.log ('HIGHRISE APP :: ABORTING xhr call to GetCompanies');
+	    dbg.log (that.log_context, 'ABORTING xhr call to GetCompanies');
 	    if (call && call.onError) {
 		call.onError('aborted getCompanies');
 	    }
@@ -162,31 +163,31 @@ HIGHRISE.init     =  function (pref) {
     this.attempts = 0;
     
     if (!(this.base_url && this.token)) {
-	console.log ('HIGHRISE APP :: Init Failed ' + this.base_url + ' -- ' + this.token);
+	dbg.log (this.log_context, 'Init Failed ' + this.base_url + ' -- ' + this.token);
 	return;
     }
     var to_func;     
     var that = this;
-    console.log ('HIGHRISE APP :: Get Contacts & Company names');
+    dbg.log (this.log_context, 'Get Contacts & Company names');
     this._getContacts ({
         onSuccess : function (c) {
 	    to_func       = that._recycle.bind (that); 
 	    that.ts       = new Date();	
 	    that.attempts = 0;
 	    setTimeout  (to_func, that.refresh);
-	    console.log ('HIGHRISE APP :: Got contacts @ ' + that.ts);	     
+	    dbg.log (that.log_context, 'Got contacts @ ' + that.ts);	     
         },
         onError   : function (status) {
-            console.log ('HIGHRISE APP :: Error ' + status);
+	    dbg.log (that.log_context, 'Error ' + status);
         }
     });
     this._getCompanies ({
         onSuccess : function (c) {
 	    that.ts = new Date();
-            console.log ('HIGHRISE APP :: Got companies @ ' + that.ts);
+            dbg.log (that.log_context, 'Got companies @ ' + that.ts);
         },
         onError   : function (status) {
-            console.log ('HIGHRISE APP :: Error ' + status);
+	    dbg.log (that.log_context, 'Error ' + status);
         }
     });   
 };
@@ -194,14 +195,13 @@ HIGHRISE.init     =  function (pref) {
 HIGHRISE._recycle       = function () {
     var to_func, failed_to;
     var that = this;
-    console.log ('HIGHRISE APP :: Recycle contacts & companies');
+    dbg.log (this.log_context, 'Recycle contacts & companies');
     this._getContacts ({
-        onSuccess : function (c) {	    
-	    delete that.ts;	
+        onSuccess : function (c) {	    	   
 	    to_func       = that._recycle.bind (that);
 	    that.attempts = 0;
 	    setTimeout  (to_func, that.refresh);	    
-	    console.log ('HIGHRISE APP :: Recycled ' + c.length + ' contacts @ ' + new Date());
+	    dbg.log (that.log_context, 'Recycled ' + c.length + ' contacts @ ' + new Date());
 	},
 	onError   : function (status) {
 	    that.attempts += 1;
@@ -209,19 +209,19 @@ HIGHRISE._recycle       = function () {
 		failed_to = 60000 * that.attempts; 
 		to_func   = that._recycle.bind (that);		
                 setTimeout  (to_func, failed_to);
-		console.log ('HIGHRISE APP :: Failed to connect on ' + that.attempts + ' attempts, will try again');
+		dbg.log (that.log_context, 'Failed to connect on ' + that.attempts + ' attempts, will try again');
 	    } else {
-		console.log ('HIGHRISE APP :: CRITICAL FAILURE, tried to connect to API more than  5 time(s)');
+		dbg.log (that.log_context, 'CRITICAL FAILURE, tried to connect to API more than  5 time(s)');
 	    }
-	    console.log ('HIGHRISE APP :: Error ' + status);
+	    dbg.log (that.log_context, 'Error ' + status);
 	}
     });
     this._getCompanies ({
        onSuccess : function (c) {          
-	    console.log ('HIGHRISE APP :: Recycled ' + c.length + '  companies @ ' + new Date());
+           dbg.log (that.log_context, 'Recycled ' + c.length + '  companies @ ' + new Date());
        },
        onError   : function (status) {
-	   console.log ('HIGHRISE APP :: Error ' + status);
+	   dbg.log (that.log_context, 'Error ' + status);
        }
     });    
 };
@@ -249,7 +249,7 @@ HIGHRISE._getContacts = function (call) {
    var a = function () {
        if (!ok) {
            xhr.abort();
-	   console.log ('HIGHRISE APP :: ABORTING xhr call to GetContacts');
+	   dbg.log (that.log_context, 'ABORTING xhr call to GetContacts');
            if (call && call.onError) {
                call.onError('aborted getContacts');
            }
@@ -285,7 +285,7 @@ HIGHRISE._getCompanies = function (call) {
    var a = function () {
        if (!ok) {
 	   xhr.abort();
-	   console.log ('HIGHRISE APP :: ABORTING xhr call to GetCompanies');
+	   dbg.log (that.log_context, 'ABORTING xhr call to GetCompanies');
 	   if (call && call.onError) {
 	       call.onError('aborted getCompanies');
 	   }

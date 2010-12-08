@@ -1147,7 +1147,6 @@ Strophe = {
      */
     log: function (level, msg)
     {
-	console.log(level + " :: " + msg);
 	return;
     },
 
@@ -2371,7 +2370,7 @@ Strophe.Connection.prototype = {
       // Fires the XHR request -- may be invoked immediately
       // or on a gradually expanding retry window for reconnects
       var sendFunc = function () {
-	  console.log(req.data);
+	  //console.log(req.data);
 	  req.xhr.send(req.data);
       };
 
@@ -2607,7 +2606,7 @@ Strophe.Connection.prototype = {
 	    this._doDisconnect();
 	}
 
-	console.log(Strophe.serialize(elem));
+	//console.log(Strophe.serialize(elem));
 
 	this.rawInput(Strophe.serialize(elem));
 

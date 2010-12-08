@@ -1,6 +1,24 @@
 var dbg = {
-    log : function(mixed){
-        console.log(mixed);
+    log : function () {	
+	if (arguments.length === 2) {
+	    var c   = OnSIP_Preferences.get('logContext');
+	    var i   = 0;
+	    var x   = '';
+	    if (!(c && c.length)) {
+		return;
+	    }
+	    var len = c.length;
+	    for (i = 0; i < len; i += 1) {
+	        x = c[i];
+		if (x === '*' || x === arguments[0]) {
+		    var d = new Date();
+		    console.log ("[" + d + "] @@@ " + arguments[0] + " :: " + arguments[1]);
+		    break;
+		}
+	    }
+	} else if (arguments.length === 1) {
+	    console.log (arguments[0]); 
+	}
     }
 };
 

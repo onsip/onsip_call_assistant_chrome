@@ -2,14 +2,15 @@
 
 var BG_APP = {
     "notifications" : [],
-    "launched_n"    : false
+    "launched_n"    : false,
+    "log_context"   : 'BG_APP'
 };
 
 BG_APP.activeCallCreated   = function ( items ) {
     var i, n, item, phone, len, name,
     cont_highrise, cont_zendesk, caption;
     var that = this;
-    dbg.log ('BG_APP LOG :: Active Call Created');
+    dbg.log (this.log_context, 'Active Call Created');
     for (i = 0, len = items.length; i < len; i++) {
         item          = items[i];
         phone         = extractPhoneNumber(item.toURI);
@@ -68,7 +69,7 @@ BG_APP.activeCallRequested = function ( items ) {
     cont_zendesk, caption, name, is_setup, that;
     var that = this;
 
-    dbg.log ('BG_APP LOG :: Active Call Requested');
+    dbg.log (this.log_context, 'Active Call Requested');
     for (i = 0, len = items.length; i < len; i++) {
         item        = items[i];
         is_setup    = isSetupCall (item.fromURI);
@@ -127,7 +128,7 @@ BG_APP.activeCallRequested = function ( items ) {
         };
 
         var p = formatPhoneNum('' + phone);
-        console.log ('BG_APP LOG :: Is Launching notification ' + this.launched_n);
+        dbg.log (this.log_context, 'Is Launching notification ' + this.launched_n);
         if (!this._isNotificationShowing (p) && !this.launched_n) {
             this.launched_n = true;
             if (cont_zendesk && cont_zendesk.id) {
@@ -180,7 +181,7 @@ BG_APP._normalizeName    = function () {
 
 /** A phone connection has been established **/
 BG_APP.activeCallConfirmed = function ( items ) {
-    dbg.log ('BG_APP LOG :: Active Call Confirmed');
+    dbg.log (this.log_context, 'Active Call Confirmed');
     var i, len, name;
     var that = this;
     for (i = 0, len = items.length; i < len; i += 1) {
@@ -194,13 +195,13 @@ BG_APP.activeCallConfirmed = function ( items ) {
 };
 
 BG_APP.activeCallPending   = function ( item ) {
-    dbg.log ('BG_APP LOG :: Active Call Pending');
+    dbg.log (this.log_context, 'Active Call Pending');
 };
 
 BG_APP.activeCallRetract   = function (itemURI) {
     var i, len;
     var that = this;
-    dbg.log ('BG_APP LOG :: Active Call Retracted = ' + this.notifications);
+    dbg.log (this.log_context, 'Active Call Retracted = ' + this.notifications);
     for (i = 0, len = itemURI.length; i < len; i += 1) {
         var q = itemURI[i].query;
         var f = function () {
@@ -238,7 +239,7 @@ BG_APP._postNotetoProfile  = function (item) {
 
 /** Helper method. hide / cancel and remove desktop notifications **/
 BG_APP._cancelNotifications = function (item) {
-    dbg.log ('BG_APP :: ' + this.notifications.length + ' notifications ');
+    dbg.log (this.log_context, this.notifications.length + ' notifications ');
     var a = [];
     var n = this.notifications.pop();
     while (n) {

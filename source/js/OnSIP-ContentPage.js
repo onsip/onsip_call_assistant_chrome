@@ -1,82 +1,25 @@
 /** SIP Chrome Content Page **/
 
-var to_domain = null;
-var _enabled  = false;
+var CONTENT_PG = "CONTENT-PG";
+var to_domain  = null;
+var _enabled   = false;
 
 /** Add listener for commands from the background process **/
 chrome.extension.onRequest.addListener( function (request, sender, sendResponse) {    
-    dbg.log ('OnSIP-ContentPage addListener FROM BACKGROUND :: parseDOM  ' + request.parseDOM);
+    dbg.log (CONTENT_PG, 'Coming From Background Page :: parseDOM  ' + request.parseDOM);
     alterDOM       (request);
     updateAddresses(request);
-
-    /**
-    // On callComplete
-    if ( request.callSetupCompleted ) {
-        dbg.log('APP :: callIsInProgress FALSE');
-        callIsInProgress = false;
-	///$('.onsip-message-box').remove();
-    }
-    **/
-
-    /** On callError **/
-    if (request.callError) {
-	//showErrorMessage (request.errorMsg, request.fromAddressError);
-    }
-
-    /** On Setting error **/
-    /**
-    if ( request.settingsError ) {
-        dbg.log('CONTENT :: setup extension first');
-        dbg.log('APP :: callIsInProgress FALSE');        
-	//showErrorMsg(request.errorMsg);
-    }
-    **/
-
-    /**
-    // On incoming call
-    if ( request.incomingCall ){
-        dbg.log(' CONTENT :: Request Incoming Call ');
-        showSetupMessage(request.incomingNumber, request.incomingName,  request.incomingCallTitle);
-    }
-    **/
-
-    /**
-    // On outgoing call
-    if(request.outgoingCall ){
-        dbg.log(' CONTENT :: Request Outgoing Call ');
-        showSetupMessage(request.outgoingNumber, request.outgoingName,  ' Calling ');
-    }
-    **/
-
-    /**
-    if ( request.incomingCallRetract ) {
-        dbg.log(' CONTENT :: Call Retract ---->>>>> ');
-        /setTimeout(function() {$('.onsip-message-box').remove();callIsInProgress = false;}, 4500); /
-        $('.onsip-message-box').remove();
-        dbg.log('APP :: callIsInProgress FALSE');
-        callIsInProgress = false;
-    }
-    **/
-
-    /**
-    if ( request.incomingCallConfirmed ) {
-        dbg.log(' CONTENT :: Request incomingCallConfirmed');
-        dbg.log('APP :: callIsInProgress FALSE');
-        callIsInProgress = false;
-        ///$('.onsip-message-box').remove();
-    }
-    **/
 });
 
 /** Alter DOM on page load **/
 chrome.extension.sendRequest({ pageLoad : true }, function (response) {
-   console.log ('CHROME Content-Page ::  sendRequest');
+   dbg.log (CONTENT_PG, 'SendRequest');
    alterDOM       (response);
    updateAddresses(response);
 });
 
 /** add listener for DOM changes, to parse the new nodes for phone numbers **/
-// document.addEventListener('DOMSubtreeModified', handleDomChange, true);
+/** document.addEventListener('DOMSubtreeModified', handleDomChange, true); **/
 
 /** stupid WebKit won't trigger DOMNodeInserted on innerHTML with plain text and no HTML tags **/
 document.addEventListener('DOMCharacterDataModified', handleDomChange, true);
@@ -91,7 +34,7 @@ function handleDomChange(e) {
         if (parsing) {
 	    return;
 	}	
-	console.log ('Handle DOM Change - parsing ' + parsing + ' Extension enabled :: ' + ext_enabled);	
+	dbg.log (CONTENT_PG, 'Handle DOM Change - parsing ' + parsing + ' Extension enabled :: ' + ext_enabled);	
 	var newNodeClass = e.srcElement.className;		
 	if ( newNodeClass != undefined ) {
 	    if (/onsip\-message\-box/.test(newNodeClass) || newNodeClass == 'onsip-click-to-call-icon') {
@@ -110,7 +53,7 @@ function handleDomChange(e) {
 /** Alter the DOM **/
 function alterDOM(request) {
     /** Parse DOM command **/
-    console.log ('AlterDOM');
+    dbg.log (CONTENT_PG, 'AlterDOM');
     if ( request.parseDOM ) {
 	_enabled = true;
 	parseDOM(document.body);
@@ -132,13 +75,13 @@ function updateAddresses(request) {
 	    href = href.substr(0, href.indexOf('@') + 1);
 	    href += to_domain;
 	    this.href = href;
-	    });
+	});
     }
 }
 
 /** Remove click-to-call links and messages **/
 function clearDOM () {
-    console.log ('clearDOM');
+    dbg.log (CONTENT_PG, 'clearDOM');
     $('.onsip-message-box').remove();
     $('.onsip-click-to-call').each(function(){
         $(this).replaceWith(this.innerHTML);
@@ -150,8 +93,6 @@ function parseDOM (node) {
     var invalidNodes     = ['SCRIPT', 'STYLE', 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A', 'CODE'];
     var nodeName         = node.nodeName.toUpperCase();
     var childNodesLength = node.childNodes.length;
-
-    //console.log ('CHROME :: Parsing DOM');
 
     if ( $.inArray(nodeName, invalidNodes) > -1 || $(node).hasClass('onsip-message-box') ) {
 	return 0;
@@ -186,21 +127,22 @@ function parsePhoneNumbers (node) {
 	node.nodeValue.match(sipAddressNumber) == null) {
         return 0;
     }
-    var phoneNumber = /((((\+|(00))[1-9]\d{0,3}[\s\-.]?)?\d{2,4}[\s\/\-.]?)|21)\d{5,9}/;
-    var phoneNumberNorthAmerica = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}/;
+
+    var phoneNumber                          = /((((\+|(00))[1-9]\d{0,3}[\s\-.]?)?\d{2,4}[\s\/\-.]?)|21)\d{5,9}/;
+    var phoneNumberNorthAmerica              = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}/;
 
     /** Phone number with an extension **/
     var phoneNumberNorthAmericaWithExtension = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}\s{1,5}(ext|x|ex)\s{0,3}.{0,3}\d{2,5}/;
-    var phoneNumberExtension = /(ext|x|ex)\s{0,3}.{0,3}\d{2,5}/g;
-    var phoneNumberDelimiter = /[\s.,;:|]/;    
-    var text = node.nodeValue;
-    var offset = 0;
-    var number = "";
+    var phoneNumberExtension                 = /(ext|x|ex)\s{0,3}.{0,3}\d{2,5}/g;
+    var phoneNumberDelimiter                 = /[\s.,;:|]/;    
+    var text                                 = node.nodeValue;
+    var offset                               = 0;
+    var number                               = "";
 
     /** Extension **/
-    var extension = null;
-    var found = false;
-    var foundNorthAmerica = false;
+    var extension                            = null;
+    var found                                = false;
+    var foundNorthAmerica                    = false;
  
     /** Find the first phone number in the text node **/
     while (!found) {        
@@ -290,26 +232,27 @@ function parsePhoneNumbers (node) {
 function addEvents(node) {
     $('.onsip-click-to-call', node).unbind().bind({
         click     : function(e){
-	    dbg.log ('CONTENT :: Call Number');
+	    dbg.log (CONTENT_PG, 'Call Number');
 	    e.preventDefault();
 	    callNumber (this.innerHTML, this.rel, $(this).attr('extension'));
 	},
         mouseover : function() {
+	    var offset, top, left;
 	    var $this = $(this);
-	    var offset = $this.offset();				
-	    var top = offset.top - 20;
-	    top = (top > 0) ? top : 0;				
-	    var left = offset.left - 18;
-	    left = (left > 0) ? left : 0;
+	    offset    = $this.offset();				
+	    top       = offset.top - 20;
+	    top       = (top > 0) ? top : 0;				
+	    left      = offset.left - 18;
+	    left      = (left > 0) ? left : 0;
 				
-	    var icon = $('<div class="onsip-click-to-call-icon"></div>');
-	    iconFile = chrome.extension.getURL('images/icon-phone.png');
-	    icon.css({ 'background-image' : 'url(' + iconFile + ')', 
+	    var icon  = $('<div class="onsip-click-to-call-icon"></div>');
+	    iconFile  = chrome.extension.getURL('images/icon-phone.png');
+	    icon.css  ({ 'background-image' : 'url(' + iconFile + ')', 
 		       'top' : top + 'px', 'left' : left + 'px'}).appendTo('body').fadeIn(200);
 	    $this.data('icon', icon);
 	},
 	 mouseout  : function() {
-	    var $this = $(this);
+	    var $this  = $(this);
 	    $this.data('icon').fadeOut(200, function() {
 	        $(this).remove();
 	    });
@@ -317,135 +260,8 @@ function addEvents(node) {
     });
 }
 
-/**
- * Call the given number
- *  @param phoneNo
- *  @param cleanNo
- */
+/** Call the given number **/
 function callNumber(phone_no, clean_no, extension) {
-    dbg.log ('CONTENT :: call number signal ' + phone_no + ' - ' + clean_no + ' - ' + extension);
-    chrome.extension.sendRequest ({ setupCall : true, phone_no : clean_no, extension : extension }, function (response) {
-    });
+    dbg.log (CONTENT_PG, 'Call number signal ' + phone_no + ' - ' + clean_no + ' - ' + extension);   
+    chrome.extension.sendRequest ({ setupCall : true, phone_no : clean_no, extension : extension }, function (response) {});
 }
-
-/**
- * Show setup message
- */
-/**
-function showSetupMessage(phoneNo, customerName, msg) {
-    dbg.log('CONTENT :: setupMessage ');
-    // take care of null name
-    if(customerName == null){
-        customerName = '';
-    }
-    if(msg == null){
-        msg = '';
-    }
-    var call = $('.onsip-call-message');
-    if (call.size() == 0) {
-	$('.onsip-message-box').remove();
-	call = $('<div class="onsip-message-box onsip-call-message" style="background: transparent url( '+ chrome.extension.getURL('images/pop_up_background.png')  + ' ) no-repeat "><div id="onsip-message-wrapper" > <div id="popup-message">'+ msg +'  </div> <div id="popup-name">'+ customerName + ' </div> <div id="popup-number">' + phoneNo + ' </div> <p id="close-btn-wrapper" ><a id="close-notification-btn" href="#" > <img src="'+ chrome.extension.getURL('images/pop_up_close.png')  + '"  /></a><p></div></div>');
-	call.find('A').click(function(e){
-		e.preventDefault();
-		dbg.log('APP :: callIsInProgress FALSE');
-		callIsInProgress = false;
-		chrome.extension.sendRequest({setupCallCancel : true}, function (response) {});
-		call.remove();
-	});
-	$('body').append(call);
-    }
-}
-**/
-
-/**
-function showBusyMessage() {
-	var msg = $('.onsip-busy-message');
-	var call = $('.onsip-call-message');
-	
-	if (msg.size() == 0 && call.size() == 0) {
-		
-		$('.onsip-message-box').remove();
-		
-		msg = $('<div class="onsip-message-box onsip-busy-message"><div>Another phone call request is already in progress!</div></div>');
-		msg.find('DIV').css('background-image', 'url(' + chrome.extension.getURL('images/i_warning.png') + ')');
-		$('body').append(msg);
-		
-		addMessageCloseEvent(msg);
-	}
-		
-	delayedClose(msg);
-}
-**/
-
-/**
-function showErrorMessage(msg, fromAddressError) {
-	$('.onsip-message-box').remove();
-	
-	var DIV = '<div class="onsip-message-box onsip-call-message" style="background: transparent url( '+ chrome.extension.getURL('images/pop_up_background.png')  + ' ) no-repeat "><div id="onsip-message-wrapper" > ' + msg + '<p>';
-	if (fromAddressError) {
-		DIV += '<a href="#" class="onsip-edit-address">Edit telephone number address</a> ';
-	}
-	DIV += '<p id="close-btn-wrapper" ><a href="#" > <img src="'+ chrome.extension.getURL('images/pop_up_close.png')  + '"  /></a><p><p></div></div>';
-	
-	error = $(DIV);
-	error.find('DIV').css('background', 'url(' + chrome.extension.getURL('images/i_error.png') + ') no-repeat');
-	error.find('A').click(function(e){e.preventDefault();});
-	$('body').append(error);
-	
-	addMessageCloseEvent(error);
-	$('.onsip-edit-address').click(function(e){
-		e.preventDefault();
-		chrome.extension.sendRequest({openSettingsPage : true}, function (response) {});
-	});
-}
-**/
-
-/**
- * Show error message
- */
-
-/**
-function showErrorMsg(msg){
-    dbg.log('CONTENT :: showErrorMsg');
-
-    // take care of null name
-    $('.onsip-message-box').remove();
-	var DIV = '<div class="onsip-message-box onsip-call-message" style="background: transparent url( '+ chrome.extension.getURL('images/pop_up_background.png')  + ' ) no-repeat "><div id="onsip-message-wrapper" > ' + msg + '<p>';
-
-    error = $(DIV);
-	error.find('DIV').css('background', 'url(' + chrome.extension.getURL('images/i_error.png') + ') no-repeat');
-	error.find('A').click(function(e){e.preventDefault();});
-	$('body').append(error);
-
-    addMessageCloseEvent(error);
-	error.click(function(e){
-		e.preventDefault();
-		chrome.extension.sendRequest({openSettingsPage : true}, function (response) {});
-	});
-}
-**/
-
-/**
-function addMessageCloseEvent(el) {
-	el.click(function(){
-		el.fadeOut(300, function(){
-			el.remove()
-		});
-	});
-	
-	$(document).keyup(function(e){
-		if (e.keyCode == 27) el.click();
-	});
-}
-
-function delayedClose(el) {
-	
-	clearTimeout(el.data('to'));
-	
-	var to = setTimeout(function(){
-		el.click();
-	}, 5000);
-	
-	el.data('to', to);
-}
-**/

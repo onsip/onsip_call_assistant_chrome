@@ -10,21 +10,22 @@ var OX_EXT = {
     "jid"          : undefined,
     "pwd"          : undefined,
     "failures"     : 0,
+    "log_context"  : "OX_EXT",
     "MAX_FAILURES" : 20,
     "DEF_TIMEOUT"  : 7000
 };
 
 OX_EXT.createStropheConnection = function (url) {
-    console.log('ON_EXT :: Initialized Strophe Connection');
+    dbg.log (this.log_context, 'Initialized Strophe Connection');
     this.strophe_conn = new Strophe.Connection( url );   
 };
 
 OX_EXT.iConnectCheck = function (pref, call) {
-    var xhr  = new XMLHttpRequest();
-    var url  = pref.get ('onsipHttpBase');
-    var ok   = false;
-    var that = this;
-    var tmout = 30000; // 30 sec
+    var xhr   = new XMLHttpRequest();
+    var url   = pref.get ('onsipHttpBase');
+    var ok    = false;
+    var that  = this;
+    var tmout = 30000; /** 30 sec **/
 
     xhr.onreadystatechange = function () {
         if (xhr.readyState !== 4) {
@@ -51,7 +52,7 @@ OX_EXT.iConnectCheck = function (pref, call) {
 	}
     };
 
-    console.log ('OX_EXT APP :: Verifying Internet Connectivity');
+    dbg.log (this.log_context, 'Verifying Internet Connectivity');
     xhr.open ("GET", url, false);
     setTimeout (a, tmout);
     xhr.send ();
@@ -66,7 +67,7 @@ OX_EXT.init = function (pref, callback) {
     this.jid          = this.from_address + '/chrome-ox-plugin'; 
    
     if (this.strophe_conn) {
-	console.log ('OX_EXT :: Resetting Connection');
+	dbg.log (this.log_context, 'Resetting Connection');
 	this.strophe_conn.disconnect();	
 	this.strophe_conn.reset();	
 	reset = true;
@@ -75,77 +76,61 @@ OX_EXT.init = function (pref, callback) {
     this.createStropheConnection ( url );
 
     this.strophe_conn.rawInput = function (data) {
-	console.log( 'STROPHE RAW INPUT  :: ' + data );
+	dbg.log ('STROPHE RAW','INPUT  :: ' + data );
     };
 
     this.strophe_conn.rawOutput = function (data) {
-	console.log( 'STROPHE RAW OUTPUT :: ' + data );
+	dbg.log ('STROPHE RAW','OUTPUT :: ' + data );
     };
 
     Strophe.log = function (level, msg) {
 	if (true || level === Strophe.LogLevel.ERROR){
-	    console.log( 'STROPHE LOG - ' + level + ' :: Message : ' + msg );
+	    dbg.log ('STROPHE LOG', level + ' :: Message : ' + msg );
 	}
     };
         
     if (reset) {
         var to = that._connect (callback);   
 	setTimeout  (to, that.DEF_TIMEOUT);
-	console.log ('OX_EXT :: Reset BOSH *************************');
+        dbg.log (this.log_context, 'Reset BOSH **********************************');
     } else {
-	console.log ('OX_EXT :: New BOSH Connection &&&&&&&&&&&&&&&&&&&&&&&&&');
+	dbg.log (this.log_context, 'New BOSH Connection &&&&&&&&&&&&&&&&&&&&&&&&&');
 	that._connect (callback);
     }
 };
 
 OX_EXT._connect   = function (callback) {
     var that      = this;
-    /** var timeout   = this.DEF_TIMEOUT * that.failures; **/
-    /**
-    var rebound_f = function () {	
-	that.failures += 1;
-	if (that.failures <= that.MAX_FAILURES) {
-	    if (!that.connecting) {
-		console.log ('STROPHE :: Trying to re-bound & re-establish connection');
-		console.log ('STROPHE :: Connecting ' + that.jid + ' - ' + that.from_address);
-		that._connect (callback);
-	    } else {		
-		console.log ('STROPHE :: HOLD trying to re-bound & re-establish connection, set on timer');	
-		setTimeout (rebound_f, 60000);
-	    }
-	}
-    }
-    **/
     OX.StropheAdapter.strophe = this.strophe_conn;    
     this.strophe_conn.connect(this.jid, this.pwd, function( status ) {
        switch ( status ){
            case Strophe.Status.CONNECTING : 
-	       console.log( 'STROPHE :: Connecting ... ' );
+	       dbg.log('STROPHE', 'Connecting ... ' );
 	       break;
 	   case Strophe.Status.CONNFAIL :
 	       if (callback && callback.onError) {
 		   callback.onError ('Connection Failed');
 	       }
-	       console.log( 'STROPHE :: Connection failed' );
+	       dbg.log('STROPHE', 'Connection failed' );
 	       break;
 	   case Strophe.Status.ERROR :
 	       /** setTimeout (rebound_f, timeout); **/
 	       if (callback && callback.onError) {
                    callback.onError ('Connection Error through Strophe');
                }
-	       console.log( 'STROPHE :: Connection Error' );
+	       dbg.log('STROPHE', 'Connection Error' );
 	       break;
 	   case Strophe.Status.AUTHENTICATING :	       
-	       console.log( 'STROPHE :: Authenticating' );
+	       dbg.log('STROPHE', 'Authenticating' );
 	       break;
 	   case Strophe.Status.AUTHFAIL:	    	      
 	       if (callback && callback.onError) {
 		   callback.onError ('Connection Error - Authenticating');
 	       }
-	       console.log( 'STROPHE :: Authentication Failed ' );
+	       dbg.log('STROPHE', 'Authentication Failed ' );
 	       break;
 	   case Strophe.Status.CONNECTED:
-	       console.log( 'STROPHE :: Connected' );
+	       dbg.log('STROPHE', 'Connected' );
 	       that.failures   = 0;
        	       that.ox_conn    = OX.Connection.extend( { connection : OX.StropheAdapter } ); 
 	       that.ox_conn.initConnection(); 
@@ -159,41 +144,41 @@ OX_EXT._connect   = function (callback) {
 	       
 	       that.authorizePlain (callback);
 	       break;
-	   default :
-	       //setTimeout (rebound_f, timeout);
-	       console.log ('STROPHE :: Default Case State' );
+	   default :	      
+	       dbg.log ('STROPHE', 'Default Case State' );
 	       break;
        }	    
     });
 };
 
 OX_EXT._recycle   = function () {
+    var that = this;
     this.authorizePlain ({
         onSuccess : function () {
-	    console.log ('OX_EXT :: Successfully Re-Authorized & Re-Subscribed');
+	    dbg.log (that.log_context, 'Successfully Re-Authorized & Re-Subscribed');
 	},
 	onError   : function (error) {
 	    /** TODOs : There are cases that we'll have to do a harder reset of our connections **/
-	    console.log ('OX_EXT :: Error in recycling ' + error);
+	    dbg.log (that.log_context, 'Error in recycling ' + error);
 	}
     });
 };
 
 OX_EXT.createCall = function (from_address, to_address, call_setup_id) {    
+    var that = this;
     if ( isNumberFormatted (to_address) ) {
 	to_address = 'sip:' + to_address;
     } else {
 	to_address = 'sip:' + to_address + '@' + getDomain(from_address);
     }
     from_address = 'sip:' + from_address;
-    console.log ('OX_EXT :: Create Call - ' + from_address + ' ^ ' + to_address);
-
+    dbg.log (this.log_context, 'Create Call - ' + from_address + ' ^ ' + to_address);
     this.ox_conn.ActiveCalls.create(to_address, from_address, call_setup_id, {
        onSuccess : function (packet) {	 
-	  console.log('OX_EXT :: create call success');
+           dbg.log(that.log_context, 'Create call success');
        },
        onError   : function (packet) {
-          console.log('OX_EXT :: create call error  ');
+	   dbg.log(that.log_context, 'Create call error');
        }
     });
 };
@@ -203,18 +188,18 @@ OX_EXT.authorizePlain = function (callback) {
     var jid = this.jid;          
     var pwd = this.pwd;          
 	   
-    console.log ( 'OX_EXT :: Authorize ' );
+    dbg.log (this.log_context, 'Authorize Plain');
     var that = this;
     var call = {
        onSuccess : function () {
-	   console.log ('OX_EXT :: Successfully Authorized')
+	   dbg.log (that.log_context, 'Successfully Authorized')
 	   that.subscribe (callback);
        },
        onError  : function (error) {
 	   if (callback && callback.onError) {
 	       callback.onError ('Connection Error through Authorize Plain');
 	   } 
-	   console.log ('OX_EXT :: Error in Authorize Plain');           
+	   dbg.log (that.log_context, 'Error in Authorize Plain');           
        }
     };
         
@@ -237,7 +222,7 @@ OX_EXT.subscribe = function (callback) {
             var subscription, expiration = new Date(), options = {}, i = 0;
        
 	    expiration.setDate (expiration.getDate() + 1);
-	    console.log ('OX_EXT :: Number of subscriptions ' + subscriptions.length);
+	    dbg.log (that.log_context, 'Number of subscriptions ' + subscriptions.length);
 		
 	    for (j = 0, len = subscriptions.length; j < len; j += 1) {
 		subscription = subscriptions[j];
@@ -256,16 +241,16 @@ OX_EXT.subscribe = function (callback) {
 		        var m = that._recycle.bind (that);
 			setTimeout (m, timeout);			
 			if (callback && callback.onSuccess) {
-			    console.log ('OX_EXT :: Calling onSuccess method of callback object');
+			    dbg.log (that.log_context, 'Calling onSuccess method of callback object');
 			    callback.onSuccess ();
 			}
-			console.log ('OX_EXT :: Successfully Got Subscriptions ');
+			dbg.log (that.log_context, 'Successfully Got Subscriptions ');
 		    },
 		    onError   : function (requestedURI, finalURI, packet) {
 		        if (callback && callback.onError) {
 		            callback.onError ('Error while trying to retrieve subscriptions');
 			}
-			console.log ('OX_EXT :: Error in Subscriptions');
+			dbg.log (that.log_context, 'Error in Subscriptions');
 		    }
 	       });
 	    } else {
@@ -276,13 +261,13 @@ OX_EXT.subscribe = function (callback) {
 			if (callback && callback.onSuccess) {
 			    callback.onSuccess ();
 			}
-			console.log ('OX_EXT ::  Successfully Subscribed');
+			dbg.log (that.log_context, 'Successfully Subscribed');
 		    },
 		    onError  : function (requestedURI, finalURI, packet) {
 		        if (callback && callback.onError) {
 			    callback.onError ('Error while subscribing');
 			}
-			console.log ('OX_EXT ::  Error while Subscribing');
+			dbg.log (that.log_context, 'Error while Subscribing');
 		    }
 		});
 	    }           
@@ -291,7 +276,7 @@ OX_EXT.subscribe = function (callback) {
 	    if (callback && callback.onError) {
 		callback.onError ('Error while trying to retrieve subscriptions');
 	    }
-            console.log ('OX_EXT :: Error while retrieving subscriptions');
+            dbg.log (that.log_context, 'Error while retrieving subscriptions');
         }
     };
 
@@ -300,20 +285,20 @@ OX_EXT.subscribe = function (callback) {
 
 
 OX_EXT.handleActiveCallUnsubscribed = function () {   
-    console.log ( "OX_EXT :: UNSUBSCRIBED" );
+    dbg.log (this.log_context, "UNSUBSCRIBED" );
 };
 
 OX_EXT.handleActiveCallSubscribe = function () {
-    console.log ( 'OX_EXT :: SUBSCRIBE' );
+    dbg.log (this.log_context, 'SUBSCRIBE' );
 };
 
 OX_EXT.handleActiveCallPending = function () {
-    console.log ( 'OX_EXT :: PENDING' );
+    dbg.log (this.log_context, 'PENDING' );
     this.__publishEventToApps ('activeCallPending');
 };
 
 OX_EXT.handleActiveCallPublish = function ( item ) {    
-    console.log ("OX_EXT :: Call Dialog State : " + item.dialogState);
+    dbg.log (this.log_context, "Call Dialog State : " + item.dialogState);
     this.call_handle = item;
     switch ( item.dialogState ) {
      case "created":	
@@ -329,7 +314,7 @@ OX_EXT.handleActiveCallPublish = function ( item ) {
 };
 
 OX_EXT.handleActiveCallRetract = function ( itemURI ) {
-    console.log ('OX_EXT :: RETRACT ' + itemURI );
+    dbg.log (this.log_context, 'RETRACT ' + itemURI );
     delete this.call_handle;
     this.__publishEventToApps ('activeCallRetract', itemURI);   
 };
@@ -351,6 +336,7 @@ OX_EXT.cancelCall = function (handle) {
 	handle.hangup();
     }
 };
+
 
 /**
 OX_EXT.getSubscriptions = function () {

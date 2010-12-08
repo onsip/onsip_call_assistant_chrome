@@ -34,7 +34,10 @@ var OnSIP_Preferences = {
 		
 	badgeOnIcon	: 'images/icon-19.png',
 	badgeOffIcon	: 'images/icon-19-off.png',
-        eventRequested  : false
+        eventRequested  : false,
+	logContext      : ['CONTENT-PG','CHROME-BACKGROUND','STROPHE', 'OX_EXT', 'BG_APP', 'HIGHRISE','CONTENT-PG']	
+	                  /** ['CONTENT-PG','CHROME-BACKGROUND','STROPHE', 'STROPHE RAW', 'STROPHE LOG', 'OX_EXT', 'BG_APP', 'HIGHRISE','CONTENT-PG'] **/
+	                  /** ['*'] **/	
     },	
     set : function( name, value ) {
 	window.localStorage[name] = JSON.stringify(value);
