@@ -6,7 +6,7 @@ var highrise_app = HIGHRISE;
 var zendesk_app  = ZENDESK;
 var extension    = null;
 var rebound_to   = 20; /** minutes **/
-var state_log    = [{ 'state':'', 'time':new Date() }];
+var state_log    = [];
 var BG_LOG       = "CHROME-BACKGROUND";
 
 /** Connect, subscribe, and register to XMPP API **/
@@ -52,22 +52,18 @@ chrome.browserAction.onClicked.addListener ( function (TAB) {
 
 /** Stores a state every time an "active" event is sent, up to 20 items. **/
 chrome.idle.onStateChanged.addListener     ( function (newstate) {
-    var time = new Date();
-    if (state_log.length >= 20) {
-	state_log.pop();
-    }
-    state_log.unshift({'state':newstate, 'time':time});
-    dbg.log (BG_LOG, 'Logged a new state @ ' + time);
     /** Rebound BOSH logic **/
-    if (state_log.length >= 2) {
-	var d_past = state_log[1].time;
-	var d_now  = state_log[0].time;	
+    if (state_log.length >= 1) {
+	var d_past = state_log[0].time;
+	var d_now  = new Date();
 	var diff   = d_now.getTime() - d_past.getTime();
 
 	/** These are the minutes in idle **/
-	var min    = Math.floor (diff/1000/60);
-	
-	dbg.log (BG_LOG, 'Minutes since idle ' + min);
+	var min    = Math.floor (diff/1000/60);	
+	dbg.log (BG_LOG, 'Minutes since idle ' + min + ' state log length is (' + state_log.length + ')');
+	while (state_log.length > 0) {
+	    state_log.pop();
+	}
 	if (min >= rebound_to && pref && pref.get ('onsipCredentialsGood')) {
 	    dbg.log (BG_LOG, 'IDLE for ' + min + ' minutes lets RE-ESTABLISH connection');	    
 	    var do_exec = function () {	        
@@ -110,6 +106,13 @@ chrome.idle.onStateChanged.addListener     ( function (newstate) {
 var sc = function () {
     chrome.idle.queryState(15, function (newstate) {
         dbg.log (BG_LOG, 'State Check -> ' + newstate);
+	if (newstate === 'idle') {
+	    if (state_log.length === 0) {
+		var time = new Date();
+		state_log.unshift({'state':newstate, 'time':time});
+		dbg.log (BG_LOG, 'Logged a new idle state @ ' + time);
+	    }	    	    
+	}
     });
     setTimeout (sc, 60000);
 };
