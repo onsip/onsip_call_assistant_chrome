@@ -5,7 +5,7 @@ var pref         = OnSIP_Preferences;
 var highrise_app = HIGHRISE;
 var zendesk_app  = ZENDESK;
 var extension    = null;
-var rebound_to   = 20; /** minutes **/
+var rebound_to   = 2; /** minutes **/
 var state_log    = [];
 var BG_LOG       = "CHROME-BACKGROUND";
 
@@ -105,7 +105,7 @@ chrome.idle.onStateChanged.addListener     ( function (newstate) {
 
 var sc = function () {
     chrome.idle.queryState(15, function (newstate) {
-        dbg.log (BG_LOG, 'State Check -> ' + newstate);
+	/** dbg.log (BG_LOG, 'State Check -> ' + newstate); **/
 	if (newstate === 'idle') {
 	    if (state_log.length === 0) {
 		var time = new Date();

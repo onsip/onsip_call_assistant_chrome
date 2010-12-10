@@ -3,12 +3,13 @@
 var HIGHRISE = {
     'companies'   : [],
     'contacts'    : [],
-    'ts'          : null,
+    'ts'          : undefined,
     'base_url'    : '',
     'token'       : '',
     'attempts'    : 0,
     'log_context' : 'HIGHRISE',
-    'refresh'     : 60000 * 45 /** Refresh every 45 min **/
+    'timeout_id'  : undefined,
+    'refresh'     : 60000 * 90 /** Refresh every 90 min **/
 };
 
 /** Tries to retrieve /people.xml and looks for error code 200 **/
@@ -110,7 +111,6 @@ HIGHRISE.findContact = function (phone_number) {
 /** Normalize the phone number **/ 
 HIGHRISE._normalizePhoneNumber = function (phone_number) {
     var clean_phone_num, clean_phone_ext;
-
     clean_phone_ext = getPhoneExtension( phone_number );
     clean_phone_num = removeExtention  ( phone_number );
     clean_phone_num = cleanPhoneNo     (clean_phone_num);
@@ -119,8 +119,7 @@ HIGHRISE._normalizePhoneNumber = function (phone_number) {
     }
     if (clean_phone_ext) {
 	clean_phone_num += cleanPhoneNo (clean_phone_ext);
-    }
-	
+    }	
     return clean_phone_num;
 };
 
@@ -178,10 +177,19 @@ HIGHRISE.init     =  function (pref) {
 	    to_func       = that._recycle.bind (that); 
 	    that.ts       = new Date();	
 	    that.attempts = 0;
-	    setTimeout  (to_func, that.refresh);
+	    if ( !that.timeout_id ) { 
+		dbg.log (that.log_context, 'In function init, will SETUP _recyle ' + that.timeout_id);
+		that.timeout_id = setTimeout  (to_func, that.refresh);
+	    }  else {
+		dbg.log (that.log_context, 'In function init, _recycle is already setup');
+	    }
 	    dbg.log (that.log_context, 'Got contacts @ ' + that.ts);	     
         },
         onError   : function (status) {
+	    to_func       = that._recycle.bind (that); 
+	    if ( !that.timeout_id ) {		
+	        that.timeout_id = setTimeout  (to_func, that.refresh);
+	    }
 	    dbg.log (that.log_context, 'Error ' + status);
         }
     });
@@ -202,17 +210,17 @@ HIGHRISE._recycle       = function () {
     dbg.log (this.log_context, 'Recycle contacts & companies');
     this._getContacts ({
         onSuccess : function (c) {	    	   
-	    to_func       = that._recycle.bind (that);
-	    that.attempts = 0;
-	    setTimeout  (to_func, that.refresh);	    
+	    to_func         = that._recycle.bind (that);
+	    that.attempts   = 0;
+	    that.timeout_id = setTimeout  (to_func, that.refresh);	    
 	    dbg.log (that.log_context, 'Recycled ' + c.length + ' contacts @ ' + new Date());
 	},
 	onError   : function (status) {
 	    that.attempts += 1;
 	    if (that.attempts <= 5) {
-		failed_to = 60000 * that.attempts; 
-		to_func   = that._recycle.bind (that);		
-                setTimeout  (to_func, failed_to);
+		failed_to       = 60000 * that.attempts; 
+		to_func         = that._recycle.bind (that);		
+                that.timeout_id = setTimeout  (to_func, failed_to);
 		dbg.log (that.log_context, 'Failed to connect on ' + that.attempts + ' attempts, will try again');
 	    } else {
 		dbg.log (that.log_context, 'CRITICAL FAILURE, tried to connect to API more than  5 time(s)');
