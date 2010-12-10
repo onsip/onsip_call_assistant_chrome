@@ -5,7 +5,7 @@ var pref         = OnSIP_Preferences;
 var highrise_app = HIGHRISE;
 var zendesk_app  = ZENDESK;
 var extension    = null;
-var rebound_to   = 2; /** minutes **/
+var rebound_to   = 20; /** minutes **/
 var state_log    = [];
 var BG_LOG       = "CHROME-BACKGROUND";
 
