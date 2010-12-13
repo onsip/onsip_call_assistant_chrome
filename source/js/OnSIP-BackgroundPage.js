@@ -1,13 +1,14 @@
 /** Chrome Background Page **/
 
 /** Alias for the OnSIP_Preferences object **/
-var pref         = OnSIP_Preferences; 
-var highrise_app = HIGHRISE;
-var zendesk_app  = ZENDESK;
-var extension    = null;
-var rebound_to   = 20; /** minutes **/
-var state_log    = [];
-var BG_LOG       = "CHROME-BACKGROUND";
+var pref            = OnSIP_Preferences; 
+var highrise_app    = HIGHRISE;
+var zendesk_app     = ZENDESK;
+var extension       = null;
+var rebound_to      = 20; /** minutes **/
+var state_inactive  = [];
+var state_active    = [];
+var BG_LOG          = "CHROME-BACKGROUND";
 
 /** Connect, subscribe, and register to XMPP API **/
 OX_EXT.apps = [BG_APP];
@@ -53,18 +54,31 @@ chrome.browserAction.onClicked.addListener ( function (TAB) {
 /** Stores a state every time an "active" event is sent, up to 20 items. **/
 chrome.idle.onStateChanged.addListener     ( function (newstate) {
     /** Rebound BOSH logic **/
-    if (state_log.length >= 1) {
-	var d_past = state_log[0].time;
-	var d_now  = new Date();
-	var diff   = d_now.getTime() - d_past.getTime();
-
+    if (state_inactive.length >= 1) {
+	var d_past      = state_inactive[0].time;
+	var d_now       = new Date();
+	var diff        = d_now.getTime() - d_past.getTime();
+	var from_active = false;
+	if (state_active.length > 0) {
+	    var d_past_active = state_active[0].time;
+	    var diff_active   = d_now.getTime() - d_past_active.getTime();
+	    var min_active    = Math.floor (diff_active/1000/60);
+	    /** 
+	     	Here we're trying to account for the case where a computer is put 
+	     * 	to sleep, taken home, and then reactivated. 
+	     **/
+	    dbg.log (BG_LOG, 'Minutes since last ACTIVE ' + min_active);
+	    if (min_active >= 120) {
+		from_active = true;
+	    }
+	}
 	/** These are the minutes in idle **/
 	var min    = Math.floor (diff/1000/60);	
-	dbg.log (BG_LOG, 'Minutes since idle ' + min + ' state log length is (' + state_log.length + ')');
-	while (state_log.length > 0) {
-	    state_log.pop();
+	dbg.log (BG_LOG, 'Minutes since idle ' + min + ' state inactive log length is (' + state_inactive.length + ')');
+	while (state_inactive.length > 0) {
+	    state_inactive.pop();
 	}
-	if (min >= rebound_to && pref && pref.get ('onsipCredentialsGood')) {
+	if ((min >= rebound_to || from_active) && pref && pref.get ('onsipCredentialsGood')) {
 	    dbg.log (BG_LOG, 'IDLE for ' + min + ' minutes lets RE-ESTABLISH connection');	    
 	    var do_exec = function () {	        
 		OX_EXT.failures     = 0;	
@@ -75,16 +89,21 @@ chrome.idle.onStateChanged.addListener     ( function (newstate) {
 		    },
 		    onError   : function (error) {
 			dbg.log (BG_LOG, 'There was an error in REBOUND OX_EXT INIT ' + error);
+			dbg.log (BG_LOG, 'Let\'s try do_exec() again');			
+			d_now.setDate (1);
+			d_now.setHours(0);
+			d_now.setMonth(0);
+			state_inactive.unshift({'state':'', 'time':d_now});
 	            }
 	        });
-	        		
+	    
 		/** Load and initialize Highrise with contacts **/
-		if (pref && pref.get ('highriseEnabled') === true) {
+		if (pref && pref.get ('highriseEnabled') === true && from_active) {
 		    highrise_app.init(pref);
 		}
 
 		/** Initialize Zendesk with Contacts **/		
-		if (pref && pref.get ('zendeskEnabled')  === true) {
+		if (pref && pref.get ('zendeskEnabled')  === true && from_active) {
 		    zendesk_app.init (pref);
 		}
 	    };
@@ -96,7 +115,7 @@ chrome.idle.onStateChanged.addListener     ( function (newstate) {
 		},
                 onError   : function () {
 		    dbg.log (BG_LOG, 'Failed to connect to BOSH pop off active node ');
-		    state_log.shift();
+		    state_inactive.shift();
 		}
 	    });	    
 	}
@@ -106,15 +125,21 @@ chrome.idle.onStateChanged.addListener     ( function (newstate) {
 var sc = function () {
     chrome.idle.queryState(15, function (newstate) {
 	/** dbg.log (BG_LOG, 'State Check -> ' + newstate); **/
+	var time = new Date();
 	if (newstate === 'idle') {
-	    if (state_log.length === 0) {
-		var time = new Date();
-		state_log.unshift({'state':newstate, 'time':time});
+	    if (state_inactive.length === 0) {		
+		state_inactive.unshift({'state':newstate, 'time':time});
 		dbg.log (BG_LOG, 'Logged a new idle state @ ' + time);
 	    }	    	    
+	} else if (newstate === 'active') {
+	    while (state_active.length >= 20) {
+		state_active.pop();
+	    }
+	    /** dbg.log (BG_LOG, 'Logged new active state @ ' + time); **/
+	    state_active.unshift({'state':newstate, 'time':time});
 	}
     });
-    setTimeout (sc, 60000);
+    setTimeout (sc, 20000);
 };
 sc();
 
