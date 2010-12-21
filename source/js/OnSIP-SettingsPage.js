@@ -19,10 +19,8 @@ $(function(){
 	pref.set('highriseEnabled'     , false);
 	pref.set('zendeskEnabled'      , false);
 
-	/**
 	$('#header-zendesk'  ).removeClass('checkmark');
 	$('#header-highrise' ).removeClass('checkmark');
-	**/
 
 	/** Error flags **/	
 	var error_fields = isOnSIPDataEntered ();
@@ -35,7 +33,7 @@ $(function(){
 	    $('#validatingMsg').show();
 
 	    /** Get onsip user and save it in the local storage **/
-	    getOnsipUser   ( handleOnSIPLogin ());
+	    getOnsipUser (handleOnSIPLogin ());
 
 	} else {
 	    $('#save-options-btn').attr('disabled','');
@@ -43,21 +41,6 @@ $(function(){
 	    showErrorFields (error_fields);
 	}
         
-	/** Send command to all tabs to update the click-to-call links **/
-	/**
-	if (pref.get('enabled')) {
-	    chrome.windows.getAll({populate: true}, function(windows){
-		    for (var w in windows) {
-			for (var t in windows[w].tabs) {
-			    var tabId = windows[w].tabs[t].id;
-			    if (tabId) {
-				chrome.tabs.sendRequest(tabId, { fromAddress: fromAddress });
-			    }
-			}
-		    }
-		});
-	}
-	**/
     });
 });
 
@@ -73,7 +56,6 @@ function isOnSIPDataEntered () {
     if($('#onsipPassword').val().length == 0){
 	error_fields.push( $('#onsipPassword'));
     }
-
     return error_fields;
 };
 
@@ -88,13 +70,10 @@ function handleOnSIPLogin () {
     var obj = {
 	onSuccess : function () {
 	    console.log('CONTENT PG :: OnSIP connection succeeded, we store in local storage');
-	    pref.set('onsipCredentialsGood', true);
-
-	    /** Update tabs **/
-	    /** updateAllTabs($('#fromAddress').val()); **/
+	    pref.set('onsipCredentialsGood', true);		
 
 	    var entered_highrise = isHighriseDataEntered();
-	    var entered_zendesk  = false; // isZendeskDataEntered();
+	    var entered_zendesk  = isZendeskDataEntered();
 
 	    /** Before showing success message see if Highrise is validated ok, due to asyncronus nature of js **/
 	    if (entered_highrise || entered_zendesk) {
@@ -170,7 +149,7 @@ function handleHighriseLogin () {
 	    
 	    /** Set Highrise Enabled **/
 	    pref.set('highriseEnabled', true);
-	    //enableHighrise ();
+	    enableHighrise ();
 	    $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
 	    $('#save-options-btn').attr('disabled','');
 	},
@@ -189,21 +168,6 @@ function handleHighriseLogin () {
 
     return obj;
 };
-
-/**
-function updateAllTabs(fromAddress){
-    chrome.windows.getAll({populate: true}, function(windows){
-        for (var w in windows) {
-            for (var t in windows[w].tabs) {
-                var tabId = windows[w].tabs[t].id;
-                chrome.tabs.sendRequest(tabId, {
-                    fromAddress: fromAddress
-                });
-            }
-        }
-    });
-}
-**/
 
 /** Validate Highrise Credentials **/
 function validateHighriseCredentials (callback){
@@ -278,12 +242,11 @@ function isZendeskDataEntered (){
     var zd_url  = $('#zendeskUrl')     .val();
     var zd_user = $('#zendeskUser')    .val();
     var zd_pwd  = $('#zendeskPassword').val();
-
     var valid   = false;
 
-    zd_url  = trim(zd_url);
-    zd_user = trim(zd_user);
-    zd_pwd  = trim(zd_pwd);
+    zd_url      = trim(zd_url);
+    zd_user     = trim(zd_user);
+    zd_pwd      = trim(zd_pwd);
     
     console.log ('CONTENT PG :: From input field, Zendesk URL -> ' + zd_url);
     if(zd_url.length > 0 && zd_url != pref.defaults['zendeskUrl']) {
@@ -407,9 +370,9 @@ function SetHelperBehavior(formID){
     /** Behaivior for a Text fields **/
     $(formID).children('fieldset').children('input[type="text"]').each(function(){
         $(this).focus(function(){
-           if( $(this).val() == pref.defaults[$(this).attr('name')]){
+            if( $(this).val() == pref.defaults[$(this).attr('name')]){
                 $(this).val('');
-           }
+            }
         });
     });
 
@@ -427,41 +390,39 @@ function SetHelperBehavior(formID){
 	$('#highriseToken').val(pref.defaults['highriseToken']);
 	$('#timezone'     ).val("0.0");
     });
-
-    /**
+   
     $('#input-zendesk'   ).hide ();
     $('#input-highrise'  ).hide ();
-    **/
+   
     if (pref && pref.get('zendeskEnabled')) {
 	enableZendesk ();	
     } else if (pref && pref.get('highriseEnabled')) {
 	enableHighrise();
     }
-
-    /**
+   
     $('#header-zendesk').click( function (e) {
-	    if ($('#input-zendesk').is(':hidden')) {
-		$('#input-zendesk').slideDown('slow', function() {
-		     $('#input-highrise').slideUp('slow');
-		});
-	    } else {
-		$('#input-zendesk').slideUp('slow');
-	    }  	    
-    });
+	if ($('#input-zendesk').is(':hidden')) {
+	    $('#input-zendesk').slideDown('slow', function() {
+		$('#input-highrise').slideUp('slow');
+	    });
+	} else {
+	    $('#input-zendesk').slideUp('slow');
+	}  	    
+    }); 
 
     $('#header-highrise').click( function (e) {
-	    if ($('#input-highrise').is(':hidden')) {
-		$('#input-highrise').slideDown('slow', function () {
-		    $('#input-zendesk').slideUp('slow');	
-		});	     		
-	    } else {
-		$('#input-highrise').slideUp('slow');
-	    }  	    
+	if ($('#input-highrise').is(':hidden')) {
+	    $('#input-highrise').slideDown('slow', function () {
+		$('#input-zendesk').slideUp('slow');	
+	    });	     		
+	} else {
+	    $('#input-highrise').slideUp('slow');
+	}  	    
     });
-    **/
 }
 
-function enableHighrise() {        
+function enableHighrise() {
+    console.log("Highrise enabled :: Highrise is enbled");
     $('#header-zendesk' ).removeClass('checkmark');
     $('#header-highrise').addClass   ('checkmark');
     $('#input-zendesk'  ).hide ();

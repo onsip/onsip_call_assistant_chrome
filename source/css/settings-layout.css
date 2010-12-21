@@ -13,10 +13,10 @@ H4	   { font-weight:bold; font-size:14px; margin:14px 0; padding:0; }
 
 #wrapper   { position:relative; width:960px; margin:0 auto; overflow:hidden; padding:0; min-height:100%;  }
 
-#header	   { position:relative; height:90px; }
-#logo	   { position:absolute; display:block; bottom:0; left:0; width:122px; height:39px; background:url(../images/logo.gif) center center no-repeat; text-align:left; text-indent:-9999px; }
-#mainMenu  { position:absolute; bottom:0; right:0; margin:0; padding:0; list-style:none; }
-#mainMenu LI 		 { float:left; padding:0 0 0 20px; margin:0 0 0 20px; border-left:1px solid #84A6CD; }
+#header	     { position:relative; height:90px; }
+#logo	     { position:absolute; display:block; bottom:0; left:0; width:122px; height:39px; background:url(../images/logo.gif) center center no-repeat; text-align:left; text-indent:-9999px; }
+#mainMenu    { position:absolute; bottom:0; right:0; margin:0; padding:0; list-style:none; }
+#mainMenu LI { float:left; padding:0 0 0 20px; margin:0 0 0 20px; border-left:1px solid #84A6CD; }
 #mainMenu LI:first-child { padding:0; margin:0; border:0; }
 #mainMenu A       { text-decoration:none; }
 #mainMenu A:hover { text-decoration:underline; }
@@ -27,7 +27,7 @@ H4	   { font-weight:bold; font-size:14px; margin:14px 0; padding:0; }
 #options	  { position:relative; float:right; width:300px; padding:10px 10px 30px 30px; margin:0; background:#F3F9FD url(../images/bg-options.png) top left repeat-x; border:1px solid #c0d7e6; border-radius:6px; }
 #options FIELDSET { padding:0; margin:0; border:0; font-size:12px; }
 #options FIELDSET.submit { text-align:right; padding:20px 0 0; }
-#options LABEL		 { display:block; padding:0 0 5px; text-shadow:1px 1px 0px #FFF; }
+#options LABEL	  { display:block; padding:0 0 5px; text-shadow:1px 1px 0px #FFF; }
 			
 #options INPUT[type="text"], #options INPUT[type="password"] { width:258px; padding:2px 4px; border:2px solid #004A8F; color:#778; font:normal 14px Verdana, Helvetica, sans-serif; float: left; }
 #options INPUT[type="text"]:focus { border-color:#5087C7; outline:none; color:#445; }
@@ -52,14 +52,12 @@ H4	   { font-weight:bold; font-size:14px; margin:14px 0; padding:0; }
 
 #clear-highrise { color:#050; font:small'trebuchet ms',helvetica,sans-serif;}
 
-/**
 #header-zendesk  { cursor:pointer; text-decoration:underline }
 #header-highrise { cursor:pointer; text-decoration:underline; }
-#.checkmark  { background : url(../images/i_ok.png) no-repeat; background-position: 30% 80%; padding-top:5px; padding-bottom:0px; }
+.checkmark      { background : url(../images/i_ok.png) no-repeat; background-position: 30% 80%; padding-top:5px; padding-bottom:0px; }
 
 #input-zendesk  { display:none }
 #input-highrise { display:none }
-**/
 
 /*highrise modification*/
 select#timezone{
@@ -83,7 +81,6 @@ select#timezone{
    font-size: 10px;
     border-radius: 8px 8px 8px 0px;
 }
-/*highrise modification*/
 
 /* test */
 
