@@ -1,0 +1,36 @@
+Chrome Click-To-Call -
+Built on Chrome's extension API. Leverages OnSIP's XMPP API for call control in conjunction with third party 
+intergration apps Highrise and Zendesk.
+
+1. Author
+---------------
+Oren Forer
+oren@junctionnetworks.com
+
+Date Created:
+Late 2010
+
+Date Modified:
+12-21-2010
+
+2. Details
+----------------
+
+OnSIP Features 
+^^^^^^^^^^^^^^^^^^^^^
+Will display notifications native to Chrome of Incoming & Outgoing phone calls.
+
+Highrise Support
+^^^^^^^^^^^^^^^^^^^^^
+Displays friendly names in the chrome notifications toast for users that can be identified in Highrise by phone number.
+Logs the calls to Highrise comments section.
+
+3. Installation
+----------------------
+- Drag & Drop the source.crx file into Chrome.  
+- Click *options* on the chrome://extensions page
+  Required : SIP credentials
+  Optional : Highrise & Zendesk credentials and tokens
+
+
+  
