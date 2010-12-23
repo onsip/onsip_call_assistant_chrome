@@ -393,37 +393,40 @@ ZENDESK._getContacts = function (call, page) {
 
 ZENDESK._parseContactsXML = function (xml) {
     var i, j, phone_node, phone, full_name, location, person_id;
-    var xmlobject   = (new DOMParser()).parseFromString(xml, "text/xml");
-    var root_node   = xmlobject.getElementsByTagName("users")[0];
-    var user_count  = 0, user_nodes, len;
-
-    if (xmlobject.getElementsByTagName("users") && xmlobject.getElementsByTagName("users").length ) {
-        user_count  = root_node.getAttribute ("count");
-	user_nodes  = root_node.getElementsByTagName("user");
-	user_count  = parseInt(user_count, 10);
-	for (i = 0,len = user_nodes.length  ; i < len ; i += 1) {
-	    person_id  = user_nodes[i].getElementsByTagName ("id")   [0].firstChild.nodeValue;
-	    full_name  = user_nodes[i].getElementsByTagName ("name") [0].firstChild.nodeValue;
-	    phone_node = user_nodes[i].getElementsByTagName ("phone");
-	    if (phone_node && phone_node.length) { 
-		if (phone_node[0].firstChild && phone_node[0].firstChild.nodeValue) {	    
-		    phone      = phone_node[0].firstChild.nodeValue;
-		    phone_num  = this._normalizePhoneNumber (phone);
-	
-		    var person_obj = {
-			"id"           : person_id,
-			"full_name"    : full_name,	    
-			"phone_number" : phone_num
-		    };
-
-		    if (phone_num) {
-			this.contacts.push (person_obj);
-		    }
-		}
-	    }
+    var xmlobject  = (new DOMParser()).parseFromString(xml, "text/xml");
+    var root_node  = xmlobject.getElementsByTagName("users");
+    if (root_node && root_node.length > 0) {
+	root_node  = root_node[0];
+    } else {
+	return;
+    }
+    var user_count = 0, user_nodes, len;    
+    user_count = root_node.getAttribute ("count");
+    user_nodes = root_node.getElementsByTagName("user");
+    user_count = parseInt(user_count, 10);
+    for (i = 0,len = user_nodes.length  ; i < len ; i += 1) {
+	person_id     = user_nodes[i].getElementsByTagName ("id")[0].firstChild.nodeValue;	
+	full_name     = user_nodes[i].getElementsByTagName ("name");
+	if (full_name && full_name.length > 0 && full_name[0].firstChild) {
+	    full_name = full_name[0].firstChild.nodeValue;
+	} else {
+	    full_name = '-------';
+	}
+	phone_node    = user_nodes[i].getElementsByTagName ("phone");
+	if (phone_node && phone_node.length && phone_node[0].firstChild) { 	   
+	    phone     = phone_node[0].firstChild.nodeValue;
+	    phone_num = this._normalizePhoneNumber (phone);
+	    var person_obj = {
+		"id"           : person_id,
+		"full_name"    : full_name,	    
+		"phone_number" : phone_num
+	    };
+	    if (phone_num) {
+		this.contacts.push (person_obj);
+	    }	   
 	}
     }
-
+    
     dbg.log (this.log_context, "User count " + user_count);
     if (user_count < 15) {
 	this.paginate  = -1;
