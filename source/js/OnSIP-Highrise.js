@@ -138,6 +138,7 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
 	        that.call.onError (xhr.status);
 	    }
 	} else {
+	    ok = true;
 	    if (that.call && that.call.onSuccess) {
 	        that.call.onSuccess ();
 	    }
@@ -148,7 +149,7 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
     var a = function () {
 	if (!ok) {
 	    xhr.abort();
-	    dbg.log (that.log_context, 'ABORTING xhr call to GetCompanies');
+	    dbg.log (that.log_context, 'ABORTING xhr call to postNoteToProfile');
 	    if (call && call.onError) {
 		call.onError('aborted getCompanies');
 	    }
