@@ -4,38 +4,21 @@ intergration apps Highrise and Zendesk.
 
 1. Author
 ---------------
-<<<<<<< HEAD
 Oren Forer
 developer@junctionnetworks.com
-=======
-Oren Forer + Russians
-oren@junctionnetworks.com
-
-Date Created:
-Late 2010
-
-Date Modified:
-12-21-2010
->>>>>>> zendesk_highrise
 
 2. Details
 ----------------
 
 OnSIP Features 
 ^^^^^^^^^^^^^^^^^^^^^
-<<<<<<< HEAD
-Will display notifications native to Chrome of Incoming & Outgoing phone calls.  Will rewrite phone numbers on a web page as hyperlinks to initiate a phone call.
-=======
-Will display notifications native to Chrome of Incoming & Outgoing phone calls.
->>>>>>> zendesk_highrise
+Will display notifications native to Chrome of Incoming & Outgoing phone calls.  Will rewrite phone numbers on a web page as hyperlinks to initiate a phone calls.
 
 Highrise Support
 ^^^^^^^^^^^^^^^^^^^^^
 Displays friendly names in the chrome notifications toast for users that can be identified in Highrise by phone number.
 Logs the calls to Highrise comments section.
 
-<<<<<<< HEAD
-=======
 Zendesk Support
 ^^^^^^^^^^^^^^^^^^^^^
 Displays friendly names in the Chrome notifications taost for users that can be looked up in Zendesk by phone number.
