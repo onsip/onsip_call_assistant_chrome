@@ -1,7 +1,8 @@
 var dbg = {
     log : function () {	
 	if (arguments.length === 2) {
-	    var c   = ['CONTENT-PG','CHROME-BACKGROUND','STROPHE', 'OX_EXT', 'BG_APP', 'HIGHRISE','CONTENT-PG','ZENDESK'];
+	    var c   = ['STROPHE RAW','CONTENT-PG','CHROME-BACKGROUND','STROPHE', 'OX_EXT', 'BG_APP', 'HIGHRISE','CONTENT-PG','ZENDESK'];
+	    //var c = [];
 	    var i   = 0;
 	    var x   = '';
 	    if (!(c && c.length)) {

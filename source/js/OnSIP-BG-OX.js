@@ -230,7 +230,8 @@ BG_APP._postNotetoProfile  = function (item) {
                         zendesk_app.postNote  (costumer_zd, pref.get('userTimezone'));
                     } else {
                         phone = notif.phone;
-                        zendesk_app.postNoteUnknown (phone, pref.get('userTimezone'));
+			/** Commented out so no random tickets would be created **/
+                        //zendesk_app.postNoteUnknown (phone, pref.get('userTimezone'));
                     }
                 }
             }
