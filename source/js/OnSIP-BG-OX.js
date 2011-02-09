@@ -87,6 +87,9 @@ BG_APP.activeCallRequested = function ( items ) {
         cont_zendesk  = zendesk_app .findContact (phone + '');
         name          = this._normalizeName (cont_zendesk, cont_highrise);
         phone         = name || phone;
+	/** global variable, resetting the name associated **/
+	/** with the last highrise number clicked **/
+	name_from_context = '';
 
         var f_notification = {
             onSuccess : function (record_count, subject, is_onsip, nice_id) {
