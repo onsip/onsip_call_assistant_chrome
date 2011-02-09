@@ -83,29 +83,67 @@ HIGHRISE.postNote = function (costumer, user_tz, incoming) {
 };
 
 /** Find the person or company by phone number **/
-HIGHRISE.findContact = function (phone_number) {
-    var  i, j, len, costumer;    
-    /** Find people first **/
-    for (i = 0, len = this.contacts.length; i < len; i += 1) {
-       for (j = 0; j < this.contacts[i].phone_numbers.length; j += 1) {
-          if (this.contacts[i].phone_numbers[j].phone_number === phone_number) {
-	     costumer      = this.contacts[i];
-	     costumer.type = 'people';
-	     return costumer;
-	  }    
-       }    	
-    }
-    
+/** Amended somewhat: **/
+/** The customer_from_context argument is scraped **/
+/** from the Highrise website, where the click-to-call phone number link **/
+/** was clicked. With the enhancement of this variable, we modify the logic such that **/
+/** If the customer_from_context was a valid argument **/
+/** we search all the phone numbers that match our customer list (cached) **/
+/** and verify that a matched phone number also matches the name scraped from the site  **/
+/** [i.e. customer_from_context].**/
+/** If said argument was not passed through, we simply find a match company if one exists **/
+/** Followed by a matching customer if company does not exist **/
+HIGHRISE.findContact = function (phone_number, customer_from_context) {
+    var  i, j, len, customer, f_name, l_name, ff_name, fl_name, b_cfc_ok;
+    customer_from_context = customer_from_context ? trim(customer_from_context.toLowerCase()) : '';      
+    b_cfc_ok = (customer_from_context.length > 0);
+    /** Find company first **/    
     for (i = 0, len = this.companies.length; i < len; i += 1) {
 	for (j = 0; j < this.companies[i].phone_numbers.length; j += 1) {
 	    if (this.companies[i].phone_numbers[j].phone_number === phone_number) {
-		costumer      = this.companies[i];
-		costumer.type = 'companies';
-		return costumer;
+		customer      = this.companies[i];
+		customer.type = 'companies';
+		if(b_cfc_ok) {
+		    if(customer.company_name.toLowerCase() == customer_from_context){
+			return customer;
+		    }
+		} else {
+		    return customer;
+		}
 	    }
 	}
     }
-    return;
+
+    for (i = 0, len = this.contacts.length; i < len; i += 1) {
+       for (j = 0; j < this.contacts[i].phone_numbers.length; j += 1) {
+          if (this.contacts[i].phone_numbers[j].phone_number === phone_number) {
+	      customer      = this.contacts[i];
+	      customer.type = 'people';
+	      if(b_cfc_ok > 0) {
+		  f_name = '';
+		  l_name = '';
+		  if (customer.first_name) {
+		      f_name = customer.first_name;
+		  }
+		  if (customer.last_name) {
+		      l_name = customer.last_name;
+		  }
+		  ff_name = f_name.toLowerCase() + ' ' + l_name.toLowerCase();
+		  fl_name = l_name.toLowerCase() + ' ' + f_name.toLowerCase();
+		  ff_name = trim(ff_name);
+		  fl_name = trim(fl_name);
+		  if(ff_name == customer_from_context || fl_name == customer_from_context){
+		      return customer;
+		  }
+	      }	   
+	      else {
+		  return customer;
+	      }
+	  }    
+       }    	
+    }
+
+    return customer;  
 };
 
 /** Normalize the phone number **/ 

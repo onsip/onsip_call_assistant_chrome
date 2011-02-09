@@ -1,14 +1,24 @@
 /** Chrome Background Page **/
 
 /** Alias for the OnSIP_Preferences object **/
-var pref            = OnSIP_Preferences; 
-var highrise_app    = HIGHRISE;
-var zendesk_app     = ZENDESK;
-var extension       = null;
-var rebound_to      = 20; /** minutes **/
-var state_inactive  = [];
-var state_active    = [];
-var BG_LOG          = "CHROME-BACKGROUND";
+var pref              = OnSIP_Preferences; 
+var highrise_app      = HIGHRISE;
+var zendesk_app       = ZENDESK;
+var extension         = null;
+var rebound_to        = 20; /** minutes **/
+var state_inactive    = [];
+var state_active      = [];
+var BG_LOG            = "CHROME-BACKGROUND";
+
+/** This is a bit hacky. the problem we're **/
+/** trying to solve has to do with identifying **/
+/** the intented individual who we are calling **/
+/** A single number within a company can represent **/
+/** a call to any one of many persons within that company **/
+/** We, therefore, are attempting to identify that **/
+/** person from the web page context from which their **/
+/** number was clicked **/
+var name_from_context = ''; 
 
 /** Connect, subscribe, and register to XMPP API **/
 OX_EXT.apps = [BG_APP];
@@ -149,7 +159,7 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 
     /** On load parse request **/     
     if ( request.pageLoad && pref.get('enabled') ) {
-	dbg.log (BG_LOG, 'Send response to TAB');
+	dbg.log (BG_LOG, 'Send parseDOM request to Content Page from BG page');
         sendResponse ({ parseDOM : true, fromAddress : pref.get('fromAddress')});
     }
 
@@ -160,18 +170,21 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 
     /** Make a Call on request **/
     if ( request.setupCall && pref.get ('enabled') ) {
-	var from_address = pref.get('fromAddress');	
-        var to_address   = request.phone_no; 	
+	var from_address  = pref.get('fromAddress');	
+        var to_address    = request.phone_no; 	
+	/** Name from context would ascertain the individual **/
+	/** we are calling further down the call initiation process **/
+	/** by scraping the page from which the click-to-call number was clicked **/
+	name_from_context = request.name_from_context;
 	// var clean_no     = formatPhoneNum (to_address);
-	dbg.log (BG_LOG, 'Call requested FROM: ' + 
-		 from_address + ' - TO: ' + to_address);
-	OX_EXT.createCall (from_address, to_address, to_address);
+	dbg.log (BG_LOG, 'Call requested FROM: ' + from_address + ' - TO: ' + to_address);
+	OX_EXT.createCall (from_address, to_address);
     }
     
     /** Verify SIP User **/
     if ( request.verifyOnSipUser ) {
 	dbg.log (BG_LOG, 'Request verify on sip user  ' + 
-		 request.username + ', ***  -- ' + 
+		request.username + ', ***  -- ' + 
 		 pref.get ('onsipHttpBase'));
 
 	pref.set ('fromAddress'  , request.username);
@@ -224,5 +237,11 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
             request.highrise_token);	
     } 
 
+    /** In case we need to refresh Highrise from the content page **/
+    if (request.refreshHighrise && pref && pref.get ('highriseEnabled')) {
+	dbg.log(BG_LOG, 'HIGHRISE API :: Refreshing Highrise');
+	highrise_app.init (pref);
+	sendResponse ({ok : true});
+    }
 });
 

@@ -4,6 +4,13 @@ var CONTENT_PG = "CONTENT-PG";
 var to_domain  = null;
 var _enabled   = false;
 
+/** These selector paths will be used to trigger a background refresh of all the Highrise **/
+/** customer data that is cached locally in the plug-in.  These Highrise paths are linked to **/
+/** to form fields that trigger this update **/
+var HQ_SELECTOR_PATH_ADD_NEW = '#page_main_column .edit .submit input[name$="commit"]';
+var HQ_SELECTOR_PATH_UPDATE  = '#page_main_column #contact_and_permissions_tab .submit input[name$="commit"]';
+var HQ_SELECTOR_PATH_DELETE  = '#screen_body .col .innercol .submit input[type$="submit"]';
+
 /** Add listener for commands from the background process **/
 chrome.extension.onRequest.addListener( function (request, sender, sendResponse) {    
     dbg.log (CONTENT_PG, 'Coming From Background Page :: parseDOM  ' + request.parseDOM);
@@ -35,7 +42,7 @@ function handleDomChange(e) {
 	    return;
 	}	
 	dbg.log (CONTENT_PG, 'Handle DOM Change - parsing ' + parsing + ' Extension enabled :: ' + ext_enabled);	
-	var newNodeClass = e.srcElement.className;		
+	var newNodeClass = e.srcElement.className;
 	if ( newNodeClass != undefined ) {
 	    if (/onsip\-message\-box/.test(newNodeClass) || newNodeClass == 'onsip-click-to-call-icon') {
 		return;
@@ -55,12 +62,23 @@ function alterDOM(request) {
     /** Parse DOM command **/
     dbg.log (CONTENT_PG, 'AlterDOM');
     if ( request.parseDOM ) {
-	_enabled = true;
+	_enabled = true;	
+	/** These events triggered through the Highrise application would send a request **/
+	/** to the background page to have the customer cache store refresh to reflect to changes made in Highrise **/
+	dbg.log(CONTENT_PG, 'In alterDOM, will add Highrise triggers');
+	addHighriseEvents();
+	/** TODO **/
+	/** Will likely need to build similar functionality for Zendesk **/
+
 	parseDOM(document.body);
     } else if ( request.clearDOM ) {
 	/** Clear DOM command **/
         _enabled = false;
 	clearDOM();
+	/** We don't bother to clear Highrise events **/
+	/** Not at this point at least with the currently supported features **/
+	/** Because even with a triggered event, the background page will not **/
+	/** process the event if the plug-in is disabled **/
     }
 }
 
@@ -129,7 +147,9 @@ function parsePhoneNumbers (node) {
     }
 
     var phoneNumber                          = /((((\+|(00))[1-9]\d{0,3}[\s\-.]?)?\d{2,4}[\s\/\-.]?)|21)\d{5,9}/;
-    var phoneNumberNorthAmerica              = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}/;
+    /** Modified phoneNumberNorthAmerica reg expression to allow for no spaces phone num support (i.e. 17328829922) **/
+    //var phoneNumberNorthAmerica              = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}/;
+    var phoneNumberNorthAmerica              = /\+?(1[\s-.]?)?((\(\d{3}\))|(\d{3}))[\s.\-]?\d{3}[\s.\-]?\d{4}/;
 
     /** Phone number with an extension **/
     var phoneNumberNorthAmericaWithExtension = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}\s{1,5}(ext|x|ex)\s{0,3}.{0,3}\d{2,5}/;
@@ -229,12 +249,84 @@ function parsePhoneNumbers (node) {
     return 1;
 }
 
+/** Highrise specific **/
+/** In this function we're trying to solve a problem whereby a single **/
+/** phone number is associated with several different people within an **/
+/** organization.  If I click that phone number link to initiate a call **/
+/** to that company, how do I identify the intended received of that phone call **/
+/** This function scrapes the name of that individual from the context of the **/
+/** web page so that we can link the name further into the whole call call control flow **/
+/** and post the appropriate comment to the account **/
+/** (i.e. Conversation with person X_FIRST, X_LAST from onsip **/
+function parseHqContext(node) {    
+    /** Discover the name on 'https://<company>.highrisehq.com/people/<id>' **/
+    var hq_people_context  = false; 
+    var context_name = '';
+    /** Discover the name on page 'https://<company>.highrisehq.com/parties' **/
+    var hq_parties_context = /highrisehq.com\/parties/.test(document.location);
+    if (!hq_parties_context) {    
+	hq_people_context = /highrisehq.com\/people/.test(document.location);
+	if (!hq_people_context){
+	    hq_people_context = /highrisehq.com\/companies/.test(document.location);
+	}
+	if (hq_people_context) {
+	    /** This jquery path selector will work to retrieve the name of the **/
+	    /** person or company from the header section of the page **/
+	    context_name = $('body #page_header_wrapper #subject_header_details .subject_header:first td.name h1:first');
+	    if (context_name.length){
+		context_name = trim(context_name.html());
+	    }
+	}
+    }
+    else if (node) {
+	/** The parties pages shows contacts in the form of a list **/
+	/** We can retrieve the name of the party by traversing up the DOM **/
+	info_node = node.parents('.info:first');
+	if (info_node.length) {
+	    context_name = info_node.find('.to_person');
+	    if (context_name.length) {
+		context_name = trim(context_name.html());
+	    }
+	}
+    }     
+
+    return context_name;
+}
+
+function addHighriseEvents() {
+    var hq_context = /highrisehq.com\/people/.test(document.location);
+    if (!hq_context){
+        hq_context = /highrisehq.com\/companies/.test(document.location);        	
+    }
+    if (hq_context) {	
+	/** #page_main_column #contact_and_permissions_tab .submit input[name$="commit"] **/
+	var path_selector = HQ_SELECTOR_PATH_UPDATE; 
+	if (!($(path_selector).length)) {
+	    /** #page_main_column .edit .submit input[name$="commit"] **/
+	    path_selector = HQ_SELECTOR_PATH_ADD_NEW; 
+	    if (!($(path_selector).length)){
+		/** #screen_body .col .innercol .submit input[type$="submit"] **/
+		path_selector = HQ_SELECTOR_PATH_DELETE; 
+	    }
+	}
+	if ($(path_selector).length && $(path_selector).attr("onClick") == undefined) {
+	    $(path_selector).unbind().bind({
+		click : function(e) {
+		    dbg.log(CONTENT_PG, 'Submit triggered refresh Highrise data');
+		    chrome.extension.sendRequest ({refreshHighrise : true}, function (response) {});
+		}
+	    });		
+	}			 
+    }
+}
+/** End Highrise specific **/
+
 function addEvents(node) {
     $('.onsip-click-to-call', node).unbind().bind({
         click     : function(e){
 	    dbg.log (CONTENT_PG, 'Call Number');
 	    e.preventDefault();
-	    callNumber (this.innerHTML, this.rel, $(this).attr('extension'));
+	    callNumber (this.innerHTML, this.rel, $(this).attr('extension'), parseHqContext($(this)));
 	},
         mouseover : function() {
 	    var offset, top, left;
@@ -261,7 +353,11 @@ function addEvents(node) {
 }
 
 /** Call the given number **/
-function callNumber(phone_no, clean_no, extension) {
-    dbg.log (CONTENT_PG, 'Call number signal ' + phone_no + ' - ' + clean_no + ' - ' + extension);   
-    chrome.extension.sendRequest ({ setupCall : true, phone_no : clean_no, extension : extension }, function (response) {});
+function callNumber(phone_no, clean_no, extension, name_from_context) {
+    var msg = ''; 
+    msg += 'Call number trigger ';
+    msg += '[phone :  '   + phone_no  + '] - [clean no:' + clean_no + '] -';
+    msg += '[extension: ' + extension + '] - [name from context page: - ' + name_from_context + ']'
+    dbg.log (CONTENT_PG, msg);   
+    chrome.extension.sendRequest ({ setupCall : true, phone_no : clean_no, extension : extension, name_from_context : name_from_context }, function (response) {});
 }

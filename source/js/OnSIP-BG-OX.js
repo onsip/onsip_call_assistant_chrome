@@ -11,10 +11,13 @@ BG_APP.activeCallCreated   = function ( items ) {
     cont_highrise, cont_zendesk, caption;
     var that = this;
     dbg.log (this.log_context, 'Active Call Created');
+    if (name_from_context && name_from_context.length > 0){
+	dbg.log (this.log_context, 'Made active call with context ' + name_from_context);
+    }
     for (i = 0, len = items.length; i < len; i++) {
         item          = items[i];
-        phone         = extractPhoneNumber(item.toURI);
-        cont_highrise = highrise_app.findContact (phone + '');
+        phone         = extractPhoneNumber(item.toURI);	
+        cont_highrise = highrise_app.findContact (phone + '', name_from_context);
         cont_zendesk  = zendesk_app .findContact (phone + '');
         name          = this._normalizeName (cont_zendesk, cont_highrise);
         phone         = name || phone;
@@ -80,7 +83,7 @@ BG_APP.activeCallRequested = function ( items ) {
         }
         caption       = is_setup ? "Call Setup: " : "Incoming Call: ";
         phone         = extractPhoneNumber(item.fromURI);
-        cont_highrise = highrise_app.findContact (phone + '');
+        cont_highrise = highrise_app.findContact (phone + '','');
         cont_zendesk  = zendesk_app .findContact (phone + '');
         name          = this._normalizeName (cont_zendesk, cont_highrise);
         phone         = name || phone;
@@ -253,6 +256,8 @@ BG_APP._cancelNotifications = function (item) {
         n = this.notifications.pop();
     }
     this.notifications = a;
+    /** global variable, resetting **/
+    name_from_context = '';
 };
 
 BG_APP._isNotificationShowing = function (item) {
