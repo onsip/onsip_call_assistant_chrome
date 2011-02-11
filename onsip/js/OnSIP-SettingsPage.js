@@ -68,16 +68,18 @@ function handleOnSIPLogin () {
 	onSuccess : function () {
 	    console.log('CONTENT PG :: OnSIP connection succeeded, we store in local storage');
 	    pref.set('onsipCredentialsGood', true);		
-
+	    hideAllMessages();
 	    var entered_highrise = isHighriseDataEntered();
-
-	    /** Before showing success message see if Highrise is validated ok, due to asyncronus nature of js **/
-	    if (entered_highrise) {
+	    if ((entered_highrise instanceof Array) && entered_highrise.length > 0) {
+		$('#errorMsg').text('Invalid Highrise domain/url or token provided').clearQueue().fadeOut(150).fadeIn(300);
+		$('#save-options-btn').attr('disabled','');
+	    }	    
+	    else if (entered_highrise) {
 		console.log('CONTENT PG :: Highrise credentials entered');		
 		/** Validate provided Highrise Credentials **/
 		validateHighriseCredentials( handleHighriseLogin () );
 	    } else {
-		console.log('highrisde account info is not added');
+		console.log('CONTENT PG :: highrisde account info is not added');
 		hideAllMessages();
 		$('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
 		$('#save-options-btn').attr('disabled','');
@@ -174,34 +176,39 @@ function getOnsipUser (callback) {
 /** Check if Highrise options were entered **/
 function isHighriseDataEntered(){
     /** Alias for the OnSIP_Preferences object **/
-    var pref   = OnSIP_Preferences;
-    var hr_url = $('#highriseUrl')  .val();
-    var token  = $('#highriseToken').val();
-    var tz     = $('#timezone')     .val();    
-    var valid  = false;
+    var pref         = OnSIP_Preferences;
+    var hr_url       = $('#highriseUrl')  .val();
+    var token        = $('#highriseToken').val();
+    var tz           = $('#timezone')     .val();    
+    var error_fields = new Array();
 
     hr_url     = trim(hr_url);
     token      = trim(token);
     
     if(hr_url.length > 0 && hr_url != pref.defaults['highriseUrl']) {
-        if (token.length > 0 && token != pref.defaults['highriseToken']) {
-	    valid = true;
-        }
+        if (token.length ==  0 || token == pref.defaults['highriseToken']) {
+	    error_fields.push( $('#highriseToken'));
+        } else {
+	    error_fields = false;
+	}
+    } else if (token.length > 0 && token != pref.defaults['highriseToken']) {
+	error_fields.push( $('#highriseUrl'));
     }
 
-    if (!valid) {
+    if ((error_fields instanceof Array) && error_fields.length > 0) {
+	console.log ('CONTENT BG :: Checking Highrise values validity FALSE');
         pref.set('highriseUrl'  , pref.defaults['highriseUrl'  ]);
         pref.set('highriseToken', pref.defaults['highriseToken']);
         pref.set('userTimezone' , pref.defaults['userTimezone' ]);
+	return error_fields;
     } else {
+	console.log ('CONTENT BG :: Checking Highrise values validity TRUE');
 	hr_url = formatUrl (hr_url, false);
 	pref.set('highriseUrl'  , hr_url);
 	pref.set('highriseToken', token);
 	pref.set('userTimezone' , tz);
-    }
-
-    console.log ('CONTENT BG :: Checking Highrise values validity ' + valid);
-    return valid;
+	return !error_fields;
+    }    
 }
 
 function clearAlerts () {
