@@ -239,8 +239,11 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 
     /** In case we need to refresh Highrise from the content page **/
     if (request.refreshHighrise && pref && pref.get ('highriseEnabled')) {
-	dbg.log(BG_LOG, 'HIGHRISE API :: Refreshing Highrise');
-	highrise_app.init (pref);
+	var f_wait = function() {
+	    dbg.log(BG_LOG, 'HIGHRISE API :: Refreshing Highrise');
+	    highrise_app.init (pref);	    
+	};
+	setTimeout(f_wait, 7000);
 	sendResponse ({ok : true});
     }
 });
