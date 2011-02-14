@@ -52,12 +52,14 @@ H4	   { font-weight:bold; font-size:14px; margin:14px 0; padding:0; }
 
 #clear-highrise { color:#050; font:small'trebuchet ms',helvetica,sans-serif;}
 
+/**
 #header-zendesk  { cursor:pointer; text-decoration:underline }
 #header-highrise { cursor:pointer; text-decoration:underline; }
 .checkmark      { background : url(../images/i_ok.png) no-repeat; background-position: 30% 80%; padding-top:5px; padding-bottom:0px; }
 
 #input-zendesk  { display:none }
 #input-highrise { display:none }
+**/
 
 /*highrise modification*/
 select#timezone{

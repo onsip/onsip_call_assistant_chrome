@@ -94,32 +94,38 @@ HIGHRISE.postNote = function (costumer, user_tz, incoming) {
 /** If said argument was not passed through, we simply find a match company if one exists **/
 /** Followed by a matching customer if company does not exist **/
 HIGHRISE.findContact = function (phone_number, customer_from_context) {
-    var  i, j, len, customer, f_name, l_name, ff_name, fl_name, b_cfc_ok;
+    var  i, j, len, customer, f_name, l_name, ff_name, fl_name, b_cfc_ok, company;    
     customer_from_context = customer_from_context ? trim(customer_from_context.toLowerCase()) : '';      
     b_cfc_ok = (customer_from_context.length > 0);
+    dbg.log (this.log_context, 'Searching customer using customer_from_context - [' + customer_from_context + '] ');
     /** Find company first **/    
     for (i = 0, len = this.companies.length; i < len; i += 1) {
 	for (j = 0; j < this.companies[i].phone_numbers.length; j += 1) {
 	    if (this.companies[i].phone_numbers[j].phone_number === phone_number) {
 		customer      = this.companies[i];
 		customer.type = 'companies';
-		if(b_cfc_ok) {
-		    if(customer.company_name.toLowerCase() == customer_from_context){
+		dbg.log (this.log_context, 'Company name: ' + customer.company_name.toLowerCase() + ' == ' + customer_from_context + ' - ' + b_cfc_ok);
+		if(b_cfc_ok) {		    
+		    if(trim(customer.company_name).toLowerCase() == customer_from_context){
+			dbg.log (this.log_context, 'Found company with valid customer context ' + customer_from_context);
 			return customer;
 		    }
 		} else {
+		    dbg.log (this.log_context, 'Found company, returning company - ' + customer_from_context);
 		    return customer;
 		}
 	    }
 	}
     }
-
+    company = customer;
     for (i = 0, len = this.contacts.length; i < len; i += 1) {
        for (j = 0; j < this.contacts[i].phone_numbers.length; j += 1) {
-          if (this.contacts[i].phone_numbers[j].phone_number === phone_number) {
+           if (this.contacts[i].phone_numbers[j].phone_number === phone_number) {
 	      customer      = this.contacts[i];
 	      customer.type = 'people';
-	      if(b_cfc_ok > 0) {
+	      dbg.log (this.log_context, 'Individual  name: ' + customer.first_name + ' ' + customer.last_name  + ' == ' + customer_from_context + ' - ' + b_cfc_ok);
+	      if(b_cfc_ok) {
+		  dbg.log (this.log_context, 'Individual  name: ' + customer.first_name + ' ' + customer.last_name  + ' == ' + customer_from_context);
 		  f_name = '';
 		  l_name = '';
 		  if (customer.first_name) {
@@ -133,14 +139,23 @@ HIGHRISE.findContact = function (phone_number, customer_from_context) {
 		  ff_name = trim(ff_name);
 		  fl_name = trim(fl_name);
 		  if(ff_name == customer_from_context || fl_name == customer_from_context){
+		      dbg.log (this.log_context, 'Found individual with valid customer context ' + customer_from_context);
 		      return customer;
 		  }
 	      }	   
-	      else {
-		  return customer;
+	      else {		 
+		  return customer;		  
 	      }
 	  }    
        }    	
+    }
+
+    /** The only reason this case can exist **/
+    /** is if a customer_from_context exists **/
+    /** but that customer does not have a valid number **/
+    if (company && company.type == 'companies') {
+	dbg.log (this.log_context, 'A customer context was given [' + customer_from_context + '] but no number was found');
+	return company;
     }
 
     return customer;  
@@ -156,7 +171,7 @@ HIGHRISE._normalizePhoneNumber = function (phone_number) {
 	clean_phone_num = '1' + clean_phone_num;
     }
     if (clean_phone_ext) {
-	clean_phone_num += cleanPhoneNo (clean_phone_ext);
+	//clean_phone_num += cleanPhoneNo (clean_phone_ext);
     }	
     return clean_phone_num;
 };

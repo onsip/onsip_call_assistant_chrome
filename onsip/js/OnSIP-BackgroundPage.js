@@ -239,8 +239,14 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 
     /** In case we need to refresh Highrise from the content page **/
     if (request.refreshHighrise && pref && pref.get ('highriseEnabled')) {
-	dbg.log(BG_LOG, 'HIGHRISE API :: Refreshing Highrise');
-	highrise_app.init (pref);
+	var f_wait = function() {
+	    dbg.log(BG_LOG, 'HIGHRISE API :: Refreshing Highrise');
+	    highrise_app.init (pref);	    
+	};
+	/** Wait a couple of seconds for the server side changes to take **/
+	/** affect before we retrieve the latest & greatest.  This code executes **/
+	/** whenever an update is made to the Highrise customer inventory  **/
+	setTimeout(f_wait, 2000);
 	sendResponse ({ok : true});
     }
 });

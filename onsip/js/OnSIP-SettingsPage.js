@@ -19,9 +19,6 @@ $(function(){
 	pref.set('highriseEnabled'     , false);
 	pref.set('zendeskEnabled'      , false);
 
-	$('#header-zendesk'  ).removeClass('checkmark');
-	$('#header-highrise' ).removeClass('checkmark');
-
 	/** Error flags **/	
 	var error_fields = isOnSIPDataEntered ();
         
@@ -71,24 +68,18 @@ function handleOnSIPLogin () {
 	onSuccess : function () {
 	    console.log('CONTENT PG :: OnSIP connection succeeded, we store in local storage');
 	    pref.set('onsipCredentialsGood', true);		
-
+	    hideAllMessages();
 	    var entered_highrise = isHighriseDataEntered();
-	    var entered_zendesk  = isZendeskDataEntered();
-
-	    /** Before showing success message see if Highrise is validated ok, due to asyncronus nature of js **/
-	    if (entered_highrise || entered_zendesk) {
-		if (entered_zendesk && !$('#input-zendesk').is(':hidden')) {
-		    console.log('CONTENT PG :: Zendesk credentials entered');
-		    /** Validate provided Zendesk Credentials **/
-		    validateZendeskCredentials ( handleZendeskLogin () );
-		}
-		else if (entered_highrise && !$('#input-highrise').is(':hidden')) {
-		    console.log('CONTENT PG :: Highrise credentials entered');		
-		    /** Validate provided Highrise Credentials **/
-		    validateHighriseCredentials( handleHighriseLogin () );
-		}
+	    if ((entered_highrise instanceof Array) && entered_highrise.length > 0) {
+		$('#errorMsg').text('Invalid Highrise domain/url or token provided').clearQueue().fadeOut(150).fadeIn(300);
+		$('#save-options-btn').attr('disabled','');
+	    }	    
+	    else if (entered_highrise) {
+		console.log('CONTENT PG :: Highrise credentials entered');		
+		/** Validate provided Highrise Credentials **/
+		validateHighriseCredentials( handleHighriseLogin () );
 	    } else {
-		console.log('highrisde account info is not added');
+		console.log('CONTENT PG :: highrisde account info is not added');
 		hideAllMessages();
 		$('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
 		$('#save-options-btn').attr('disabled','');
@@ -110,36 +101,6 @@ function handleOnSIPLogin () {
     return obj;
 };
 
-function handleZendeskLogin () {
-    var preferences  = OnSIP_Preferences;
-    hideAllMessages();
-    var obj = {
-        onSuccess : function() {
-            console.log('CONTENT PG :: Zendesk account was verified successfully');           
-
-            /** Set Zendesk Enabled **/
-            preferences.set('zendeskEnabled', true);
-            enableZendesk();
-
-            $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
-            $('#save-options-btn').attr('disabled','');
-        },
-        onError : function() {
-            console.log('CONTENT PG :: Zendesk account error');
-            preferences.set('zendeskEnabled', false);
-
-            $('#errorMsg').text('Invalid Zendesk domain/url or credetials').clearQueue().fadeOut(150).fadeIn(300);
-            $('#save-options-btn').attr('disabled','');
-
-	    var error_fields = new Array();
-	    error_fields.push($('#zendeskUrl'), $('#zendeskUser'), $('#zendeskPassword'));
-            showErrorFields(error_fields);
-        }
-    };
-
-    return obj;
-};
-
 function handleHighriseLogin () {
     var pref = OnSIP_Preferences;
     hideAllMessages();
@@ -149,7 +110,6 @@ function handleHighriseLogin () {
 	    
 	    /** Set Highrise Enabled **/
 	    pref.set('highriseEnabled', true);
-	    enableHighrise ();
 	    $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
 	    $('#save-options-btn').attr('disabled','');
 	},
@@ -191,28 +151,6 @@ function validateHighriseCredentials (callback){
         }
     );
 }
-
-/** Validate Zendesk Credentials **/
-function validateZendeskCredentials (callback) {    
-    var pref = OnSIP_Preferences;
-    var url  = pref.get ('zendeskUrl');
-    var usr  = pref.get ('zendeskUsr');
-    var pwd  = pref.get ('zendeskPwd');
-
-    console.log ('CONTENT PG :: Sending verifyZendesk request to BG-PAGE');
-    
-    chrome.extension.sendRequest({ verifyZendesk : true, zendesk_url : url, zendesk_usr : usr, zendesk_pwd : pwd},
-        function (response) {
-	    if (callback) {
-		if (response.ok) {
-		    callback.onSuccess();
-		} else {
-		    callback.onError();
-		}
-	    }	    
-	}
-    );
-}
             
 /** Get user info from OnSIP **/
 function getOnsipUser (callback) {
@@ -235,74 +173,42 @@ function getOnsipUser (callback) {
     );
 }
 
-/** Check if Zendesk options were entered **/
-function isZendeskDataEntered (){
-    /** Alias for the OnSIP_Preferences object **/
-    var pref    = OnSIP_Preferences;
-    var zd_url  = $('#zendeskUrl')     .val();
-    var zd_user = $('#zendeskUser')    .val();
-    var zd_pwd  = $('#zendeskPassword').val();
-    var valid   = false;
-
-    zd_url      = trim(zd_url);
-    zd_user     = trim(zd_user);
-    zd_pwd      = trim(zd_pwd);
-    
-    console.log ('CONTENT PG :: From input field, Zendesk URL -> ' + zd_url);
-    if(zd_url.length > 0 && zd_url != pref.defaults['zendeskUrl']) {
-	if (zd_user.length > 0 && zd_user != pref.defaults['zendeskUser']) {
-	    if (zd_pwd.length > 0) {
-		valid = true;
-	    }
-	}
-    }
-    
-    if (!valid) {
-	pref.set('zendeskUrl', pref.defaults['zendeskUrl']);
-	pref.set('zendeskUsr', pref.defaults['zendeskUsr']);
-	pref.set('zendeskPwd', pref.defaults['zendeskPwd']);
-    } else {
-	zd_url = formatUrl (zd_url, true);
-	pref.set('zendeskUrl', zd_url);
-	pref.set('zendeskUsr', zd_user);
-	pref.set('zendeskPwd', zd_pwd);
-
-    }
-    console.log ('CONTENT BG :: Checking Zendesk values validity ' + valid);
-    return valid;
-}
-
 /** Check if Highrise options were entered **/
 function isHighriseDataEntered(){
     /** Alias for the OnSIP_Preferences object **/
-    var pref   = OnSIP_Preferences;
-    var hr_url = $('#highriseUrl')  .val();
-    var token  = $('#highriseToken').val();
-    var tz     = $('#timezone')     .val();    
-    var valid  = false;
+    var pref         = OnSIP_Preferences;
+    var hr_url       = $('#highriseUrl')  .val();
+    var token        = $('#highriseToken').val();
+    var tz           = $('#timezone')     .val();    
+    var error_fields = new Array();
 
     hr_url     = trim(hr_url);
     token      = trim(token);
     
     if(hr_url.length > 0 && hr_url != pref.defaults['highriseUrl']) {
-        if (token.length > 0 && token != pref.defaults['highriseToken']) {
-	    valid = true;
-        }
+        if (token.length ==  0 || token == pref.defaults['highriseToken']) {
+	    error_fields.push( $('#highriseToken'));
+        } else {
+	    error_fields = false;
+	}
+    } else if (token.length > 0 && token != pref.defaults['highriseToken']) {
+	error_fields.push( $('#highriseUrl'));
     }
 
-    if (!valid) {
+    if ((error_fields instanceof Array) && error_fields.length > 0) {
+	console.log ('CONTENT BG :: Checking Highrise values validity FALSE');
         pref.set('highriseUrl'  , pref.defaults['highriseUrl'  ]);
         pref.set('highriseToken', pref.defaults['highriseToken']);
         pref.set('userTimezone' , pref.defaults['userTimezone' ]);
+	return error_fields;
     } else {
+	console.log ('CONTENT BG :: Checking Highrise values validity TRUE');
 	hr_url = formatUrl (hr_url, false);
 	pref.set('highriseUrl'  , hr_url);
 	pref.set('highriseToken', token);
 	pref.set('userTimezone' , tz);
-    }
-
-    console.log ('CONTENT BG :: Checking Highrise values validity ' + valid);
-    return valid;
+	return !error_fields;
+    }    
 }
 
 function clearAlerts () {
@@ -350,11 +256,6 @@ function setDefaultSettings(){
     $('#fromAddress')  .val (pref.get('fromAddress') );
     $('#onsipPassword').val (pref.get('onsipPassword') );
 
-    /** Initial value for zendesk **/
-    $('#zendeskUrl')     .val (pref.get('zendeskUrl'));
-    $('#zendeskUser')    .val (pref.get('zendeskUsr'));
-    $('#zendeskPassword').val (pref.get('zendeskPwd'));
-
     /** Initial value for a highrise **/
     $('#highriseUrl')  .val (pref.get('highriseUrl')  );
     $('#highriseToken').val (pref.get('highriseToken'));
@@ -391,49 +292,6 @@ function SetHelperBehavior(formID){
 	$('#timezone'     ).val("0.0");
     });
    
-    $('#input-zendesk'   ).hide ();
-    $('#input-highrise'  ).hide ();
-   
-    if (pref && pref.get('zendeskEnabled')) {
-	enableZendesk ();	
-    } else if (pref && pref.get('highriseEnabled')) {
-	enableHighrise();
-    }
-   
-    $('#header-zendesk').click( function (e) {
-	if ($('#input-zendesk').is(':hidden')) {
-	    $('#input-zendesk').slideDown('slow', function() {
-		$('#input-highrise').slideUp('slow');
-	    });
-	} else {
-	    $('#input-zendesk').slideUp('slow');
-	}  	    
-    }); 
-
-    $('#header-highrise').click( function (e) {
-	if ($('#input-highrise').is(':hidden')) {
-	    $('#input-highrise').slideDown('slow', function () {
-		$('#input-zendesk').slideUp('slow');	
-	    });	     		
-	} else {
-	    $('#input-highrise').slideUp('slow');
-	}  	    
-    });
-}
-
-function enableHighrise() {
-    console.log("Highrise enabled :: Highrise is enbled");
-    $('#header-zendesk' ).removeClass('checkmark');
-    $('#header-highrise').addClass   ('checkmark');
-    $('#input-zendesk'  ).hide ();
-    $('#input-highrise' ).show ();
-}
-
-function enableZendesk () {
-    $('#header-highrise').removeClass('checkmark');
-    $('#header-zendesk' ).addClass   ('checkmark');
-    $('#input-zendesk'  ).show ();
-    $('#input-highrise' ).hide ();
 }
 
 /** Set up Tooltips **/

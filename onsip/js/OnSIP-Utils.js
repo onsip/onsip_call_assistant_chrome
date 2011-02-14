@@ -1,3 +1,4 @@
+/**
 var dbg = {
     log : function () {	
 	if (arguments.length === 2) {
@@ -22,10 +23,11 @@ var dbg = {
 	}
     }
 };
-
+**/
 /** Turn off debugging when on production **/
-// dbg.log = function(){};
-
+var dbg = {
+    log : function(){}
+};
 
 /** Is provided element in array **/
 function isInArray(stack, needle){

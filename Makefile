@@ -1,6 +1,6 @@
-SRC_DIR     = source 
-PEM_FILE    = source.pem
-CRX_FILE    = source.crx
+SRC_DIR     = onsip 
+PEM_FILE    = onsip.pem
+CRX_FILE    = onsip.crx
 
 default: 
 	make onsip.crx
