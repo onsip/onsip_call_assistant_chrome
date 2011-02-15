@@ -24,40 +24,50 @@ BG_APP.activeCallCreated   = function ( items ) {
         caption       = "Calling: ";
 
         var f_notification = {
-            onSuccess : function (record_count, subject, is_onsip, nice_id) {
+            onSuccess : function (record_count, subject, is_onsip, nice_id) {		
                 if (record_count) {
-                    caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
-                    subject  = subject.substr (0, 60).toLowerCase();
+		    caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
+		    subject  = subject.substr (0, 60).toLowerCase();
                 } else {
-                    subject  = "To: " + formatPhoneNum('' + phone);
-                }	
-                n  = webkitNotifications.createNotification ('images/icon-48.png',
-                                                             caption, subject);
-                n.onclick = function () {
-                    if (pref.get('zendeskEnabled')) {
-                        if (!nice_id) {
-                            chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
-                        } else {
-                            chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
-                        }
-                    } else {
-                        OX_EXT.cancelCall (item);
-                    }
+		    subject  = "To: " + formatPhoneNum('' + phone);
                 }
+		if (webkitNotifications.checkPermission() == 0) {
+		    n  = webkitNotifications.createNotification ('images/icon-48.png', caption, subject);
+                    n.onclick = function () {
+			if (pref.get('zendeskEnabled')) {
+                            if (!nice_id) {
+				chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
+                            } else {
+				chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
+                            }
+			} else {
+                            OX_EXT.cancelCall (item);
+			}
+                    }
+		} else {
+		    n = {};
+		}
                 n.uri               = item.uri.query;
                 n.phone             = formatPhoneNum('' + phone);
                 n.contact_highrise  = cont_highrise;
                 n.contact_zendesk   = cont_zendesk;
 		n.is_onsip          = (is_onsip) ? is_onsip : false;
-                n.show();
 
-                that.notifications.push (n);
+		if (webkitNotifications.checkPermission() == 0) {
+                    n.show();
+		}
+		dbg.log(that.log_context, 'Checking if last ticket was onsip ' + n.is_onsip);
+		
+                that.notifications.push (n);		
+		that.launched_n = false;
             },
-            onError  : function () {}
+            onError  : function () {
+		that.launched_n = false;
+	    }
         };
 
         /** On Call Created. If a notification already exists then we won't produce another. **/
-        if (this.notifications.length === 0 && webkitNotifications.checkPermission() == 0) {
+        if (this.notifications.length === 0) {
             if (cont_zendesk && cont_zendesk.id) {
                 zendesk_app.search ( cont_zendesk.id, f_notification);
             } else {
@@ -79,6 +89,9 @@ BG_APP.activeCallRequested = function ( items ) {
         /** Temporarily adding this feature 12/3/2010 **/
         /** If this is just a call setup, then we don't display notification **/
         if (is_setup) {
+	    if (len < 2) {
+		this.launched_n = false;
+	    }
             continue;
         }
         caption            = is_setup ? "Call Setup: " : "Incoming Call: ";
@@ -89,30 +102,33 @@ BG_APP.activeCallRequested = function ( items ) {
         phone              = name || phone;
 	name_from_context  = '';
         var f_notification = {
-            onSuccess : function (record_count, subject, is_onsip, nice_id) {
-                if (record_count) {
-                    caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
-                    subject  = subject.substr(0, 60).toLowerCase();
+            onSuccess : function (record_count, subject, is_onsip, nice_id) {                		
+		if (record_count) {
+		    caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
+		    subject  = subject.substr(0, 60).toLowerCase();
                 } else {
-                    if (!is_setup) {
+		    if (!is_setup) {
                         subject  = "From: "  + formatPhoneNum('' + phone);
-                    } else {
+		    } else {
                         subject  = "Setup: " + formatPhoneNum('' + phone);
-                    }
+		    }
                 }		
-                n  = webkitNotifications.createNotification ('images/icon-48.png',
-                                                             caption, subject);		
-                n.onclick = function () {
-                    if (pref.get('zendeskEnabled')) {
-                        if (!nice_id) {
-                            chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
-                        } else {
-                            chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
-                        }
-                    } else {
-                        OX_EXT.cancelCall (item);
+		if (webkitNotifications.checkPermission() == 0) {
+                    n  = webkitNotifications.createNotification ('images/icon-48.png', caption, subject);		
+                    n.onclick = function () {
+			if (pref.get('zendeskEnabled')) {
+                            if (!nice_id) {
+				chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
+                            } else {
+				chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
+                            }
+			} else {
+                            OX_EXT.cancelCall (item);
+			}
                     }
-                }
+		} else {
+		    n = {};
+		}
                 n.uri               = item.uri.query;
                 n.phone             = formatPhoneNum('' + phone);
                 n.is_setup          = is_setup;
@@ -120,9 +136,14 @@ BG_APP.activeCallRequested = function ( items ) {
                 n.contact_zendesk   = cont_zendesk;
                 n.is_onsip          = (is_onsip) ? is_onsip : false;
                 n.flag_incoming     = true;
-                n.show();
 
-                that.notifications.push (n);
+		if (webkitNotifications.checkPermission() == 0) {
+                    n.show();
+		}
+
+		dbg.log(that.log_context, 'Checking if last was ticket onsip - ' + n.is_onsip);
+                
+		that.notifications.push (n);	    
                 that.launched_n = false;
             },
             onError  : function () {
@@ -132,7 +153,7 @@ BG_APP.activeCallRequested = function ( items ) {
 
         var p = formatPhoneNum('' + phone);
         dbg.log (this.log_context, 'Is Launching notification ' + this.launched_n);
-        if (!this._isNotificationShowing (p) && !this.launched_n && webkitNotifications.checkPermission() == 0) {
+        if (!this._isNotificationShowing(p) && !this.launched_n) {
             this.launched_n = true;
             if (cont_zendesk && cont_zendesk.id) {
                 zendesk_app.search (cont_zendesk.id, f_notification);
@@ -143,13 +164,13 @@ BG_APP.activeCallRequested = function ( items ) {
     }
 };
 
-/**                                                                                                                                       
- * Normalize on the variations in the name returned by the various third parties.                                                         
- * The returned normalized value will be display in the notification toast.                                                               
- * Variations include :                                                                                                                   
- * Zendesk, which returns the full name.                                                                                                  
- * Highrise, which returns first and last name                                                                                            
- * Highrise also returns company.                                                                                                         
+/**    
+ * Normalize on the variations in the name returned by the various third parties. 
+ * The returned normalized value will be display in the notification toast.
+ * Variations include :
+ * Zendesk, which returns the full name.
+ * Highrise, which returns first and last name                                                                                 
+ * Highrise also returns company.
  **/
 BG_APP._normalizeName    = function () {
     var normalized_name, len, i, c;
@@ -230,6 +251,7 @@ BG_APP._postNotetoProfile  = function (item) {
                 }
                 if (pref.get ('zendeskEnabled') && notif.flag_incoming && !notif.is_onsip) {
                     if (costumer_zd && costumer_zd.id) {
+			dbg.log(this.log_context, 'Lets try posting a ticket to Zendesk');
                         zendesk_app.postNote  (costumer_zd, pref.get('userTimezone'));
                     } else {
                         phone = notif.phone;
@@ -244,12 +266,14 @@ BG_APP._postNotetoProfile  = function (item) {
 
 /** Helper method. hide / cancel and remove desktop notifications **/
 BG_APP._cancelNotifications = function (item) {
-    dbg.log (this.log_context, this.notifications.length + ' notifications ');
+    dbg.log (this.log_context, 'In cancel notification ' + this.notifications.length + ' notifications ');
     var a = [];
     var n = this.notifications.pop();
     while (n) {
         if (item === n.uri) {
-            n.cancel();
+	    if (webkitNotifications.checkPermission() == 0) {
+		n.cancel();
+	    }
         } else {
             a.push (n);
         }
@@ -269,5 +293,5 @@ BG_APP._isNotificationShowing = function (item) {
             break;
         }
     }
-    return is_showing;
+    return (is_showing && (webkitNotifications.checkPermission() == 0));
 };

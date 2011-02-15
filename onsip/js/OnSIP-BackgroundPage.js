@@ -115,7 +115,7 @@ chrome.idle.onStateChanged.addListener     ( function (newstate) {
 		/** Initialize Zendesk with Contacts **/		
 		if (pref && pref.get ('zendeskEnabled')  === true && from_active) {
 		    zendesk_app.init (pref);
-		}
+		}		
 	    };
 	    
 	    OX_EXT.iConnectCheck  (pref, {

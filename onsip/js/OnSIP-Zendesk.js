@@ -7,7 +7,7 @@ var ZENDESK = {
     'pwd'         : '',
     'attempts'    : 0,
     'log_context' : 'ZENDESK',
-    'refresh'     : 60000 * 90, // Refresh every 1.5 hours 
+    'refresh'     : 60000 * 25, // Refresh every 25 min 
     'paginate'    : -1,
     'to_id'       : undefined
 };
@@ -251,7 +251,7 @@ ZENDESK.search  = function (requester_id, call) {
 ZENDESK._search = function (requester_id, call) {
     var xhr   = new XMLHttpRequest();
     var that  = this;
-    var tmout = 45000; 
+    var tmout = 10000; 
     var ok    = false;
 
     xhr.onreadystatechange = function () {
@@ -400,6 +400,7 @@ ZENDESK._parseContactsXML = function (xml) {
     } else {
 	return;
     }
+    //dbg.log (this.log_context, xml);
     var user_count = 0, user_nodes, len;    
     user_count = root_node.getAttribute ("count");
     user_nodes = root_node.getElementsByTagName("user");
@@ -415,6 +416,7 @@ ZENDESK._parseContactsXML = function (xml) {
 	phone_node    = user_nodes[i].getElementsByTagName ("phone");
 	if (phone_node && phone_node.length && phone_node[0].firstChild) { 	   
 	    phone     = phone_node[0].firstChild.nodeValue;
+	    dbg.log(this.log_context, "User " + full_name + " should have phone " + phone);
 	    phone_num = this._normalizePhoneNumber (phone);
 	    var person_obj = {
 		"id"           : person_id,
