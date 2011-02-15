@@ -31,22 +31,7 @@ BG_APP.activeCallCreated   = function ( items ) {
                 } else {
 		    subject  = "To: " + formatPhoneNum('' + phone);
                 }
-		if (webkitNotifications.checkPermission() == 0) {
-		    n  = webkitNotifications.createNotification ('images/icon-48.png', caption, subject);
-                    n.onclick = function () {
-			if (pref.get('zendeskEnabled')) {
-                            if (!nice_id) {
-				chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
-                            } else {
-				chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
-                            }
-			} else {
-                            OX_EXT.cancelCall (item);
-			}
-                    }
-		} else {
-		    n = {};
-		}
+		n                   = that._getNotification(nice_id, caption, subject, item);
                 n.uri               = item.uri.query;
                 n.phone             = formatPhoneNum('' + phone);
                 n.contact_highrise  = cont_highrise;
@@ -71,7 +56,7 @@ BG_APP.activeCallCreated   = function ( items ) {
             if (cont_zendesk && cont_zendesk.id) {
                 zendesk_app.search ( cont_zendesk.id, f_notification);
             } else {
-                f_notification.onSuccess ();
+                f_notification.onSuccess();
             }
 	}
     }
@@ -101,6 +86,7 @@ BG_APP.activeCallRequested = function ( items ) {
         name               = this._normalizeName (cont_zendesk, cont_highrise);
         phone              = name || phone;
 	name_from_context  = '';
+
         var f_notification = {
             onSuccess : function (record_count, subject, is_onsip, nice_id) {                		
 		if (record_count) {
@@ -112,30 +98,16 @@ BG_APP.activeCallRequested = function ( items ) {
 		    } else {
                         subject  = "Setup: " + formatPhoneNum('' + phone);
 		    }
-                }		
-		if (webkitNotifications.checkPermission() == 0) {
-                    n  = webkitNotifications.createNotification ('images/icon-48.png', caption, subject);		
-                    n.onclick = function () {
-			if (pref.get('zendeskEnabled')) {
-                            if (!nice_id) {
-				chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
-                            } else {
-				chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
-                            }
-			} else {
-                            OX_EXT.cancelCall (item);
-			}
-                    }
-		} else {
-		    n = {};
-		}
-                n.uri               = item.uri.query;
-                n.phone             = formatPhoneNum('' + phone);
-                n.is_setup          = is_setup;
-                n.contact_highrise  = cont_highrise;
-                n.contact_zendesk   = cont_zendesk;
-                n.is_onsip          = (is_onsip) ? is_onsip : false;
-                n.flag_incoming     = true;
+                }
+
+		n                  = that._getNotification(nice_id, caption, subject, item);
+                n.uri              = item.uri.query;
+                n.phone            = formatPhoneNum('' + phone);
+                n.is_setup         = is_setup;
+                n.contact_highrise = cont_highrise;
+                n.contact_zendesk  = cont_zendesk;
+                n.is_onsip         = (is_onsip) ? is_onsip : false;
+                n.flag_incoming    = true;
 
 		if (webkitNotifications.checkPermission() == 0) {
                     n.show();
@@ -158,10 +130,31 @@ BG_APP.activeCallRequested = function ( items ) {
             if (cont_zendesk && cont_zendesk.id) {
                 zendesk_app.search (cont_zendesk.id, f_notification);
             } else {
-                f_notification.onSuccess ();
+                f_notification.onSuccess();
             }
         }
     }
+};
+
+BG_APP._getNotification = function(nice_id, caption, subject, item) {
+    var n;
+    if (webkitNotifications.checkPermission() == 0) {
+	n  = webkitNotifications.createNotification ('images/icon-48.png', caption, subject);
+        n.onclick = function () {
+	    if (pref.get('zendeskEnabled')) {
+                if (!nice_id) {
+		    chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
+                } else {
+		    chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
+                }
+	    } else {
+                OX_EXT.cancelCall (item);
+	    }
+        }
+    } else {
+	n = {};
+    }
+    return n;
 };
 
 /**    
