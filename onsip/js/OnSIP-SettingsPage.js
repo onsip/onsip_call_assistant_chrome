@@ -15,6 +15,11 @@ $(function(){
 	/** Remove default behavior **/
 	e.preventDefault();
 	    
+	/** 0 means PERMISSION_ALLOWED **/
+	if (window.webkitNotifications.checkPermission() != 0) { 
+	    window.webkitNotifications.requestPermission();
+	}             
+    
 	pref.set('onsipCredentialsGood', false);
 	pref.set('highriseEnabled'     , false);
 	pref.set('zendeskEnabled'      , false);
@@ -56,6 +61,27 @@ function isOnSIPDataEntered () {
     return error_fields;
 };
 
+/** Get user info from OnSIP **/
+function getOnsipUser (callback) {
+    var pref     = OnSIP_Preferences;
+    var username = $('#fromAddress')  .val();                                                      
+    var password = $('#onsipPassword').val();
+
+    chrome.extension.sendRequest({ verifyOnSipUser : true, username : username, password : password},
+        function (response) {
+	    if (response.ok){
+		if(callback){
+		    callback.onSuccess();
+		}
+	    } else {
+		if (callback){
+		    callback.onError();
+		}
+	    }
+	}
+    );
+}
+
 function handleOnSIPLogin () {
     var pref = OnSIP_Preferences;
                         
@@ -68,25 +94,21 @@ function handleOnSIPLogin () {
 	onSuccess : function () {
 	    console.log('CONTENT PG :: OnSIP connection succeeded, we store in local storage');
 	    pref.set('onsipCredentialsGood', true);		
-	    hideAllMessages();
-	    var entered_highrise = isHighriseDataEntered();
-	    if ((entered_highrise instanceof Array) && entered_highrise.length > 0) {
-		$('#errorMsg').text('Invalid Highrise domain/url or token provided').clearQueue().fadeOut(150).fadeIn(300);
-		$('#save-options-btn').attr('disabled','');
-	    }	    
-	    else if (entered_highrise) {
-		console.log('CONTENT PG :: Highrise credentials entered');		
-		/** Validate provided Highrise Credentials **/
-		validateHighriseCredentials( handleHighriseLogin () );
+	    hideAllMessages();	    
+	    if ($('#zendeskUrl') && $('#zendeskUrl').length) {
+		console.log('CONTENT PG :: Fork Zendesk');
+		forkZendesk();
+	    } else if ($('#highriseUrl') && $('#highriseUrl').length) {	    
+		console.log('CONTENT PG :: Fork Highrise');
+		forkHighrise();
 	    } else {
 		console.log('CONTENT PG :: highrisde account info is not added');
-		hideAllMessages();
 		$('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
 		$('#save-options-btn').attr('disabled','');
-	    }	    
+	    }
 	},
 	onError   : function () {
-	    console.log('onsip account valid Error');
+	    console.log('CONTENT PG :: OnSIP account valid error');
 	    pref.set('onsipCredentialsGood', false);
 	    hideAllMessages();
 	    $('#errorMsg').text('Onsip credentials are invalid').clearQueue().fadeOut(150).fadeIn(300);
@@ -101,13 +123,70 @@ function handleOnSIPLogin () {
     return obj;
 };
 
+function forkZendesk() {
+    var entered_zendesk  = isZendeskDataEntered();
+    if ((entered_zendesk instanceof Array) && entered_zendesk.length > 0) {
+	$('#errorMsg').text('Invalid Zendesk domain/url or username provided').clearQueue().fadeOut(150).fadeIn(300);
+        $('#save-options-btn').attr('disabled','');	
+    } else if (entered_zendesk) {
+	console.log('CONTENT PG :: Zendesk credentials entered');	
+	validateZendeskCredentials ( handleZendeskLogin () );
+    } else {
+	$('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
+        $('#save-options-btn').attr('disabled','');
+    }	    
+}
+
+function forkHighrise() {
+    var entered_highrise = isHighriseDataEntered();
+    if ((entered_highrise instanceof Array) && entered_highrise.length > 0) {
+        $('#errorMsg').text('Invalid Highrise domain/url or token provided').clearQueue().fadeOut(150).fadeIn(300);
+        $('#save-options-btn').attr('disabled','');
+    }
+    else if (entered_highrise) {
+        console.log('CONTENT PG :: Highrise credentials entered');
+        /** Validate provided Highrise Credentials **/
+        validateHighriseCredentials( handleHighriseLogin () );
+    } else {
+	$('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
+        $('#save-options-btn').attr('disabled','');
+    }    
+}
+
+function handleZendeskLogin () {
+    var preferences  = OnSIP_Preferences;
+    hideAllMessages();
+    var obj = {
+        onSuccess : function() {
+            console.log('CONTENT PG :: Zendesk account was verified successfully');           
+            /** Set Zendesk Enabled **/
+            preferences.set('zendeskEnabled', true);
+            
+            $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
+            $('#save-options-btn').attr('disabled','');
+        },
+        onError : function() {
+            console.log('CONTENT PG :: Zendesk account error');
+            preferences.set('zendeskEnabled', false);
+
+            $('#errorMsg').text('Invalid Zendesk domain/url or credetials').clearQueue().fadeOut(150).fadeIn(300);
+            $('#save-options-btn').attr('disabled','');
+
+	    var error_fields = new Array();
+	    error_fields.push($('#zendeskUrl'), $('#zendeskUser'), $('#zendeskPassword'));
+            showErrorFields(error_fields);
+        }
+    };
+
+    return obj;
+};
+
 function handleHighriseLogin () {
     var pref = OnSIP_Preferences;
     hideAllMessages();
     var obj  = {
         onSuccess : function() {
-	    console.log('CONTENT PG :: Highrise account was verified successfully');
-	    
+	    console.log('CONTENT PG :: Highrise account was verified successfully');	    
 	    /** Set Highrise Enabled **/
 	    pref.set('highriseEnabled', true);
 	    $('#savedMsg').clearQueue().fadeOut(150).fadeIn(300);
@@ -151,26 +230,71 @@ function validateHighriseCredentials (callback){
         }
     );
 }
-            
-/** Get user info from OnSIP **/
-function getOnsipUser (callback) {
-    var pref     = OnSIP_Preferences;
-    var username = $('#fromAddress')  .val();                                                                                                                                                 
-    var password = $('#onsipPassword').val();
 
-    chrome.extension.sendRequest({ verifyOnSipUser : true, username : username, password : password},
+/** Validate Zendesk Credentials **/
+function validateZendeskCredentials (callback) {    
+    var pref = OnSIP_Preferences;
+    var url  = pref.get ('zendeskUrl');
+    var usr  = pref.get ('zendeskUsr');
+    var pwd  = pref.get ('zendeskPwd');
+
+    console.log ('CONTENT PG :: Sending verifyZendesk request to BG-PAGE');
+    
+    chrome.extension.sendRequest({ verifyZendesk : true, zendesk_url : url, zendesk_usr : usr, zendesk_pwd : pwd},
         function (response) {
-	    if (response.ok){
-		if(callback){
+	    if (callback) {
+		if (response.ok) {
 		    callback.onSuccess();
-		}
-	    } else {
-		if (callback){
+		} else {
 		    callback.onError();
 		}
-	    }
+	    }	    
 	}
     );
+}
+            
+/** Check if Zendesk options were entered **/
+function isZendeskDataEntered (){
+    /** Alias for the OnSIP_Preferences object **/
+    var pref         = OnSIP_Preferences;
+    var zd_url       = $('#zendeskUrl')     .val();
+    var zd_user      = $('#zendeskUser')    .val();
+    var zd_pwd       = $('#zendeskPassword').val();
+    var error_fields = new Array();
+
+    zd_url      = trim(zd_url);
+    zd_user     = trim(zd_user);
+    zd_pwd      = trim(zd_pwd);
+    
+    console.log ('CONTENT PG :: From input field, Zendesk URL -> ' + zd_url);
+    if(zd_url.length > 0 && zd_url != pref.defaults['zendeskUrl']) {
+	if (zd_user.length == 0 || zd_user == pref.defaults['zendeskUsr']) {
+	    console.log("CONTENT PG :: Zendesk user is invalid");
+	    error_fields.push($('#zendeskUser'));
+	} else {
+	    error_fields = false;
+	}
+    } else if (zd_user.length > 0 && zd_user != pref.defaults['zendeskUsr']){
+	console.log("CONTENT PG :: Zendesk URL is invalid");
+	error_fields.push($('#zendeskUrl'));
+    } else {
+	error_fields = true;
+    }
+    
+    if ((error_fields instanceof Array) && error_fields.length > 0) {
+	pref.set('zendeskUrl', pref.defaults['zendeskUrl']);
+	pref.set('zendeskUsr', pref.defaults['zendeskUsr']);
+	pref.set('zendeskPwd', pref.defaults['zendeskPwd']);
+	return error_fields;
+    } else if (error_fields) {
+	return false;
+    } else {
+	zd_url = formatUrl (zd_url, true);
+	pref.set('zendeskUrl', zd_url);
+	pref.set('zendeskUsr', zd_user);
+	pref.set('zendeskPwd', zd_pwd);
+	return !error_fields;
+    }
 }
 
 /** Check if Highrise options were entered **/
@@ -179,37 +303,38 @@ function isHighriseDataEntered(){
     var pref         = OnSIP_Preferences;
     var hr_url       = $('#highriseUrl')  .val();
     var token        = $('#highriseToken').val();
-    var tz           = $('#timezone')     .val();    
+    var tz           = $('#timezone')     .val();
     var error_fields = new Array();
 
     hr_url     = trim(hr_url);
     token      = trim(token);
-    
+
     if(hr_url.length > 0 && hr_url != pref.defaults['highriseUrl']) {
         if (token.length ==  0 || token == pref.defaults['highriseToken']) {
-	    error_fields.push( $('#highriseToken'));
+            error_fields.push( $('#highriseToken'));
         } else {
-	    error_fields = false;
-	}
+            error_fields = false;
+        }
     } else if (token.length > 0 && token != pref.defaults['highriseToken']) {
-	error_fields.push( $('#highriseUrl'));
+        error_fields.push( $('#highriseUrl'));
     }
 
     if ((error_fields instanceof Array) && error_fields.length > 0) {
-	console.log ('CONTENT BG :: Checking Highrise values validity FALSE');
+        console.log ('CONTENT BG :: Checking Highrise values validity FALSE');
         pref.set('highriseUrl'  , pref.defaults['highriseUrl'  ]);
         pref.set('highriseToken', pref.defaults['highriseToken']);
         pref.set('userTimezone' , pref.defaults['userTimezone' ]);
-	return error_fields;
+        return error_fields;
     } else {
-	console.log ('CONTENT BG :: Checking Highrise values validity TRUE');
-	hr_url = formatUrl (hr_url, false);
-	pref.set('highriseUrl'  , hr_url);
-	pref.set('highriseToken', token);
-	pref.set('userTimezone' , tz);
-	return !error_fields;
-    }    
+        console.log ('CONTENT BG :: Checking Highrise values validity TRUE');
+        hr_url = formatUrl (hr_url, false);
+        pref.set('highriseUrl'  , hr_url);
+        pref.set('highriseToken', token);
+        pref.set('userTimezone' , tz);
+        return !error_fields;
+    }
 }
+
 
 function clearAlerts () {
     hideAllMessages();
@@ -256,6 +381,15 @@ function setDefaultSettings(){
     $('#fromAddress')  .val (pref.get('fromAddress') );
     $('#onsipPassword').val (pref.get('onsipPassword') );
 
+    /** TODO: Check which of the two plug-ins are enabled **/
+    setZendeskSettings(pref);
+
+    /** TODO: Check which of the two plug-ins are enabled **/
+    setHighriseSettings(pref);
+}
+
+/** Set Highrise defaults **/
+function setHighriseSettings(pref){
     /** Initial value for a highrise **/
     $('#highriseUrl')  .val (pref.get('highriseUrl')  );
     $('#highriseToken').val (pref.get('highriseToken'));
@@ -265,6 +399,14 @@ function setDefaultSettings(){
         $('#timezone').val (timezoneSetting);
     }   
 }
+
+/** Set Zendesk defaults **/
+function setZendeskSettings(pref){
+   /** Initial value for zendesk **/
+    $('#zendeskUrl')     .val (pref.get('zendeskUrl'));
+    $('#zendeskUser')    .val (pref.get('zendeskUsr'));
+    $('#zendeskPassword').val (pref.get('zendeskPwd'));
+} 
 
 function SetHelperBehavior(formID){
     var pref = OnSIP_Preferences;
