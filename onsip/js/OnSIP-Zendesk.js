@@ -17,7 +17,7 @@ ZENDESK.verify = function (call, zendesk_url, user, pwd) {
     var xhr   = new XMLHttpRequest ();
     var ok    = false;
     var that  = this;
-    var tmout = 60000;
+    var tmout = 10000;
 
     xhr.onreadystatechange = function () {
 	if (xhr.readyState === 4) {
@@ -29,9 +29,10 @@ ZENDESK.verify = function (call, zendesk_url, user, pwd) {
 		    id = user_node[0].getElementsByTagName ("id")[0].firstChild.nodeValue;
 		    dbg.log (that.log_context, "ID of Current User " + id);
 		}	     
+		ok = true;
 		if (!isNaN(id)) {
 		    call.onSuccess ();
-		} else {
+		} else {		    
 		    call.onError ();
 		}	     
 	    } else {
