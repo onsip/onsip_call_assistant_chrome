@@ -86,7 +86,6 @@ function updateAddresses(request) {
     if (request.fromAddress) {
         var from_address = request.fromAddress;
 	var to_domain    = getDomain (from_address);
-		
 	/** update toAddress in link href **/
 	$('.onsip-click-to-call').each(function(){
             var href = this.href;
@@ -137,7 +136,7 @@ function parsePhoneNumbers (node) {
     var isStringNumber = false;
 
     /** SIP address **/
-    var sipAddressNumber = /sip:[a-zA-Z09_]+@[a-zA-Z09_]+\.[a-z]{1,4}/;
+    var sipAddressNumber = /sip:[a-zA-Z0-9_]+@[a-zA-Z0-9_.]+\.[a-z]{1,4}/;
 
     /** Eliminate the obvious cases **/
     if (!node || node.nodeValue.length < 10 ||
@@ -192,12 +191,12 @@ function parsePhoneNumbers (node) {
         if (!result) {
             return 0;
         }
-        number = result[0];  
+        number = result[0];
         if (!isStringNumber) {
             var pos = result.index;
             offset += pos;
 
-            /** Make sure we have a resonable delimiters around our matching number **/
+            /** Make sure we have a reasonable delimiters around our matching number **/
             if (pos && !text.substr(pos - 1, 1).match(phoneNumberDelimiter) 
                 || pos + number.length < text.length
                 && !text.substr(pos + number.length, 1).match(phoneNumberDelimiter)) {
