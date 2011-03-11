@@ -17,7 +17,7 @@ HIGHRISE.verifyToken = function (call, highrise_url, token) {
    var xhr   = new XMLHttpRequest ();
    var ok    = false;
    var tmout = 30000; /** 30 sec **/
- 
+
    xhr.onreadystatechange = function () {
       if (xhr.readyState === 4) {
          if (xhr.status === 200) {
@@ -26,7 +26,7 @@ HIGHRISE.verifyToken = function (call, highrise_url, token) {
 	 } else {
 	     call.onError (xhr.status);
 	 }
-      } 
+      }
    }
 
    this.base_url = highrise_url;
@@ -44,6 +44,11 @@ HIGHRISE.verifyToken = function (call, highrise_url, token) {
    xhr.open ('GET', this.base_url + '/people.xml', false, this.token, 'X');
    setTimeout (a, tmout);
    xhr.send ();
+};
+
+HIGHRISE.clearCache = function() {
+    this.contacts = [];
+    this.companies = [];
 };
 
 HIGHRISE._createDefaultNote = function (costumer, user_tz, incoming) {
@@ -77,9 +82,9 @@ HIGHRISE.postNote = function (costumer, user_tz, incoming) {
     if (costumer) {
 	note = this._createDefaultNote (costumer, user_tz, incoming);
 	if (note && note.length) {
-	    this.postNoteToProfile (costumer, note); 
+	    this.postNoteToProfile (costumer, note);
 	}
-    }    
+    }
 };
 
 /** Find the person or company by phone number **/
@@ -94,18 +99,18 @@ HIGHRISE.postNote = function (costumer, user_tz, incoming) {
 /** If said argument was not passed through, we simply find a match company if one exists **/
 /** Followed by a matching customer if company does not exist **/
 HIGHRISE.findContact = function (phone_number, customer_from_context) {
-    var  i, j, len, customer, f_name, l_name, ff_name, fl_name, b_cfc_ok, company;    
-    customer_from_context = customer_from_context ? trim(customer_from_context.toLowerCase()) : '';      
+    var  i, j, len, customer, f_name, l_name, ff_name, fl_name, b_cfc_ok, company;
+    customer_from_context = customer_from_context ? trim(customer_from_context.toLowerCase()) : '';
     b_cfc_ok = (customer_from_context.length > 0);
     dbg.log (this.log_context, 'Searching customer using customer_from_context - [' + customer_from_context + '] ');
-    /** Find company first **/    
+    /** Find company first **/
     for (i = 0, len = this.companies.length; i < len; i += 1) {
 	for (j = 0; j < this.companies[i].phone_numbers.length; j += 1) {
 	    if (this.companies[i].phone_numbers[j].phone_number === phone_number) {
 		customer      = this.companies[i];
 		customer.type = 'companies';
 		dbg.log (this.log_context, 'Company name: ' + customer.company_name.toLowerCase() + ' == ' + customer_from_context + ' - ' + b_cfc_ok);
-		if(b_cfc_ok) {		    
+		if(b_cfc_ok) {
 		    if(trim(customer.company_name).toLowerCase() == customer_from_context){
 			dbg.log (this.log_context, 'Found company with valid customer context ' + customer_from_context);
 			return customer;
@@ -142,12 +147,12 @@ HIGHRISE.findContact = function (phone_number, customer_from_context) {
 		      dbg.log (this.log_context, 'Found individual with valid customer context ' + customer_from_context);
 		      return customer;
 		  }
-	      }	   
-	      else {		 
-		  return customer;		  
 	      }
-	  }    
-       }    	
+	      else {
+		  return customer;
+	      }
+	  }
+       }
     }
 
     /** The only reason this case can exist **/
@@ -158,10 +163,10 @@ HIGHRISE.findContact = function (phone_number, customer_from_context) {
 	return company;
     }
 
-    return customer;  
+    return customer;
 };
 
-/** Normalize the phone number **/ 
+/** Normalize the phone number **/
 HIGHRISE._normalizePhoneNumber = function (phone_number) {
     var clean_phone_num, clean_phone_ext;
     clean_phone_ext = getPhoneExtension( phone_number );
@@ -172,7 +177,7 @@ HIGHRISE._normalizePhoneNumber = function (phone_number) {
     }
     if (clean_phone_ext) {
 	//clean_phone_num += cleanPhoneNo (clean_phone_ext);
-    }	
+    }
     return clean_phone_num;
 };
 
@@ -182,7 +187,7 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
     var ok   = false;
     var tmout= 60000;
 
-    xhr.onreadystatechange = function () {	
+    xhr.onreadystatechange = function () {
 	if (xhr.readyState !== 4) {
 	    return false;
 	}
@@ -208,40 +213,40 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
 	    }
 	}
     };
-        
-    xhr.open ("POST", this.base_url + "/" +  customer.type + "/" + customer.id + "/notes.xml", true, this.token, 'X');    
+
+    xhr.open ("POST", this.base_url + "/" +  customer.type + "/" + customer.id + "/notes.xml", true, this.token, 'X');
     setTimeout (a, tmout);
     xhr.send (note);
 };
 
-HIGHRISE.init     =  function (pref) {    
+HIGHRISE.init     =  function (pref) {
     this.base_url = pref.get ('highriseUrl');
     this.token    = pref.get ('highriseToken');
     this.attempts = 0;
-    
+
     if (!(this.base_url && this.token)) {
 	dbg.log (this.log_context, 'Init Failed ' + this.base_url + ' -- ' + this.token);
 	return;
     }
-    var to_func;     
+    var to_func;
     var that = this;
     dbg.log (this.log_context, 'Get Contacts & Company names');
     this._getContacts ({
         onSuccess : function (c) {
-	    to_func       = that._recycle.bind (that); 
-	    that.ts       = new Date();	
+	    to_func       = that._recycle.bind (that);
+	    that.ts       = new Date();
 	    that.attempts = 0;
-	    if ( !that.timeout_id ) { 
+	    if ( !that.timeout_id ) {
 		dbg.log (that.log_context, 'In function init, will SETUP _recyle ' + that.timeout_id);
 		that.timeout_id = setTimeout  (to_func, that.refresh);
 	    }  else {
 		dbg.log (that.log_context, 'In function init, _recycle is already setup');
 	    }
-	    dbg.log (that.log_context, 'Got contacts @ ' + that.ts);	     
+	    dbg.log (that.log_context, 'Got contacts @ ' + that.ts);
         },
         onError   : function (status) {
-	    to_func       = that._recycle.bind (that); 
-	    if ( !that.timeout_id ) {		
+	    to_func       = that._recycle.bind (that);
+	    if ( !that.timeout_id ) {
 	        that.timeout_id = setTimeout  (to_func, that.refresh);
 	    }
 	    dbg.log (that.log_context, 'Error ' + status);
@@ -255,7 +260,7 @@ HIGHRISE.init     =  function (pref) {
         onError   : function (status) {
 	    dbg.log (that.log_context, 'Error ' + status);
         }
-    });   
+    });
 };
 
 HIGHRISE._recycle       = function () {
@@ -263,17 +268,17 @@ HIGHRISE._recycle       = function () {
     var that = this;
     dbg.log (this.log_context, 'Recycle contacts & companies');
     this._getContacts ({
-        onSuccess : function (c) {	    	   
+        onSuccess : function (c) {
 	    to_func         = that._recycle.bind (that);
 	    that.attempts   = 0;
-	    that.timeout_id = setTimeout  (to_func, that.refresh);	    
+	    that.timeout_id = setTimeout  (to_func, that.refresh);
 	    dbg.log (that.log_context, 'Recycled ' + c.length + ' contacts @ ' + new Date());
 	},
 	onError   : function (status) {
 	    that.attempts += 1;
 	    if (that.attempts <= 5) {
-		failed_to       = 60000 * that.attempts; 
-		to_func         = that._recycle.bind (that);		
+		failed_to       = 60000 * that.attempts;
+		to_func         = that._recycle.bind (that);
                 that.timeout_id = setTimeout  (to_func, failed_to);
 		dbg.log (that.log_context, 'Failed to connect on ' + that.attempts + ' attempts, will try again');
 	    } else {
@@ -283,13 +288,13 @@ HIGHRISE._recycle       = function () {
 	}
     });
     this._getCompanies ({
-       onSuccess : function (c) {          
+       onSuccess : function (c) {
            dbg.log (that.log_context, 'Recycled ' + c.length + '  companies @ ' + new Date());
        },
        onError   : function (status) {
 	   dbg.log (that.log_context, 'Error ' + status);
        }
-    });    
+    });
 };
 
 HIGHRISE._getContacts = function (call) {
@@ -304,7 +309,7 @@ HIGHRISE._getContacts = function (call) {
       }
       if (xhr.status !== 200) {
          call.onError (xhr.status);
-      } else{	  
+      } else{
 	 ok = true;
 	 that._parseContactsXML (xhr.responseText);
 	 call.onSuccess         (that.contacts);
@@ -328,7 +333,7 @@ HIGHRISE._getContacts = function (call) {
 };
 
 /** Retrieve companies from highrise **/
-HIGHRISE._getCompanies = function (call) {   
+HIGHRISE._getCompanies = function (call) {
    var xhr  = new XMLHttpRequest();
    var that = this;
    var ok   = false;
@@ -339,14 +344,14 @@ HIGHRISE._getCompanies = function (call) {
          return false;
       }
       if (xhr.status !== 200) {
-	  call.onError (xhr.status);         	  
-      } else {      	
+	  call.onError (xhr.status);
+      } else {
 	  ok = true;
 	  that._parseCompaniesXML (xhr.responseText);
 	  call.onSuccess          (that.companies);
       }
       return true;
-   };   
+   };
 
    var a = function () {
        if (!ok) {
@@ -360,7 +365,7 @@ HIGHRISE._getCompanies = function (call) {
 
    xhr.open ("GET", this.base_url + '/companies.xml', true, this.token, 'X');
    setTimeout (a, tmout);
-   xhr.send ();  
+   xhr.send ();
 };
 
 HIGHRISE._parseContactsXML = function (xml) {
@@ -373,8 +378,8 @@ HIGHRISE._parseContactsXML = function (xml) {
 	root_node = root_node[0];
     } else {
 	return;
-    }  
-    var person_nodes  = root_node.getElementsByTagName("person");    
+    }
+    var person_nodes  = root_node.getElementsByTagName("person");
     for (i = 0,   len = person_nodes.length; i < len ; i += 1) {
 	person_id     = person_nodes[i].getElementsByTagName ("id")[0].firstChild.nodeValue;
 	last_name     = person_nodes[i].getElementsByTagName ("last-name");
@@ -385,7 +390,7 @@ HIGHRISE._parseContactsXML = function (xml) {
 	}
 	first_name     = person_nodes[i].getElementsByTagName ("first-name");
 	if (first_name && first_name.length > 0 && first_name[0].firstChild) {
-	    first_name = first_name[0].firstChild.nodeValue;	   
+	    first_name = first_name[0].firstChild.nodeValue;
 	} else {
 	    first_name = '';
 	}
@@ -394,13 +399,13 @@ HIGHRISE._parseContactsXML = function (xml) {
 	for (j = 0;  j < pn_nodes.length; j += 1) {
 	    phone_num     = pn_nodes[j].getElementsByTagName ("number");
 	    if (phone_num && phone_num.length > 0 && phone_num[0].firstChild) {
-		phone_num = phone_num[0].firstChild.nodeValue;	   			   	   
+		phone_num = phone_num[0].firstChild.nodeValue;
 		location  = pn_nodes[j].getElementsByTagName ("location");
 		if (location && location.length > 0 && location[0].firstChild) {
 		    location = location[0].firstChild.nodeValue;
 		} else {
 		    location = '';
-		}	   
+		}
 		phone_num  = this._normalizePhoneNumber (phone_num);
 		var ph_obj = {
 		    phone_number : phone_num,
@@ -413,15 +418,15 @@ HIGHRISE._parseContactsXML = function (xml) {
 	    var person_obj = {
 		"id"           : person_id,
 		"first_name"   : first_name,
-		"last_name"    : last_name,	    
+		"last_name"    : last_name,
 		"phone_numbers": phone_numbers_list
-	    };	
+	    };
 	    this.contacts.push (person_obj);
 	}
     }
 };
 
-HIGHRISE._parseCompaniesXML = function (xml) {   
+HIGHRISE._parseCompaniesXML = function (xml) {
    var i, j, len, company_name, company_id, phone_num, pn_nodes = [], location;
    var xmlobject     = (new DOMParser()).parseFromString(xml, "text/xml");
    var root_node     = xmlobject.getElementsByTagName("companies");
@@ -431,8 +436,8 @@ HIGHRISE._parseCompaniesXML = function (xml) {
    } else {
        return;
    }
-   var company_nodes = root_node.getElementsByTagName("company");   
-   for (i = 0,   len = company_nodes.length ; i < len ; i += 1) {      
+   var company_nodes = root_node.getElementsByTagName("company");
+   for (i = 0,   len = company_nodes.length ; i < len ; i += 1) {
       company_id     = company_nodes[i].getElementsByTagName ("id")  [0].firstChild.nodeValue;
       company_name   = company_nodes[i].getElementsByTagName ("name");
       if (company_name && company_name.length > 0 && company_name[0].firstChild) {
@@ -444,7 +449,7 @@ HIGHRISE._parseCompaniesXML = function (xml) {
 	      if (phone_num &&  phone_num.length > 0 && phone_num[0].firstChild) {
 		  phone_num = phone_num[0].firstChild.nodeValue;
 		  location  = pn_nodes[j].getElementsByTagName ("location");
-		  if (location && location.length > 0 && location[0].firstChild) {    
+		  if (location && location.length > 0 && location[0].firstChild) {
 		      location = location[0].firstChild.nodeValue;
 		  } else {
 		      location = '';

@@ -1,7 +1,7 @@
 /** Chrome Background Page **/
 
 /** Alias for the OnSIP_Preferences object **/
-var pref              = OnSIP_Preferences; 
+var pref              = OnSIP_Preferences;
 var highrise_app      = HIGHRISE;
 var zendesk_app       = ZENDESK;
 var extension         = null;
@@ -18,7 +18,7 @@ var BG_LOG            = "CHROME-BACKGROUND";
 /** We, therefore, are attempting to identify that **/
 /** person from the web page context from which their **/
 /** number was clicked **/
-var name_from_context = ''; 
+var name_from_context = '';
 
 /** Connect, subscribe, and register to XMPP API **/
 OX_EXT.apps = [BG_APP];
@@ -29,7 +29,7 @@ if (pref && pref.get('onsipCredentialsGood') === true && pref.get ('onsipPasswor
             onSuccess : function () {
 		dbg.log (BG_LOG, 'Succeeded in OX_EXT.init for connecting & subscribing');
             },
-            onError   : function (error) {	    
+            onError   : function (error) {
                 /** In case of failure, display settings in a new tab **/
 		dbg.log (BG_LOG, 'There was an error in OX_EXT.init ' + error);
             }
@@ -73,9 +73,9 @@ chrome.idle.onStateChanged.addListener     ( function (newstate) {
 	    var d_past_active = state_active[0].time;
 	    var diff_active   = d_now.getTime() - d_past_active.getTime();
 	    var min_active    = Math.floor (diff_active/1000/60);
-	    /** 
-	     	Here we're trying to account for the case where a computer is put 
-	     * 	to sleep, taken home, and then reactivated. 
+	    /**
+	     	Here we're trying to account for the case where a computer is put
+	     * 	to sleep, taken home, and then reactivated.
 	     **/
 	    dbg.log (BG_LOG, 'Minutes since last ACTIVE ' + min_active);
 	    if (min_active >= 120) {
@@ -83,51 +83,51 @@ chrome.idle.onStateChanged.addListener     ( function (newstate) {
 	    }
 	}
 	/** These are the minutes in idle **/
-	var min    = Math.floor (diff/1000/60);	
+	var min    = Math.floor (diff/1000/60);
 	dbg.log (BG_LOG, 'Minutes since idle ' + min + ' state inactive log length is (' + state_inactive.length + ')');
 	while (state_inactive.length > 0) {
 	    state_inactive.pop();
 	}
 	if ((min >= rebound_to || from_active) && pref && pref.get ('onsipCredentialsGood')) {
-	    dbg.log (BG_LOG, 'IDLE for ' + min + ' minutes lets RE-ESTABLISH connection');	    
-	    var do_exec = function () {	        
-		OX_EXT.failures     = 0;	
-		BG_APP.launched_n   = false;		    
+	    dbg.log (BG_LOG, 'IDLE for ' + min + ' minutes lets RE-ESTABLISH connection');
+	    var do_exec = function () {
+		OX_EXT.failures     = 0;
+		BG_APP.launched_n   = false;
 		OX_EXT.init   (pref, {
 		    onSuccess : function () {
 			dbg.log (BG_LOG, 'Succeeded in OX_EXT.init for REBOUND connecting & subscribing');
 		    },
 		    onError   : function (error) {
 			dbg.log (BG_LOG, 'There was an error in REBOUND OX_EXT INIT ' + error);
-			dbg.log (BG_LOG, 'Let\'s try do_exec() again');			
+			dbg.log (BG_LOG, 'Let\'s try do_exec() again');
 			d_now.setDate (1);
 			d_now.setHours(0);
 			d_now.setMonth(0);
 			state_inactive.unshift({'state':'', 'time':d_now});
 	            }
 	        });
-	    
+
 		/** Load and initialize Highrise with contacts **/
 		if (pref && pref.get ('highriseEnabled') === true && from_active) {
 		    highrise_app.init(pref);
 		}
 
-		/** Initialize Zendesk with Contacts **/		
+		/** Initialize Zendesk with Contacts **/
 		if (pref && pref.get ('zendeskEnabled')  === true && from_active) {
 		    zendesk_app.init (pref);
-		}		
+		}
 	    };
-	    
+
 	    OX_EXT.iConnectCheck  (pref, {
-	        onSuccess : function () {		    
+	        onSuccess : function () {
 		    dbg.log (BG_LOG, 'Successfully connected to BOSH Server, do_exec()');
-		    do_exec ();	
+		    do_exec ();
 		},
                 onError   : function () {
 		    dbg.log (BG_LOG, 'Failed to connect to BOSH pop off active node ');
 		    state_inactive.shift();
 		}
-	    });	    
+	    });
 	}
     }
 });
@@ -137,10 +137,10 @@ var sc = function () {
 	/** dbg.log (BG_LOG, 'State Check -> ' + newstate); **/
 	var time = new Date();
 	if (newstate === 'idle') {
-	    if (state_inactive.length === 0) {		
+	    if (state_inactive.length === 0) {
 		state_inactive.unshift({'state':newstate, 'time':time});
 		dbg.log (BG_LOG, 'Logged a new idle state @ ' + time);
-	    }	    	    
+	    }
 	} else if (newstate === 'active') {
 	    while (state_active.length >= 20) {
 		state_active.pop();
@@ -153,11 +153,11 @@ var sc = function () {
 };
 sc();
 
-/** Add listener for requests from the pages **/          
-chrome.extension.onRequest.addListener    ( function (request, sender, sendResponse) {    
+/** Add listener for requests from the pages **/
+chrome.extension.onRequest.addListener    ( function (request, sender, sendResponse) {
     dbg.log (BG_LOG, 'Request ');
 
-    /** On load parse request **/     
+    /** On load parse request **/
     if ( request.pageLoad && pref.get('enabled') ) {
 	dbg.log (BG_LOG, 'Send parseDOM request to Content Page from BG page');
         sendResponse ({ parseDOM : true, fromAddress : pref.get('fromAddress')});
@@ -168,10 +168,16 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
         chrome.tabs.create ({ "url" : "index.html" });
     }
 
+    /** Clear Highrise client cache **/
+    if ( request.clearCache ) {
+	dbg.log (BG_LOG, 'Clearing Highrise client cache');
+        highrise_app.clearCache();
+    }
+
     /** Make a Call on request **/
     if ( request.setupCall && pref.get ('enabled') ) {
-	var from_address  = pref.get('fromAddress');	
-        var to_address    = request.phone_no; 	
+	var from_address  = pref.get('fromAddress');
+        var to_address    = request.phone_no;
 	/** Name from context would ascertain the individual **/
 	/** we are calling further down the call initiation process **/
 	/** by scraping the page from which the click-to-call number was clicked **/
@@ -180,11 +186,11 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 	dbg.log (BG_LOG, 'Call requested FROM: ' + from_address + ' - TO: ' + to_address);
 	OX_EXT.createCall (from_address, to_address);
     }
-    
+
     /** Verify SIP User **/
     if ( request.verifyOnSipUser ) {
-	dbg.log (BG_LOG, 'Request verify on sip user  ' + 
-		request.username + ', ***  -- ' + 
+	dbg.log (BG_LOG, 'Request verify on sip user  ' +
+		request.username + ', ***  -- ' +
 		 pref.get ('onsipHttpBase'));
 
 	pref.set ('fromAddress'  , request.username);
@@ -193,7 +199,7 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 	OX_EXT.init (pref, {
 	    onSuccess : function () {
 		dbg.log (BG_LOG, "SIP user Verified Successfully");
-		sendResponse ({ ok : true  });	    
+		sendResponse ({ ok : true  });
 	    },
 	    onError   : function (error) {
 		dbg.log (BG_LOG, "Error in verifying SIP User [ " + error + " ]");
@@ -204,7 +210,7 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 
     /** Verify Zendesk User **/
     if ( request.verifyZendesk ) {
-       dbg.log (BG_LOG, 'Verifying Zendesk account with ' + 
+       dbg.log (BG_LOG, 'Verifying Zendesk account with ' +
 		    request.zendesk_url + ' - ' + request.zendesk_usr + ' - ' + request.zendesk_pwd);
        zendesk_app.verify ({
           onSuccess : function () {
@@ -212,9 +218,9 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
 	     zendesk_app.init (pref);
              dbg.log (BG_LOG, 'Zendesk Credentials OK');
 	  },
-          onError   : function () { 
+          onError   : function () {
 	     sendResponse ({ok : false});
-	     dbg.log (BG_LOG, 'Zendesk Credetials INVALID ');	    
+	     dbg.log (BG_LOG, 'Zendesk Credetials INVALID ');
           }
        }, request.zendesk_url, request.zendesk_usr, request.zendesk_pwd);
     }
@@ -222,26 +228,26 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
     /** Verify Highrise Account **/
     if ( request.verifyHighrise ) {
 	var highriseResult = {};
-	dbg.log(BG_LOG, 'Verifying Highrise Credentials TOKEN ' + request.highrise_url + '');    
+	dbg.log(BG_LOG, 'Verifying Highrise Credentials TOKEN ' + request.highrise_url + '');
         highrise_app.verifyToken ({
 	    onSuccess : function (data) {
 		dbg.log(BG_LOG, 'HIGHRISE API :: Highrise credentials OK');
-	        sendResponse ({ ok : true });		
-		highrise_app.init (pref);		  
+	        sendResponse ({ ok : true });
+		highrise_app.init (pref);
 	    },
 	    onError   : function () {
 		dbg.log(BG_LOG, 'HIGHRISE API :: Highrise credentials NOT OK');
 		sendResponse ({ ok : false });
 	    }},
 	    request.highrise_url,
-            request.highrise_token);	
-    } 
+            request.highrise_token);
+    }
 
     /** In case we need to refresh Highrise from the content page **/
     if (request.refreshHighrise && pref && pref.get ('highriseEnabled')) {
 	var f_wait = function() {
 	    dbg.log(BG_LOG, 'HIGHRISE API :: Refreshing Highrise');
-	    highrise_app.init (pref);	    
+	    highrise_app.init (pref);
 	};
 	/** Wait a couple of seconds for the server side changes to take **/
 	/** affect before we retrieve the latest & greatest.  This code executes **/

@@ -20,6 +20,8 @@ $(function(){
 	    window.webkitNotifications.requestPermission();
 	}
 
+	chrome.extension.sendRequest({ clearCache : true });
+
 	pref.set('onsipCredentialsGood', false);
 	pref.set('highriseEnabled'     , false);
 	pref.set('zendeskEnabled'      , false);
