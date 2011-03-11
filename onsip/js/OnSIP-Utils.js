@@ -1,6 +1,6 @@
 /**
 var dbg = {
-    log : function () {	
+    log : function () {
 	if (arguments.length === 2) {
 	    var c   = ['STROPHE RAW','CONTENT-PG','CHROME-BACKGROUND','STROPHE', 'OX_EXT', 'BG_APP', 'HIGHRISE','CONTENT-PG','ZENDESK'];
 	    //var c = [];
@@ -19,7 +19,7 @@ var dbg = {
 		}
 	    }
 	} else if (arguments.length === 1) {
-	    console.log (arguments[0]); 
+	    console.log (arguments[0]);
 	}
     }
 };
@@ -62,7 +62,7 @@ function isFromSipAddress (str){
 }
 
 /** Set Request details **/
-function setRequestedDetails (item) {    
+function setRequestedDetails (item) {
     var pref = OnSIP_Preferences;
     pref.set('requestedNumber', extractPhoneNumber(item.fromURI));
 }
@@ -85,7 +85,7 @@ function getPhoneExtension (phoneNumber) {
     }
 }
 
-/**  
+/**
  *  Get domain from address
  *  /(ext|x|ex)\s{0,3}.{0,3}\d{2,5}/
  **/
@@ -110,9 +110,9 @@ Array.prototype.unique = function () {
 	    if(r[x]==this[i]) {
 		continue o;
 	    }
-	}		
+	}
 	r[r.length] = this[i];
-    }	
+    }
     return r;
 }
 
@@ -126,11 +126,11 @@ function formatUrl (str, unsecure) {
     }
 }
 
-/** 
-*   Expects a non-formatted phone number (e.g. 17321234567) 
+/**
+*   Expects a non-formatted phone number (e.g. 17321234567)
 *   This will return (732) 123-4567.
 *   If the pattern is not matched it will simply return the
-*   supplied phone number 
+*   supplied phone number
 **/
 function formatPhoneNum (phone_number) {
     var matches   = phone_number.match(/(^\d{1})(\d{3})(\d{3})(\d{4})/);
@@ -155,7 +155,7 @@ function getDateAndTime (timezone){
         timezone = '';
     }
     var m_names   = new Array("January", "February", "March",
-			      "April"  , "May"     , "June" , 
+			      "April"  , "May"     , "June" ,
 			      "July"   , "August"  , "September",
 			      "October", "November", "December");
     var d         = new Date();
@@ -182,10 +182,10 @@ function getDateAndTime (timezone){
     if (curr_min.length == 1){
         curr_min = "0" + curr_min;
     }
-    
-    return curr_hour  + ':'   + curr_min + ' ' + 
-	a_p + ' ' + timezone  + ' on '   + 
-	m_names[d.getMonth()] + ' '      + 
+
+    return curr_hour  + ':'   + curr_min + ' ' +
+	a_p + ' ' + timezone  + ' on '   +
+	m_names[d.getMonth()] + ' '      +
 	d.getDate(); + ', '   + d.getFullYear();
 }
 
@@ -195,7 +195,7 @@ function getTimezoneAbbrevation (time) {
 		     '-8.0'  : 'PST','-7.0'  : 'PDT','-6.0'  : 'CST','-5.0'  : 'EST',
 		     '-4.0'  : 'AST','-3.5'  : 'NST','-3.0'  : 'ADT','-2.5'  : 'NDT',
 		     '-2.0'  : 'EST','-1.0'  : 'EST','1.0'   : 'CET','2.0'   : 'CEST',
-		     '3.0'   : 'EEDT','3.5'  : 'HNT','4.0'   : 'EDT','4.5'   : 'EST', 
+		     '3.0'   : 'EEDT','3.5'  : 'HNT','4.0'   : 'EDT','4.5'   : 'EST',
 		     '5.0'   : 'EST', '5.5'  : 'EST','5.75'  : 'EST','6.0'   : 'CST',
 		     '7.0'   : 'MST','8.0'   : 'EST','9.0'   : 'I'  ,'9.5'   : 'EST',
 		     '10.0'  : 'AEST', '11.0': 'AEDT','12.0' : ''
@@ -220,11 +220,11 @@ function rtrim(str, chars) {
     return str.replace(new RegExp("[" + chars + "]+$", "g"), "");
 }
 
-/** 
+/**
  *  Extract phone number
- *  We extract the number from the id assuming this 
- *  was a call initiated by the CallCreate API call 
- *   e.g "sip:call-setup@onsip.com;id=14156265035" 
+ *  We extract the number from the id assuming this
+ *  was a call initiated by the CallCreate API call
+ *   e.g "sip:call-setup@onsip.com;id=14156265035"
 **/
 function extractPhoneNumber(str){
     var rev_str, s_temp;
