@@ -16,7 +16,7 @@ BG_APP.activeCallCreated   = function ( items ) {
     }
     for (i = 0, len = items.length; i < len; i++) {
         item          = items[i];
-        phone         = extractPhoneNumber(item.toURI);	
+        phone         = extractPhoneNumber(item.toURI);
         cont_highrise = highrise_app.findContact (phone + '', name_from_context);
         cont_zendesk  = zendesk_app .findContact (phone + '');
         name          = this._normalizeName (cont_zendesk, cont_highrise);
@@ -24,7 +24,7 @@ BG_APP.activeCallCreated   = function ( items ) {
         caption       = "Calling: ";
 
         var f_notification = {
-            onSuccess : function (record_count, subject, is_onsip, nice_id) {		
+            onSuccess : function (record_count, subject, is_onsip, nice_id) {
                 if (record_count) {
 		    caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
 		    subject  = subject.substr (0, 60).toLowerCase();
@@ -32,7 +32,8 @@ BG_APP.activeCallCreated   = function ( items ) {
 		    subject  = "To: " + formatPhoneNum('' + phone);
                 }
 		n                   = that._getNotification(nice_id, caption, subject, item);
-                n.uri               = item.uri.query;
+                //n.uri               = item.uri.query;
+		n.uri               = that._splitUriBranch(item.uri.queryParam('item'));
                 n.phone             = formatPhoneNum('' + phone);
                 n.contact_highrise  = cont_highrise;
                 n.contact_zendesk   = cont_zendesk;
@@ -42,8 +43,8 @@ BG_APP.activeCallCreated   = function ( items ) {
                     n.show();
 		}
 		dbg.log(that.log_context, 'Checking if last ticket was onsip ' + n.is_onsip);
-		
-                that.notifications.push (n);		
+
+                that.notifications.push (n);
 		that.launched_n = false;
             },
             onError  : function () {
@@ -70,7 +71,9 @@ BG_APP.activeCallRequested = function ( items ) {
     dbg.log (this.log_context, 'Active Call Requested');
     for (i = 0, len = items.length; i < len; i++) {
         item        = items[i];
-        is_setup    = isSetupCall (item.fromURI);
+        is_setup    = (item.callSetupID && item.callSetupID.length > 0); 
+	//is_setup = isSetupCall (item.fromURI);
+	dbg.log(this.log_context, 'Call Setup ID is ' + item.callSetupID);
         /** Temporarily adding this feature 12/3/2010 **/
         /** If this is just a call setup, then we don't display notification **/
         if (is_setup) {
@@ -88,7 +91,7 @@ BG_APP.activeCallRequested = function ( items ) {
 	name_from_context  = '';
 
         var f_notification = {
-            onSuccess : function (record_count, subject, is_onsip, nice_id) {                		
+            onSuccess : function (record_count, subject, is_onsip, nice_id) {
 		if (record_count) {
 		    caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
 		    subject  = subject.substr(0, 60).toLowerCase();
@@ -101,7 +104,7 @@ BG_APP.activeCallRequested = function ( items ) {
                 }
 
 		n                  = that._getNotification(nice_id, caption, subject, item);
-                n.uri              = item.uri.query;
+                n.uri              = that._splitUriBranch(item.uri.queryParam('item'));
                 n.phone            = formatPhoneNum('' + phone);
                 n.is_setup         = is_setup;
                 n.contact_highrise = cont_highrise;
@@ -113,9 +116,9 @@ BG_APP.activeCallRequested = function ( items ) {
                     n.show();
 		}
 
-		dbg.log(that.log_context, 'Checking if last was ticket onsip - ' + n.is_onsip);
-                
-		that.notifications.push (n);	    
+		dbg.log(that.log_context, 'Checking if last was ticket onsip - ' + n.is_onsip + ' query param ' + n.uri);
+
+		that.notifications.push (n);
                 that.launched_n = false;
             },
             onError  : function () {
@@ -134,6 +137,18 @@ BG_APP.activeCallRequested = function ( items ) {
             }
         }
     }
+};
+
+BG_APP._splitUriBranch  = function(uri) {
+    var bare_uri = '';
+    if (uri && uri.length > 0) {
+	bare_uri = uri;
+	var idx = uri.lastIndexOf(':');
+	if (idx != -1) {
+	    bare_uri = uri.substring(0, idx-1);
+	}
+    }
+    return bare_uri;
 };
 
 BG_APP._getNotification = function(nice_id, caption, subject, item) {
@@ -157,12 +172,12 @@ BG_APP._getNotification = function(nice_id, caption, subject, item) {
     return n;
 };
 
-/**    
- * Normalize on the variations in the name returned by the various third parties. 
+/**
+ * Normalize on the variations in the name returned by the various third parties.
  * The returned normalized value will be display in the notification toast.
  * Variations include :
  * Zendesk, which returns the full name.
- * Highrise, which returns first and last name                                                                                 
+ * Highrise, which returns first and last name
  * Highrise also returns company.
  **/
 BG_APP._normalizeName    = function () {
@@ -202,10 +217,10 @@ BG_APP.activeCallConfirmed = function ( items ) {
     var i, len, name;
     var that = this;
     for (i = 0, len = items.length; i < len; i += 1) {
-	this._postNotetoProfile   (items[i].uri.query)
-	var q = items[i].uri.query;
+	var q = this._splitUriBranch(items[i].uri.queryParam('item'));
+	this._postNotetoProfile(q);
 	var f = function() {
-	    that._cancelNotifications (q);
+	    that._cancelNotifications(q);
 	};
 	setTimeout (f, 2000);
     }
@@ -220,7 +235,8 @@ BG_APP.activeCallRetract   = function (itemURI) {
     var that = this;
     dbg.log (this.log_context, 'Active Call Retracted = ' + this.notifications);
     for (i = 0, len = itemURI.length; i < len; i += 1) {
-        var q = itemURI[i].query;
+	var q = this._splitUriBranch(itemURI[i].queryParam('item'));
+	dbg.log (this.log_context, 'Active Call Retracted URI ' + q);
         var f = function () {
             that._cancelNotifications (q);
         };
@@ -263,7 +279,9 @@ BG_APP._cancelNotifications = function (item) {
     var a = [];
     var n = this.notifications.pop();
     while (n) {
+	dbg.log (this.log_context, 'Check URI comparison ' + n.uri + ' == ' + item);
         if (item === n.uri) {
+	    dbg.log (this.log_context, 'Notifications check permission ' + webkitNotifications.checkPermission());
 	    if (webkitNotifications.checkPermission() == 0) {
 		n.cancel();
 	    }
