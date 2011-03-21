@@ -178,13 +178,14 @@ chrome.extension.onRequest.addListener    ( function (request, sender, sendRespo
     if ( request.setupCall && pref.get ('enabled') ) {
 	var from_address  = pref.get('fromAddress');
         var to_address    = request.phone_no;
+	var call_setup_id = new Date().getTime() + '' + Math.floor(Math.random() * 1000);
 	/** Name from context would ascertain the individual **/
 	/** we are calling further down the call initiation process **/
 	/** by scraping the page from which the click-to-call number was clicked **/
 	name_from_context = request.name_from_context;
 	// var clean_no     = formatPhoneNum (to_address);
 	dbg.log (BG_LOG, 'Call requested FROM: ' + from_address + ' - TO: ' + to_address);
-	OX_EXT.createCall (from_address, to_address);
+	OX_EXT.createCall (from_address, to_address, call_setup_id);
     }
 
     /** Verify SIP User **/

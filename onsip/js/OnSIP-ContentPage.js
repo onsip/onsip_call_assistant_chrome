@@ -12,7 +12,7 @@ var HQ_SELECTOR_PATH_UPDATE  = '#page_main_column #contact_and_permissions_tab .
 var HQ_SELECTOR_PATH_DELETE  = '#screen_body .col .innercol .submit input[type$="submit"]';
 
 /** Add listener for commands from the background process **/
-chrome.extension.onRequest.addListener( function (request, sender, sendResponse) {    
+chrome.extension.onRequest.addListener( function (request, sender, sendResponse) {
     dbg.log (CONTENT_PG, 'Coming From Background Page :: parseDOM  ' + request.parseDOM);
     alterDOM       (request);
     updateAddresses(request);
@@ -36,12 +36,12 @@ document.addEventListener('DOMNodeInserted'         , handleDomChange, true);
 var parsing = false;
 
 function handleDomChange(e) {
-    var ext_enabled = _enabled;    
-    if (ext_enabled) {		
+    var ext_enabled = _enabled;
+    if (ext_enabled) {
         if (parsing) {
 	    return;
-	}	
-	dbg.log (CONTENT_PG, 'Handle DOM Change - parsing ' + parsing + ' Extension enabled :: ' + ext_enabled);	
+	}
+	dbg.log (CONTENT_PG, 'Handle DOM Change - parsing ' + parsing + ' Extension enabled :: ' + ext_enabled);
 	var newNodeClass = e.srcElement.className;
 	if ( newNodeClass != undefined ) {
 	    if (/onsip\-message\-box/.test(newNodeClass) || newNodeClass == 'onsip-click-to-call-icon') {
@@ -62,7 +62,7 @@ function alterDOM(request) {
     /** Parse DOM command **/
     dbg.log (CONTENT_PG, 'AlterDOM');
     if ( request.parseDOM ) {
-	_enabled = true;	
+	_enabled = true;
 	/** These events triggered through the Highrise application would send a request **/
 	/** to the background page to have the customer cache store refresh to reflect to changes made in Highrise **/
 	dbg.log(CONTENT_PG, 'In alterDOM, will add Highrise triggers');
@@ -106,7 +106,7 @@ function clearDOM () {
 }
 
 /** Parse DOM and convert phone numbers to click-to-call links **/
-function parseDOM (node) {    
+function parseDOM (node) {
     var invalidNodes     = ['SCRIPT', 'STYLE', 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A', 'CODE'];
     var nodeName         = node.nodeName.toUpperCase();
     var childNodesLength = node.childNodes.length;
@@ -122,12 +122,12 @@ function parseDOM (node) {
 	    return 0;
 	}
     }
-	
-    if (node.nodeType == Node.TEXT_NODE) {	
+
+    if (node.nodeType == Node.TEXT_NODE) {
 	return parsePhoneNumbers(node);
     } else {
 	addEvents(node);
-    }	
+    }
     return 0;
 }
 
@@ -140,7 +140,7 @@ function parsePhoneNumbers (node) {
 
     /** Eliminate the obvious cases **/
     if (!node || node.nodeValue.length < 10 ||
-	node.nodeValue.search(/\d/) == -1 && 
+	node.nodeValue.search(/\d/) == -1 &&
 	node.nodeValue.match(sipAddressNumber) == null) {
         return 0;
     }
@@ -153,7 +153,7 @@ function parsePhoneNumbers (node) {
     /** Phone number with an extension **/
     var phoneNumberNorthAmericaWithExtension = /\+?(1[\s-.])?((\(\d{3}\))|(\d{3}))[\s.\-]\d{3}[\s.\-]\d{4}\s{1,5}(ext|x|ex)\s{0,3}.{0,3}\d{2,5}/;
     var phoneNumberExtension                 = /(ext|x|ex)\s{0,3}.{0,3}\d{2,5}/g;
-    var phoneNumberDelimiter                 = /[\s.,;:|]/;    
+    var phoneNumberDelimiter                 = /[\s.,;:|]/;
     var text                                 = node.nodeValue;
     var offset                               = 0;
     var number                               = "";
@@ -162,9 +162,9 @@ function parsePhoneNumbers (node) {
     var extension                            = null;
     var found                                = false;
     var foundNorthAmerica                    = false;
- 
+
     /** Find the first phone number in the text node **/
-    while (!found) {        
+    while (!found) {
         var result = text.match(phoneNumberNorthAmerica);
 
         /** Handling extension **/
@@ -197,10 +197,10 @@ function parsePhoneNumbers (node) {
             offset += pos;
 
             /** Make sure we have a reasonable delimiters around our matching number **/
-            if (pos && !text.substr(pos - 1, 1).match(phoneNumberDelimiter) 
+            if (pos && !text.substr(pos - 1, 1).match(phoneNumberDelimiter)
                 || pos + number.length < text.length
                 && !text.substr(pos + number.length, 1).match(phoneNumberDelimiter)) {
-                
+
                 offset += number.length;
                 text = text.substr(pos + number.length);
                 continue;
@@ -208,7 +208,7 @@ function parsePhoneNumbers (node) {
         } else{
             var pos = result.index;
             offset += pos;
-        }                
+        }
         /** looks like we found a phone number **/
         found = true;
     }
@@ -216,35 +216,35 @@ function parsePhoneNumbers (node) {
     /** handle string address **/
     if (isStringNumber) {
         var stringNumber = number.replace(/sip:/,'');
-        var spanNode     = $('<a href="onsip:'                     + stringNumber + 
-			     '" title="Click-to-Call '             + stringNumber + 
-			     '" class="onsip-click-to-call" rel="' + stringNumber + 
-			     '" extension="' + extension +'"></a>')[0];    
+        var spanNode     = $('<a href="onsip:'                     + stringNumber +
+			     '" title="Click-to-Call '             + stringNumber +
+			     '" class="onsip-click-to-call" rel="' + stringNumber +
+			     '" extension="' + extension +'"></a>')[0];
     } else {
         /** wrap the phone number in a span tag **/
         var cleanNumber  = cleanPhoneNo(number);
         if (foundNorthAmerica && cleanNumber.length == 10) {
             cleanNumber = "1" + cleanNumber;
         }
-        var spanNode = $('<a href="onsip:'         + cleanNumber + '@' + to_domain + 
-			 '" title="Click-to-Call ' + number + 
-			 '" class="onsip-click-to-call" rel="' + cleanNumber + 
+        var spanNode = $('<a href="onsip:'         + cleanNumber + '@' + to_domain +
+			 '" title="Click-to-Call ' + number +
+			 '" class="onsip-click-to-call" rel="' + cleanNumber +
 			 '" extension="' + extension + '"></a>')[0];
     }
 
     var range   = node.ownerDocument.createRange();
- 
+
     range.setStart(node, offset);
     range.setEnd  (node, offset + number.length);
-  
+
     var docfrag = range.extractContents();
     var before  = range.startContainer.splitText(range.startOffset);
     var parent  = before.parentNode;
-    
+
     spanNode.appendChild(docfrag);
 
     parent.insertBefore(spanNode, before);
-    
+
     return 1;
 }
 
@@ -257,13 +257,13 @@ function parsePhoneNumbers (node) {
 /** web page so that we can link the name further into the whole call call control flow **/
 /** and post the appropriate comment to the account **/
 /** (i.e. Conversation with person X_FIRST, X_LAST from onsip **/
-function parseHqContext(node) {    
+function parseHqContext(node) {
     /** Discover the name on 'https://<company>.highrisehq.com/people/<id>' **/
-    var hq_people_context  = false; 
+    var hq_people_context  = false;
     var context_name = '';
     /** Discover the name on page 'https://<company>.highrisehq.com/parties' **/
     var hq_parties_context = /highrisehq.com\/parties/.test(document.location);
-    if (!hq_parties_context) {    
+    if (!hq_parties_context) {
 	hq_people_context = /highrisehq.com\/people/.test(document.location);
 	if (!hq_people_context){
 	    hq_people_context = /highrisehq.com\/companies/.test(document.location);
@@ -287,7 +287,7 @@ function parseHqContext(node) {
 		context_name = trim(context_name.html());
 	    }
 	}
-    }     
+    }
 
     return context_name;
 }
@@ -295,17 +295,17 @@ function parseHqContext(node) {
 function addHighriseEvents() {
     var hq_context = /highrisehq.com\/people/.test(document.location);
     if (!hq_context){
-        hq_context = /highrisehq.com\/companies/.test(document.location);        	
+        hq_context = /highrisehq.com\/companies/.test(document.location);
     }
-    if (hq_context) {	
+    if (hq_context) {
 	/** #page_main_column #contact_and_permissions_tab .submit input[name$="commit"] **/
-	var path_selector = HQ_SELECTOR_PATH_UPDATE; 
+	var path_selector = HQ_SELECTOR_PATH_UPDATE;
 	if (!($(path_selector).length)) {
 	    /** #page_main_column .edit .submit input[name$="commit"] **/
-	    path_selector = HQ_SELECTOR_PATH_ADD_NEW; 
+	    path_selector = HQ_SELECTOR_PATH_ADD_NEW;
 	    if (!($(path_selector).length)){
 		/** #screen_body .col .innercol .submit input[type$="submit"] **/
-		path_selector = HQ_SELECTOR_PATH_DELETE; 
+		path_selector = HQ_SELECTOR_PATH_DELETE;
 	    }
 	}
 	if ($(path_selector).length && $(path_selector).attr("onClick") == undefined) {
@@ -314,8 +314,8 @@ function addHighriseEvents() {
 		    dbg.log(CONTENT_PG, 'Submit triggered refresh Highrise data');
 		    chrome.extension.sendRequest ({refreshHighrise : true}, function (response) {});
 		}
-	    });		
-	}			 
+	    });
+	}
     }
 }
 /** End Highrise specific **/
@@ -330,15 +330,15 @@ function addEvents(node) {
         mouseover : function() {
 	    var offset, top, left;
 	    var $this = $(this);
-	    offset    = $this.offset();				
+	    offset    = $this.offset();
 	    top       = offset.top - 20;
-	    top       = (top > 0) ? top : 0;				
+	    top       = (top > 0) ? top : 0;
 	    left      = offset.left - 18;
 	    left      = (left > 0) ? left : 0;
-				
+
 	    var icon  = $('<div class="onsip-click-to-call-icon"></div>');
 	    iconFile  = chrome.extension.getURL('images/icon-phone.png');
-	    icon.css  ({ 'background-image' : 'url(' + iconFile + ')', 
+	    icon.css  ({ 'background-image' : 'url(' + iconFile + ')',
 		       'top' : top + 'px', 'left' : left + 'px'}).appendTo('body').fadeIn(200);
 	    $this.data('icon', icon);
 	},
@@ -353,10 +353,10 @@ function addEvents(node) {
 
 /** Call the given number **/
 function callNumber(phone_no, clean_no, extension, name_from_context) {
-    var msg = ''; 
+    var msg = '';
     msg += 'Call number trigger ';
     msg += '[phone :  '   + phone_no  + '] - [clean no:' + clean_no + '] -';
     msg += '[extension: ' + extension + '] - [name from context page: - ' + name_from_context + ']'
-    dbg.log (CONTENT_PG, msg);   
+    dbg.log (CONTENT_PG, msg);
     chrome.extension.sendRequest ({ setupCall : true, phone_no : clean_no, extension : extension, name_from_context : name_from_context }, function (response) {});
 }
