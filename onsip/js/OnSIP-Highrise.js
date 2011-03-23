@@ -209,7 +209,7 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
 	    xhr.abort();
 	    dbg.log (that.log_context, 'ABORTING xhr call to postNoteToProfile');
 	    if (call && call.onError) {
-		call.onError('aborted getCompanies');
+		call.onError('aborted postNoteToProfile');
 	    }
 	}
     };
