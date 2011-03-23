@@ -21,6 +21,7 @@ $(function(){
 	}
 
 	chrome.extension.sendRequest({ clearCache : true });
+	chrome.extension.sendRequest({ checkConnection : true, run : false});
 
 	pref.set('onsipCredentialsGood', false);
 	pref.set('highriseEnabled'     , false);
@@ -37,8 +38,9 @@ $(function(){
 	    $('#validatingMsg').show();
 
 	    /** Get onsip user and save it in the local storage **/
-	    getOnsipUser (handleOnSIPLogin ());
+	    getOnsipUser(handleOnSIPLogin());
 
+	    chrome.extension.sendRequest({ checkConnection : true, run : true });
 	} else {
 	    $('#save-options-btn').attr('disabled','');
 	    $('#errorMsg').text('Please fill in all fields for Highrise and OnSIP.').clearQueue().fadeOut(150).fadeIn(300);
