@@ -70,8 +70,12 @@ BG_APP.activeCallRequested = function ( items ) {
 
     dbg.log (this.log_context, 'Active Call Requested');
     for (i = 0, len = items.length; i < len; i++) {
-        item        = items[i];
-        is_setup    = (item.callSetupID && item.callSetupID.length > 0); 
+        item = items[i];
+	// We check to make sure that the call setup id was not
+	// only set, but that it matches the id we provided when
+	// we made initiated the call setup
+        is_setup = (item.callSetupID && item.callSetupID.length > 0);
+	is_setup = is_setup && (item.callSetupID == OX_EXT.store_cs_id);
 	//is_setup = isSetupCall (item.fromURI);
 	dbg.log(this.log_context, 'Call Setup ID is ' + item.callSetupID);
         /** Temporarily adding this feature 12/3/2010 **/

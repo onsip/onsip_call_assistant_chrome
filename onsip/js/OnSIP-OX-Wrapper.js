@@ -9,6 +9,7 @@ var OX_EXT = {
     "jid"          : undefined,
     "pwd"          : undefined,
     "log_context"  : "OX_EXT",
+    "store_cs_id"  : undefined,
     "DEF_TIMEOUT"  : 7000
 };
 
@@ -172,6 +173,7 @@ OX_EXT.createCall = function (from_address, to_address, call_setup_id) {
     this.ox_conn.ActiveCalls.create(to_address, from_address, call_setup_id, {
        onSuccess : function (packet) {
            dbg.log(that.log_context, 'Create call success');
+	   that.store_cs_id = call_setup_id;
        },
        onError   : function (packet) {
 	   dbg.log(that.log_context, 'Create call error');
