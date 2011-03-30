@@ -75,7 +75,7 @@ var sc = function() {
     if (!found_errors) {
 	found_errors = OX_EXT.strophe_conn.errors > 0;
     }
-    if (found_errors) { /** OX_EXT.strophe_conn.errors == 0 && found_errors **/
+    if (found_errors) {
 	dbg.log (BG_LOG, 'Discovered ' + OX_EXT.strophe_conn.errors  + ' errors lets RE-ESTABLISH connection');
 	var do_exec = function() {
 	    OX_EXT.failures = 0;
@@ -87,6 +87,7 @@ var sc = function() {
 		},
 		onError   : function(error) {
 		    dbg.log (BG_LOG, 'There was an error in do_exec() ' + error);
+		    found_errors = true;
 	        }
 	    });
 
