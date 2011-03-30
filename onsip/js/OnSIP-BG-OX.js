@@ -73,10 +73,11 @@ BG_APP.activeCallRequested = function ( items ) {
         item = items[i];
 	// We check to make sure that the call setup id was not
 	// only set, but that it matches the id we provided when
-	// we made initiated the call setup
+	// we made initiated the call setup..., or the fromURI
+	// includes sip:call-setup instring
         is_setup = (item.callSetupID && item.callSetupID.length > 0);
-	is_setup = is_setup && (item.callSetupID == OX_EXT.store_cs_id);
-	//is_setup = isSetupCall (item.fromURI);
+	is_setup = is_setup && (item.callSetupID == OX_EXT.store_cs_id || isSetupCall(item.fromURI));
+
 	dbg.log(this.log_context, 'Call Setup ID is ' + item.callSetupID);
         /** Temporarily adding this feature 12/3/2010 **/
         /** If this is just a call setup, then we don't display notification **/
