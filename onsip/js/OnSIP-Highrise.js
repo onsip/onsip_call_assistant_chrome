@@ -185,7 +185,7 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
     var xhr  = new XMLHttpRequest();
     var that = this;
     var ok   = false;
-    var tmout= 60000;
+    // var tmout= 60000;
 
     xhr.onreadystatechange = function () {
 	if (xhr.readyState !== 4) {
@@ -204,6 +204,7 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
 	return true;
     };
 
+    /**
     var a = function () {
 	if (!ok) {
 	    xhr.abort();
@@ -213,9 +214,9 @@ HIGHRISE.postNoteToProfile = function (customer, note, call) {
 	    }
 	}
     };
-
+    **/
     xhr.open ("POST", this.base_url + "/" +  customer.type + "/" + customer.id + "/notes.xml", true, this.token, 'X');
-    setTimeout (a, tmout);
+    /** setTimeout (a, tmout); **/
     xhr.send (note);
 };
 
@@ -233,22 +234,22 @@ HIGHRISE.init     =  function (pref) {
     dbg.log (this.log_context, 'Get Contacts & Company names');
     this._getContacts ({
         onSuccess : function (c) {
-	    to_func       = that._recycle.bind (that);
-	    that.ts       = new Date();
+	    to_func = that._recycle.bind (that);
+	    that.ts = new Date();
 	    that.attempts = 0;
-	    if ( !that.timeout_id ) {
-		dbg.log (that.log_context, 'In function init, will SETUP _recyle ' + that.timeout_id);
-		that.timeout_id = setTimeout  (to_func, that.refresh);
-	    }  else {
-		dbg.log (that.log_context, 'In function init, _recycle is already setup');
+	    if (that.timeout_id) {
+		clearInterval(that.timeout_id);
 	    }
+	    dbg.log (that.log_context, 'In function init, will SETUP _recyle ' + that.timeout_id);
+	    that.timeout_id = setInterval(to_func, that.refresh);
 	    dbg.log (that.log_context, 'Got contacts @ ' + that.ts);
         },
         onError   : function (status) {
-	    to_func       = that._recycle.bind (that);
-	    if ( !that.timeout_id ) {
-	        that.timeout_id = setTimeout  (to_func, that.refresh);
+	    to_func = that._recycle.bind (that);
+	    if (that.timeout_id) {
+		clearInterval(that.timeout_id);
 	    }
+	    that.timeout_id = setInterval(to_func, that.refresh);
 	    dbg.log (that.log_context, 'Error ' + status);
         }
     });
@@ -269,20 +270,24 @@ HIGHRISE._recycle       = function () {
     dbg.log (this.log_context, 'Recycle contacts & companies');
     this._getContacts ({
         onSuccess : function (c) {
-	    to_func         = that._recycle.bind (that);
-	    that.attempts   = 0;
-	    that.timeout_id = setTimeout  (to_func, that.refresh);
+	    to_func = that._recycle.bind (that);
+	    that.attempts = 0;
+	    if (!that.timeout_id) { // Added 4/1/2011
+		that.timeout_id = setInterval(to_func, that.refresh);
+	    }
 	    dbg.log (that.log_context, 'Recycled ' + c.length + ' contacts @ ' + new Date());
 	},
 	onError   : function (status) {
 	    that.attempts += 1;
-	    if (that.attempts <= 5) {
-		failed_to       = 60000 * that.attempts;
-		to_func         = that._recycle.bind (that);
-                that.timeout_id = setTimeout  (to_func, failed_to);
-		dbg.log (that.log_context, 'Failed to connect on ' + that.attempts + ' attempts, will try again');
-	    } else {
-		dbg.log (that.log_context, 'CRITICAL FAILURE, tried to connect to API more than  5 time(s)');
+	    if (that.attempts > 5) {
+		/** Modified 4/1/2011 **/
+		// failed_to = 60000 * that.attempts;
+		// to_func = that._recycle.bind (that);
+		if (that.timeout_id) {
+                    clearInterval(that.timeout_id);
+		    that.timeout_id = null;
+		}
+		dbg.log (that.log_context, 'Failed to connect on ' + that.attempts + ' attempts');
 	    }
 	    dbg.log (that.log_context, 'Error ' + status);
 	}
