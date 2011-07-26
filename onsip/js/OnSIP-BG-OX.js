@@ -8,122 +8,123 @@ var BG_APP = {
 
 BG_APP.activeCallCreated   = function ( items ) {
   var i, n, item, phone, len, name,
-  cont_highrise, cont_zendesk, caption;
+      cont_highrise, cont_zendesk, caption;
   var that = this;
   dbg.log(this.log_context, 'Active Call Created');
   if (name_from_context && name_from_context.length > 0){
-	  dbg.log (this.log_context, 'Made active call with context ' + name_from_context);
+    dbg.log (this.log_context, 'Made active call with context ' + name_from_context);
   }
   for (i = 0, len = items.length; i < len; i++) {
-    item          = items[i];
-    phone         = extractPhoneNumber(item.toURI);
+    item = items[i];
+    phone = extractPhoneNumber(item.toURI);
     cont_highrise = highrise_app.findContact (phone + '', name_from_context);
-    cont_zendesk  = zendesk_app .findContact (phone + '');
-    name          = this._normalizeName (cont_zendesk, cont_highrise);
-    phone         = name || phone;
-    caption       = "Calling: ";
+    cont_zendesk = zendesk_app .findContact (phone + '');
+    name  = this._normalizeName (cont_zendesk, cont_highrise);
+    phone = name || phone;
+    caption = "Calling: ";
 
     var f_notification = {
-          onSuccess : function (record_count, subject, is_onsip, nice_id) {
-            if (record_count) {
-		          caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
-		          subject  = subject.substr (0, 60).toLowerCase();
-            } else {
-		          subject  = "To: " + formatPhoneNum('' + phone);
-            }
-		        n                   = that._getNotification(nice_id, caption, subject, item);
-            //n.uri               = item.uri.query;
-		        n.uri               = that._splitUriBranch(item.uri.queryParam('item'));
-            n.phone             = formatPhoneNum('' + phone);
-            n.contact_highrise  = cont_highrise;
-            n.contact_zendesk   = cont_zendesk;
-		        n.is_onsip          = (is_onsip) ? is_onsip : false;
+      onSuccess : function (record_count, subject, is_onsip, nice_id) {
+        if (record_count) {
+	  caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
+	  subject  = subject.substr (0, 60).toLowerCase();
+        } else {
+	  subject  = "To: " + formatPhoneNum('' + phone);
+        }
+	n  = that._getNotification(nice_id, caption, subject, item);
+        //n.uri = item.uri.query;
+	n.uri = that._splitUriBranch(item.uri.queryParam('item'));
+        n.phone = formatPhoneNum('' + phone);
+        n.contact_highrise = cont_highrise;
+        n.contact_zendesk = cont_zendesk;
+	n.is_onsip = (is_onsip) ? is_onsip : false;
+	if (webkitNotifications.checkPermission() == 0) {
+          n.show();
+	}
+	dbg.log(that.log_context, 'Checking if last ticket was onsip ' + n.is_onsip);
 
-		        if (webkitNotifications.checkPermission() == 0) {
-              n.show();
-		        }
-		        dbg.log(that.log_context, 'Checking if last ticket was onsip ' + n.is_onsip);
-
-            that.notifications.push (n);
-		        that.launched_n = false;
-          },
+        that.notifications.push (n);
+	that.launched_n = false;
+      },
       onError  : function () {
-		    that.launched_n = false;
-	    }
+	that.launched_n = false;
+      }
     };
 
-    /** On Call Created. If a notification already exists then we won't produce another. **/
+    // On Call Created. If a notification already exists then we won't produce another.
     if (this.notifications.length === 0) {
       if (cont_zendesk && cont_zendesk.id) {
         zendesk_app.search ( cont_zendesk.id, f_notification);
       } else {
         f_notification.onSuccess();
       }
-	  }
+    }
   }
 };
 
 BG_APP.activeCallRequested = function ( items ) {
   var i, n, item, phone, len, cont_highrise,
-  cont_zendesk, caption, name, is_setup, that;
+      cont_zendesk, caption, name, is_setup, that;
   var that = this;
 
   dbg.log (this.log_context, 'Active Call Requested');
   for (i = 0, len = items.length; i < len; i++) {
     item = items[i];
-	  // We check to make sure that the call setup id was not
-	  // only set, but that it matches the id we provided when
-	  // we made initiated the call setup..., or the fromURI
-	  // includes sip:call-setup instring
+    // We check to make sure that the call setup id was not
+    // only set, but that it matches the id we provided when
+    // we made initiated the call setup..., or the fromURI
+    // includes sip:call-setup instring
     is_setup = (item.callSetupID && item.callSetupID.length > 0);
-	  is_setup = is_setup && (item.callSetupID == OX_EXT.store_cs_id || isSetupCall(item.fromURI));
+    is_setup = is_setup &&
+      (item.callSetupID == OX_EXT.store_cs_id || isSetupCall(item.fromURI));
 
-	  dbg.log(this.log_context, 'Call Setup ID is ' + item.callSetupID);
+    dbg.log(this.log_context, 'Call Setup ID is ' + item.callSetupID);
     /** Temporarily adding this feature 12/3/2010 **/
     /** If this is just a call setup, then we don't display notification **/
     if (is_setup) {
-	    if (len < 2) {
-		    this.launched_n = false;
-	    }
+      if (len < 2) {
+	this.launched_n = false;
+      }
       continue;
     }
-    caption            = is_setup ? "Call Setup: " : "Incoming Call: ";
-    phone              = extractPhoneNumber(item.fromURI);
-    cont_highrise      = highrise_app.findContact (phone + '','');
-    cont_zendesk       = zendesk_app .findContact (phone + '');
-    name               = this._normalizeName (cont_zendesk, cont_highrise);
-    phone              = name || phone;
-	  name_from_context  = '';
+    caption = is_setup ? "Call Setup: " : "Incoming Call: ";
+    phone = extractPhoneNumber(item.fromURI);
+    cont_highrise = highrise_app.findContact (phone + '','');
+    cont_zendesk = zendesk_app .findContact (phone + '');
+    name = this._normalizeName (cont_zendesk, cont_highrise);
+    phone = name || phone;
+    name_from_context  = '';
 
     var f_notification = {
       onSuccess : function (record_count, subject, is_onsip, nice_id) {
-		    if (record_count) {
-		      caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
-		      subject  = subject.substr(0, 60).toLowerCase();
+	if (record_count) {
+	  caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
+	  subject  = subject.substr(0, 60).toLowerCase();
         } else {
-		      if (!is_setup) {
+	  if (!is_setup) {
             subject  = "From: "  + formatPhoneNum('' + phone);
-		      } else {
+	  } else {
             subject  = "Setup: " + formatPhoneNum('' + phone);
-		      }
+	  }
         }
 
-		    n                  = that._getNotification(nice_id, caption, subject, item);
-        n.uri              = that._splitUriBranch(item.uri.queryParam('item'));
-        n.phone            = formatPhoneNum('' + phone);
-        n.is_setup         = is_setup;
+	n = that._getNotification(nice_id, caption, subject, item);
+        n.uri = that._splitUriBranch(item.uri.queryParam('item'));
+        n.phone = formatPhoneNum('' + phone);
+        n.is_setup = is_setup;
         n.contact_highrise = cont_highrise;
-        n.contact_zendesk  = cont_zendesk;
-        n.is_onsip         = (is_onsip) ? is_onsip : false;
-        n.flag_incoming    = true;
+        n.contact_zendesk = cont_zendesk;
+        n.is_onsip = (is_onsip) ? is_onsip : false;
+        n.flag_incoming = true;
 
-		    if (webkitNotifications.checkPermission() == 0) {
+	if (webkitNotifications.checkPermission() == 0) {
           n.show();
-		    }
+	}
 
-		    dbg.log(that.log_context, 'Checking if last was ticket onsip - ' + n.is_onsip + ' query param ' + n.uri);
+	dbg.log(that.log_context, 'Checking if last was ticket onsip - ' +
+                n.is_onsip + ' query param ' + n.uri);
 
-		    that.notifications.push (n);
+	that.notifications.push(n);
         that.launched_n = false;
       },
       onError  : function () {
@@ -147,11 +148,11 @@ BG_APP.activeCallRequested = function ( items ) {
 BG_APP._splitUriBranch  = function(uri) {
   var bare_uri = '';
   if (uri && uri.length > 0) {
-	  bare_uri = uri;
-	  var idx = uri.lastIndexOf(':');
-	  if (idx != -1) {
-	    bare_uri = uri.substring(0, idx-1);
-	  }
+    bare_uri = uri;
+    var idx = uri.lastIndexOf(':');
+    if (idx != -1) {
+      bare_uri = uri.substring(0, idx-1);
+    }
   }
   return bare_uri;
 };
@@ -159,20 +160,20 @@ BG_APP._splitUriBranch  = function(uri) {
 BG_APP._getNotification = function(nice_id, caption, subject, item) {
   var n;
   if (webkitNotifications.checkPermission() == 0) {
-	  n  = webkitNotifications.createNotification ('images/icon-48.png', caption, subject);
+    n  = webkitNotifications.createNotification ('images/icon-48.png', caption, subject);
     n.onclick = function () {
-	    if (pref.get('zendeskEnabled')) {
+      if (pref.get('zendeskEnabled')) {
         if (!nice_id) {
-		      chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
+	  chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
         } else {
-		      chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
+	  chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
         }
-	    } else {
+      } else {
         OX_EXT.cancelCall (item);
-	    }
+      }
     };
   } else {
-	  n = {};
+    n = {};
   }
   return n;
 };
@@ -222,26 +223,26 @@ BG_APP.activeCallConfirmed = function ( items ) {
   var i, len, name;
   var that = this;
   for (i = 0, len = items.length; i < len; i += 1) {
-	  var q = this._splitUriBranch(items[i].uri.queryParam('item'));
-	  this._postNotetoProfile(q);
-	  var f = function() {
-	    that._cancelNotifications(q);
-	  };
-	  setTimeout (f, 2000);
+    var q = this._splitUriBranch(items[i].uri.queryParam('item'));
+    this._postNotetoProfile(q);
+    var f = function() {
+      that._cancelNotifications(q);
+    };
+    setTimeout (f, 2000);
   }
 };
 
-BG_APP.activeCallPending   = function ( item ) {
+BG_APP.activeCallPending = function ( item ) {
   dbg.log (this.log_context, 'Active Call Pending');
 };
 
-BG_APP.activeCallRetract   = function (itemURI) {
+BG_APP.activeCallRetract = function (itemURI) {
   var i, len;
   var that = this;
   dbg.log (this.log_context, 'Active Call Retracted = ' + this.notifications);
   for (i = 0, len = itemURI.length; i < len; i += 1) {
-	  var q = this._splitUriBranch(itemURI[i].queryParam('item'));
-	  dbg.log (this.log_context, 'Active Call Retracted URI ' + q);
+    var q = this._splitUriBranch(itemURI[i].queryParam('item'));
+    dbg.log (this.log_context, 'Active Call Retracted URI ' + q);
     var f = function () {
       that._cancelNotifications (q);
     };
@@ -284,12 +285,12 @@ BG_APP._cancelNotifications = function (item) {
   var a = [];
   var n = this.notifications.pop();
   while (n) {
-	  dbg.log (this.log_context, 'Check URI comparison ' + n.uri + ' == ' + item);
+    dbg.log (this.log_context, 'Check URI comparison ' + n.uri + ' == ' + item);
     if (item === n.uri) {
-	    dbg.log (this.log_context, 'Notifications check permission ' + webkitNotifications.checkPermission());
-	    if (webkitNotifications.checkPermission() == 0) {
-		    n.cancel();
-	    }
+      dbg.log (this.log_context, 'Notifications check permission ' + webkitNotifications.checkPermission());
+      if (webkitNotifications.checkPermission() == 0) {
+	n.cancel();
+      }
     } else {
       a.push (n);
     }
