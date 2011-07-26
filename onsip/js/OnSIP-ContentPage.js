@@ -271,7 +271,7 @@ function parseHqContext(node) {
 	if (hq_people_context) {
 	    /** This jquery path selector will work to retrieve the name of the **/
 	    /** person or company from the header section of the page **/
-	    context_name = $('body #page_header_wrapper #subject_header_details .subject_header:first td.name h1:first');
+            context_name = $('body #wrapper .party_header h1.name');
 	    if (context_name.length){
 		context_name = trim(context_name.html());
 	    }
@@ -289,7 +289,12 @@ function parseHqContext(node) {
 	}
     }
 
-    return context_name;
+    if (context_name.length && (context_name.constructor == String)){
+        return context_name;
+    } else {
+        return null;
+    }
+
 }
 
 function addHighriseEvents() {
@@ -356,7 +361,7 @@ function callNumber(phone_no, clean_no, extension, name_from_context) {
     var msg = '';
     msg += 'Call number trigger ';
     msg += '[phone :  '   + phone_no  + '] - [clean no:' + clean_no + '] -';
-    msg += '[extension: ' + extension + '] - [name from context page: - ' + name_from_context + ']'
+    msg += '[extension: ' + extension + '] - [name from context page: - ' + name_from_context + ']';
     dbg.log (CONTENT_PG, msg);
     chrome.extension.sendRequest ({ setupCall : true, phone_no : clean_no, extension : extension, name_from_context : name_from_context }, function (response) {});
 }
