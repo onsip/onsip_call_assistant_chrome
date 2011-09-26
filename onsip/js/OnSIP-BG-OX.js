@@ -164,7 +164,7 @@ BG_APP._getNotification = function(nice_id, caption, subject, item) {
     n.onclick = function () {
       if (pref.get('zendeskEnabled')) {
         if (!nice_id) {
-	  chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/2007686'});
+	  chrome.tabs.create({url: pref.get('zendeskUrl') + '/rules/'});
         } else {
 	  chrome.tabs.create({url: pref.get('zendeskUrl') + '/tickets/' + nice_id});
         }
