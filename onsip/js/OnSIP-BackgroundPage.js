@@ -9,6 +9,8 @@ var rebound_to        = 3; /** minutes **/
 var state_inactive    = [];
 var state_active      = [];
 var found_errors      = false;
+var errored_interval  = 30000;
+var DEFAULT_INTERVAL  = 30000;
 var BG_LOG            = "CHROME-BACKGROUND";
 
 /** This is a bit hacky. the problem we're **/
@@ -87,10 +89,28 @@ var sc = function() {
 	  onSuccess : function() {
 	    dbg.log (BG_LOG, 'Succeeded in OX_EXT.init for REBOUND connecting & subscribing');
 	    found_errors = false;
+            // reset interval
+            dbg.log(BG_LOG, 'Reconnection interval on success set at ' + errored_interval);
+            errored_interval = DEFAULT_INTERVAL;
+            if (sc_interval) {
+              clearInterval(sc_interval);
+            }
+            sc_interval = setInterval(sc, errored_interval);
 	  },
 	  onError   : function(error) {
 	    dbg.log (BG_LOG, 'There was an error in do_exec() ' + error);
 	    found_errors = true;
+            // back-off on auto connecting
+            var factor = Math.floor(errored_interval / DEFAULT_INTERVAL);
+            errored_interval = (factor + 1) * DEFAULT_INTERVAL;
+            if (errored_interval > 300000) { // 5 min
+              errored_interval = 300000 + (Math.floor((Math.random() * 5)) * DEFAULT_INTERVAL);
+            }
+            if (sc_interval) {
+              clearInterval(sc_interval);
+            }
+            dbg.log(BG_LOG, 'Reconnection interval on error set at ' + errored_interval);
+            sc_interval = setInterval(sc, errored_interval);
 	  }
 	});
 
@@ -118,7 +138,7 @@ var sc = function() {
 };
 
 if (pref && pref.get('onsipCredentialsGood')) {
-  sc_interval = setInterval(sc, 30000);
+  sc_interval = setInterval(sc, errored_interval);
 }
 
 
@@ -188,7 +208,7 @@ chrome.extension.onRequest.addListener(
 	clearInterval(sc_interval);
       }
       if (request.run) {
-	sc_interval = setInterval(sc, 30000);
+	sc_interval = setInterval(sc, DEFAULT_INTERVAL);
       }
     }
 
