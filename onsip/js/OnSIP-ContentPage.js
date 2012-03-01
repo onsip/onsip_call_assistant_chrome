@@ -136,7 +136,7 @@ function parsePhoneNumbers (node) {
     var isStringNumber = false;
 
     /** SIP address **/
-    var sipAddressNumber = /sip:[a-zA-Z0-9_]+@[a-zA-Z0-9_.]+\.[a-z]{1,4}/;
+    var sipAddressNumber = /sip:[a-zA-Z0-9_.]+@[a-zA-Z0-9_.]+\.[a-z]{1,4}/;
 
     /** Eliminate the obvious cases **/
     if (!node || node.nodeValue.length < 10 ||
@@ -330,6 +330,7 @@ function addEvents(node) {
         click     : function(e){
 	    dbg.log (CONTENT_PG, 'Call Number');
 	    e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
 	    callNumber (this.innerHTML, this.rel, $(this).attr('extension'), parseHqContext($(this)));
 	},
         mouseover : function() {
