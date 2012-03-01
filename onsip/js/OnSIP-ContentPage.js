@@ -136,7 +136,7 @@ function parsePhoneNumbers (node) {
     var isStringNumber = false;
 
     /** SIP address **/
-    var sipAddressNumber = /sip:[a-zA-Z0-9_.]+@[a-zA-Z0-9_.]+\.[a-z]{1,4}/;
+    var sipAddressNumber = /sip:[a-zA-Z0-9_.\-]+@[a-zA-Z0-9_.\-]+\.[a-z]{1,4}/;
 
     /** Eliminate the obvious cases **/
     if (!node || node.nodeValue.length < 10 ||
