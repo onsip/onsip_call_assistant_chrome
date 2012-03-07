@@ -330,8 +330,8 @@ function addEvents(node) {
         click     : function(e){
 	    dbg.log (CONTENT_PG, 'Call Number');
 	    e.preventDefault();
-            if (e.stopPropagation) e.stopPropagation();
 	    callNumber (this.innerHTML, this.rel, $(this).attr('extension'), parseHqContext($(this)));
+            if (e.stopPropagation) e.stopPropagation();
 	},
         mouseover : function() {
 	    var offset, top, left;
