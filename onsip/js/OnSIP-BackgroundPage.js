@@ -15,7 +15,7 @@ var BG_LOG            = "CHROME-BACKGROUND";
 
 /** This is a bit hacky. the problem we're **/
 /** trying to solve has to do with identifying **/
-/** the intented individual who we are calling **/
+/** the intended individual who we are calling **/
 /** A single number within a company can represent **/
 /** a call to any one of many persons within that company **/
 /** We, therefore, are attempting to identify that **/
@@ -31,15 +31,16 @@ if (pref && pref.get('onsipCredentialsGood') === true && pref.get('onsipPassword
     OX_EXT.init (
       pref, {
         onSuccess : function () {
-		      dbg.log(BG_LOG, 'Succeeded in OX_EXT.init for connecting & subscribing');
+          dbg.log(BG_LOG, 'Succeeded in OX_EXT.init for connecting & subscribing');
         },
         onError   : function (error) {
           /** In case of failure, display settings in a new tab **/
-		      dbg.log(BG_LOG, 'There was an error in OX_EXT.init ' + error);
+          dbg.log(BG_LOG, 'There was an error in OX_EXT.init ' + error);
         }
-	    });
+      }
+    );
   } else {
-	  dbg.log(BG_LOG, 'OX_EXT.init NOT called, no credentials found');
+    dbg.log(BG_LOG, 'OX_EXT.init NOT called, no credentials found');
   }
 };
 
@@ -86,9 +87,9 @@ var sc = function() {
       BG_APP.launched_n = false;
       OX_EXT.init(
         pref, {
-	  onSuccess : function() {
-	    dbg.log (BG_LOG, 'Succeeded in OX_EXT.init for REBOUND connecting & subscribing');
-	    found_errors = false;
+          onSuccess : function() {
+            dbg.log (BG_LOG, 'Succeeded in OX_EXT.init for REBOUND connecting & subscribing');
+            found_errors = false;
             // reset interval
             dbg.log(BG_LOG, 'Reconnection interval on success set at ' + errored_interval);
             errored_interval = DEFAULT_INTERVAL;
@@ -96,10 +97,10 @@ var sc = function() {
               clearInterval(sc_interval);
             }
             sc_interval = setInterval(sc, errored_interval);
-	  },
-	  onError   : function(error) {
-	    dbg.log (BG_LOG, 'There was an error in do_exec() ' + error);
-	    found_errors = true;
+          },
+          onError   : function(error) {
+            dbg.log (BG_LOG, 'There was an error in do_exec() ' + error);
+            found_errors = true;
             // back-off on auto connecting
             var factor = Math.floor(errored_interval / DEFAULT_INTERVAL);
             errored_interval = (factor + 1) * DEFAULT_INTERVAL;
@@ -111,29 +112,31 @@ var sc = function() {
             }
             dbg.log(BG_LOG, 'Reconnection interval on error set at ' + errored_interval);
             sc_interval = setInterval(sc, errored_interval);
-	  }
-	});
+          }
+        }
+      );
 
       /** Load and initialize Highrise with contacts **/
       if (pref && pref.get('highriseEnabled')) {
-	highrise_app.init(pref);
+        highrise_app.init(pref);
       }
 
       /** Initialize Zendesk with Contacts **/
       if (pref && pref.get('zendeskEnabled')) {
-	zendesk_app.init(pref);
+        zendesk_app.init(pref);
       }
     };
     OX_EXT.iConnectCheck(
       pref, {
-	onSuccess : function() {
-	  dbg.log(BG_LOG, 'Successfully connected to BOSH Server, do_exec()');
-	  do_exec();
-	},
+        onSuccess : function() {
+          dbg.log(BG_LOG, 'Successfully connected to BOSH Server, do_exec()');
+          do_exec();
+        },
         onError   : function() {
-	  dbg.log(BG_LOG, 'Failed to connect to BOSH Server ');
-	}
-      });
+          dbg.log(BG_LOG, 'Failed to connect to BOSH Server ');
+        }
+      }
+    );
   }
 };
 
@@ -181,52 +184,52 @@ chrome.extension.onRequest.addListener(
     /** Verify SIP User **/
     if ( request.verifyOnSipUser ) {
       dbg.log (BG_LOG, 'Request verify on sip user  ' +
-	       request.username + ', ***  -- ' +
-	       pref.get ('onsipHttpBase'));
+      request.username + ', ***  -- ' +
+      pref.get ('onsipHttpBase'));
 
       pref.set('fromAddress'  , request.username);
       pref.set('onsipPassword', request.password);
 
       OX_EXT.init (
         pref, {
-	  onSuccess : function() {
-	    dbg.log (BG_LOG, "SIP user Verified Successfully");
-	    sendResponse({ok : true});
-	  },
-	  onError   : function(error) {
-	    dbg.log (BG_LOG, "Error in verifying SIP User [ " + error + " ]");
-	    sendResponse({ok : false});
-	  }
-	});
+          onSuccess : function() {
+            dbg.log (BG_LOG, "SIP user Verified Successfully");
+            sendResponse({ok : true});
+          },
+          onError   : function(error) {
+            dbg.log (BG_LOG, "Error in verifying SIP User [ " + error + " ]");
+            sendResponse({ok : false});
+          }
+        });
     }
 
     /** Execute loop to verify XMPP / BOSH connection **/
     if ( request.checkConnection ) {
       dbg.log (BG_LOG, "checkConnection - " + request.run);
       if (sc_interval) {
-	dbg.log (BG_LOG, "checkConnection - clear existing interval " + sc_interval);
-	clearInterval(sc_interval);
+        dbg.log (BG_LOG, "checkConnection - clear existing interval " + sc_interval);
+        clearInterval(sc_interval);
       }
       if (request.run) {
-	sc_interval = setInterval(sc, DEFAULT_INTERVAL);
+        sc_interval = setInterval(sc, DEFAULT_INTERVAL);
       }
     }
 
     /** Verify Zendesk User **/
     if ( request.verifyZendesk ) {
       dbg.log (BG_LOG, 'Verifying Zendesk account with ' +
-	       request.zendesk_url + ' - ' +
+               request.zendesk_url + ' - ' +
                request.zendesk_usr + ' - ' +
                request.zendesk_pwd);
       zendesk_app.verify ({
         onSuccess : function () {
-	  sendResponse ({ok : true});
-	  zendesk_app.init (pref);
+          sendResponse ({ok : true});
+          zendesk_app.init (pref);
           dbg.log (BG_LOG, 'Zendesk Credentials OK');
-	},
+        },
         onError   : function () {
-	  sendResponse ({ok : false});
-	  dbg.log (BG_LOG, 'Zendesk Credetials INVALID ');
+          sendResponse ({ok : false});
+          dbg.log (BG_LOG, 'Zendesk Credetials INVALID ');
         }
       }, request.zendesk_url, request.zendesk_usr, request.zendesk_pwd);
     }
@@ -237,22 +240,22 @@ chrome.extension.onRequest.addListener(
       dbg.log(BG_LOG, 'Verifying Highrise Credentials TOKEN ' + request.highrise_url + '');
       highrise_app.verifyToken ({
         onSuccess : function (data) {
-	  dbg.log(BG_LOG, 'HIGHRISE API :: Highrise credentials OK');
-	  sendResponse({ok : true});
-	  highrise_app.init(pref);
-	},
-	onError   : function () {
-	  dbg.log(BG_LOG, 'HIGHRISE API :: Highrise credentials NOT OK');
-	  sendResponse({ok : false});
-	}
+          dbg.log(BG_LOG, 'HIGHRISE API :: Highrise credentials OK');
+          sendResponse({ok : true});
+          highrise_app.init(pref);
+        },
+        onError   : function () {
+          dbg.log(BG_LOG, 'HIGHRISE API :: Highrise credentials NOT OK');
+          sendResponse({ok : false});
+        }
       },request.highrise_url, request.highrise_token);
     }
 
     /** In case we need to refresh Highrise from the content page **/
     if (request.refreshHighrise && pref && pref.get ('highriseEnabled')) {
       var f_wait = function() {
-	dbg.log(BG_LOG, 'HIGHRISE API :: Refreshing Highrise');
-	highrise_app.init (pref);
+        dbg.log(BG_LOG, 'HIGHRISE API :: Refreshing Highrise');
+        highrise_app.init (pref);
       };
       /** Wait a couple of seconds for the server side changes to take **/
       /** affect before we retrieve the latest & greatest.  This code executes **/
@@ -261,98 +264,6 @@ chrome.extension.onRequest.addListener(
       sendResponse ({ok : true});
     }
 });
-
-
-/** Stores a state every time an "active" event is sent, up to 20 items. **/
-/**
-chrome.idle.onStateChanged.addListener     ( function (newstate) {
-    // Rebound BOSH logic
-    if (state_inactive.length >= 1) {
-	var d_past      = state_inactive[0].time;
-	var d_now       = new Date();
-	var diff        = d_now.getTime() - d_past.getTime();
-	var from_active = false;
-	if (state_active.length > 0) {
-	    var d_past_active = state_active[0].time;
-	    var diff_active   = d_now.getTime() - d_past_active.getTime();
-	    var min_active    = Math.floor (diff_active/1000/60);
-	    // 	Here we're trying to account for the case where a computer is put
-	    // 	to sleep, taken home, and then reactivated.
-	    dbg.log (BG_LOG, 'Minutes since last ACTIVE ' + min_active);
-	    if (min_active >= 120) {
-		from_active = true;
-	    }
-	}
-	// These are the minutes in idle
-	var min    = Math.floor (diff/1000/60);
-	dbg.log (BG_LOG, 'Minutes since idle ' + min + ' state inactive log length is (' + state_inactive.length + ')');
-	while (state_inactive.length > 0) {
-	    state_inactive.pop();
-	}
-	if ((min >= rebound_to || from_active) && pref && pref.get ('onsipCredentialsGood')) {
-	    dbg.log (BG_LOG, 'IDLE for ' + min + ' minutes lets RE-ESTABLISH connection');
-	    var do_exec = function () {
-		OX_EXT.failures     = 0;
-		BG_APP.launched_n   = false;
-		OX_EXT.init   (pref, {
-		    onSuccess : function () {
-			dbg.log (BG_LOG, 'Succeeded in OX_EXT.init for REBOUND connecting & subscribing');
-		    },
-		    onError   : function (error) {
-			dbg.log (BG_LOG, 'There was an error in REBOUND OX_EXT INIT ' + error);
-			dbg.log (BG_LOG, "Let's try do_exec() again");
-			d_now.setDate (1);
-			d_now.setHours(0);
-			d_now.setMonth(0);
-			state_inactive.unshift({'state':'', 'time':d_now});
-	            }
-	        });
-
-		// Load and initialize Highrise with contacts
-		if (pref && pref.get ('highriseEnabled') === true && from_active) {
-		    highrise_app.init(pref);
-		}
-
-		// Initialize Zendesk with Contacts
-		if (pref && pref.get ('zendeskEnabled')  === true && from_active) {
-		    zendesk_app.init (pref);
-		}
-	    };
-
-	    OX_EXT.iConnectCheck  (pref, {
-	        onSuccess : function () {
-		    dbg.log (BG_LOG, 'Successfully connected to BOSH Server, do_exec()');
-		    do_exec ();
-		},
-                onError   : function () {
-		    dbg.log (BG_LOG, 'Failed to connect to BOSH pop off active node ');
-		    state_inactive.shift();
-		}
-	    });
-	}
-    }
-});
-**/
-
-/**
-var sc = function () {
-    chrome.idle.queryState(15, function (newstate) {
-	var time = new Date();
-	if (newstate === 'idle') {
-	    if (state_inactive.length === 0) {
-		state_inactive.unshift({'state':newstate, 'time':time});
-		dbg.log (BG_LOG, 'Logged a new idle state @ ' + time);
-	    }
-	} else if (newstate === 'active') {
-	    while (state_active.length >= 20) {
-		state_active.pop();
-	    }
-	    //dbg.log (BG_LOG, 'Logged new ACTIVE state @ ' + time);
-	    state_active.unshift({'state':newstate, 'time':time});
-	}
-    });
-};
-**/
 
 
 
