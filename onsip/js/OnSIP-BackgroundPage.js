@@ -146,7 +146,7 @@ if (pref && pref.get('onsipCredentialsGood')) {
 
 
 /** Add listener for requests from the pages **/
-chrome.extension.onRequest.addListener(
+chrome.extension.onMessage.addListener(
   function(request, sender, sendResponse) {
     dbg.log (BG_LOG, 'Request ');
 

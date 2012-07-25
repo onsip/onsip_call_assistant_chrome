@@ -44,8 +44,8 @@ function onSubmit(e) {
     window.webkitNotifications.requestPermission();
   }
 
-  chrome.extension.sendRequest({ clearCache : true });
-  chrome.extension.sendRequest({ checkConnection : true, run : false});
+  chrome.extension.sendMessage({ clearCache : true });
+  chrome.extension.sendMessage({ checkConnection : true, run : false});
 
   pref.set('onsipCredentialsGood', false);
   pref.set('highriseEnabled'     , false);
@@ -64,7 +64,7 @@ function onSubmit(e) {
     /** Get onsip user and save it in the local storage **/
     getOnsipUser(handleOnSIPLogin());
 
-    chrome.extension.sendRequest({ checkConnection : true, run : true });
+    chrome.extension.sendMessage({ checkConnection : true, run : true });
   } else {
     $('#save-options-btn').removeAttr('disabled');
     $('#errorMsg').text('Please fill in all fields for OnSIP and optionally Highrise.').clearQueue().fadeOut(150).fadeIn(300);
@@ -94,7 +94,7 @@ function getOnsipUser (callback) {
     username = $('#fromAddress').val(),
     password = $('#onsipPassword').val();
 
-  chrome.extension.sendRequest({verifyOnSipUser:true, username:username, password:password},
+  chrome.extension.sendMessage({verifyOnSipUser:true, username:username, password:password},
     function (response) {
       if (callback) {
         var ts = Math.round(((new Date().getTime() - _startTimeLoginProc) / 1000));
@@ -241,7 +241,7 @@ function validateHighriseCredentials (callback){
 
   SETTINGS_PG_LOG && console.log('SETTINGS PG :: Sending verifyHighrise request to BG-PAGE');
 
-  chrome.extension.sendRequest({verifyHighrise:true, highrise_url:url, highrise_token:token},
+  chrome.extension.sendMessage({verifyHighrise:true, highrise_url:url, highrise_token:token},
     function (response) {
       if (callback) {
         if (response.ok) {
@@ -263,7 +263,7 @@ function validateZendeskCredentials (callback) {
 
   SETTINGS_PG_LOG && console.log ('SETTINGS PG :: Sending verifyZendesk request to BG-PAGE');
 
-  chrome.extension.sendRequest({ verifyZendesk : true, zendesk_url : url, zendesk_usr : usr, zendesk_pwd : pwd},
+  chrome.extension.sendMessage({ verifyZendesk : true, zendesk_url : url, zendesk_usr : usr, zendesk_pwd : pwd},
     function (response) {
       if (callback) {
         if (response.ok) {

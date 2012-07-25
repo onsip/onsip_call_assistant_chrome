@@ -26,7 +26,7 @@ var OnSIP_Process = function() {
           for (var t in windows[w].tabs) {
             var tabId = windows[w].tabs[t].id;
             if (tabId) {
-              chrome.tabs.sendRequest(tabId, requestOptions);
+              chrome.tabs.sendMessage(tabId, requestOptions);
             }
           }
         }

@@ -12,14 +12,14 @@ var HQ_SELECTOR_PATH_UPDATE  = '#page_main_column #contact_and_permissions_tab .
 var HQ_SELECTOR_PATH_DELETE  = '#screen_body .col .innercol .submit input[type$="submit"]';
 
 /** Add listener for commands from the background process **/
-chrome.extension.onRequest.addListener( function (request, sender, sendResponse) {
+chrome.extension.onMessage.addListener( function (request, sender, sendResponse) {
     dbg.log (CONTENT_PG, 'Coming From Background Page :: parseDOM  ' + request.parseDOM);
     alterDOM       (request);
     updateAddresses(request);
 });
 
 /** Alter DOM on page load **/
-chrome.extension.sendRequest({ pageLoad : true }, function (response) {
+chrome.extension.sendMessage({ pageLoad : true }, function (response) {
    dbg.log (CONTENT_PG, 'SendRequest');
    alterDOM       (response);
    updateAddresses(response);
@@ -317,7 +317,7 @@ function addHighriseEvents() {
       $(path_selector).unbind().bind({
         click : function(e) {
           dbg.log(CONTENT_PG, 'Submit triggered refresh Highrise data');
-          chrome.extension.sendRequest ({refreshHighrise : true}, function (response) {});
+          chrome.extension.sendMessage ({refreshHighrise : true}, function (response) {});
         }
       });
     }
@@ -364,5 +364,5 @@ function callNumber(phone_no, clean_no, extension, name_from_context) {
   msg += '[phone :  '   + phone_no  + '] - [clean no:' + clean_no + '] -';
   msg += '[extension: ' + extension + '] - [name from context page: - ' + name_from_context + ']';
   dbg.log (CONTENT_PG, msg);
-  chrome.extension.sendRequest ({ setupCall : true, phone_no : clean_no, extension : extension, name_from_context : name_from_context }, function (response) {});
+  chrome.extension.sendMessage ({ setupCall : true, phone_no : clean_no, extension : extension, name_from_context : name_from_context }, function (response) {});
 }
