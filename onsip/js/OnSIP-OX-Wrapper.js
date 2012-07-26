@@ -97,11 +97,12 @@ OX_EXT.init = function (pref, callback) {
   };
 
   if (reset) {
-    var to = that._connect (callback);
-    setTimeout (to, this.DEF_TIMEOUT);
+    setTimeout (function() {
+      that._connect (callback);
+    }, this.DEF_TIMEOUT);
     dbg.log(this.log_context, 'Reset BOSH in ' + this.DEF_TIMEOUT + ' seconds');
   } else {
-    dbg.log (this.log_context, 'Estalish BOSH Connection &&&&&&&&&&&&&&&&&&&&&');
+    dbg.log (this.log_context, 'Establish BOSH Connection &&&&&&&&&&&&&&&&&&&&&');
     that._connect (callback);
   }
 };

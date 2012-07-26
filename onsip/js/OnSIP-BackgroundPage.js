@@ -263,6 +263,7 @@ chrome.extension.onMessage.addListener(
       setTimeout(f_wait, 2000);
       sendResponse ({ok : true});
     }
+    return true;
 });
 
 

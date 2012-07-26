@@ -56,8 +56,8 @@ A:hover	   { color:#5087C7; }
 P	   { padding:0; margin:14px 0; }
 
 H1	   { font: 35px/30px 'FolioCondensedBold', Arial, Helvetica, sans-serif; color:#506675; border-bottom:1px solid #94A9CD; margin:5px 0 14px; padding:0 0 5px; }
-H3	   { font: 26px/30px 'FolioBold', Arial, Helvetica, sans-serif; color:#5087C7; margin:0; padding:0 0 20px; }
-H4	   { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#5087C7; margin:14px 0; padding:0; }
+H3	   { font: 26px/30px 'FolioBold', Arial, Helvetica, sans-serif; color:#FFF; margin:0; padding:0 0 20px; }
+H4	   { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#FFF; margin:14px 0; padding:0; }
 
 #wrapper   { position:relative; width:960px; margin:0 auto; overflow:hidden; padding:0; min-height:100%;  }
 
@@ -71,10 +71,10 @@ H4	   { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#5087C7
 
 #content	  { position:relative; width:960px; padding:60px 0 80px; overflow:hidden; }
 
-#options	  { position:relative; float:right; width:300px; padding:10px 10px 30px 30px; margin:0; background:#F3F9FD url(../images/bg-options.png) top left repeat-x; border:1px solid #c0d7e6; border-radius:6px; }
+#options	  { position:relative; float:right; width:300px; padding:10px 10px 19px 30px; margin:0; background:#062c3f url(../images/bg-options.png) top left repeat-x; border:1px solid #c0d7e6; border-radius:6px; }
 #options FIELDSET { padding:0; margin:0; border:0; font-size:12px; }
 #options FIELDSET.submit { text-align:right; padding:20px 0 0; }
-#options LABEL	  { display:block; padding:0 0 0px; text-shadow:1px 1px 0px #FFF; }
+#options LABEL	  { display:block; padding:0 0 0px; color: #FFF }
 
 #options INPUT[type="text"], #options INPUT[type="password"] { width:258px; padding:2px 4px; border:2px solid #004A8F; color:#778; margin-bottom: 10px; font:normal 14px Arial, Helvetica, sans-serif; float: left; }
 #options INPUT[type="text"]:focus { border-color:#5087C7; outline:none; color:#445; }
@@ -86,9 +86,9 @@ H4	   { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#5087C7
 #options INPUT[type="submit"]:focus  { background-position:0 -34px; outline:none; }
 #options INPUT[type="submit"]:active { background-position:0 -68px; outline:none; }
 
-#savedMsg	{ display:none; position:absolute; left:30px; bottom:35px; width:150px; color:#70A433; text-align:center; text-shadow:1px 1px 0px #FFF; line-height:14px; }
-#errorMsg	{ display:none; position:absolute; left:30px; bottom:25px; width:150px; color:#cc0000; text-align:center; text-shadow:1px 1px 0px #FFF; line-height:14px; }
-#validatingMsg	{ display:none; position:absolute; left:30px; bottom:35px; width:150px; color:#cc0000; text-align:center; text-shadow:1px 1px 0px #FFF; line-height:14px; }
+#savedMsg	{ display:none; position:absolute; left:30px; bottom:22px; width:150px; color:#FFF; text-align:center; line-height:14px; }
+#errorMsg	{ display:none; position:absolute; left:30px; bottom:25px; width:150px; color:#FFF; text-align:center; line-height:14px; }
+#validatingMsg	{ display:none; position:absolute; left:30px; bottom:35px; width:150px; color:#FFF; text-align:center; line-height:14px; }
 
 #content P	{ text-align:justify; }
 
@@ -97,7 +97,7 @@ H4	   { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#5087C7
 #footer		{ position:relative; width:100%; height:43px; padding:45px 0 0; margin:-89px 0 0; font-size:14px; color:##506675; background:#003B73 url(../images/bg-footer.gif) top left repeat-x; }
 #footerContent	{ position:relative; width:980px; margin:8px auto; text-align:center; }
 
-#clear-highrise { color:#050; font:small Arial,helvetica,sans-serif;}
+#clear-highrise { color:#fff; font:small Arial,helvetica,sans-serif;}
 
 /**
 #header-zendesk  { cursor:pointer; text-decoration:underline }
@@ -115,7 +115,7 @@ select#timezone{
 }
 
 .tool-tip-trigger{
-    color: #5087C7;
+    color: #FFF;
     float: left;
     padding: 2px 10px;
     font-size: 16px;
