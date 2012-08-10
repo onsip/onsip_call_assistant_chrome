@@ -87,9 +87,10 @@ H4	   { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#FFF; m
 #options INPUT[type="submit"]:active { background-position:0 -68px; outline:none; }
 
 #savedMsg	{ display:none; position:absolute; left:30px; bottom:22px; width:150px; color:#FFF; text-align:center; line-height:14px; }
-#errorMsg	{ display:none; position:absolute; left:30px; bottom:25px; width:150px; color:#FFF; text-align:center; line-height:14px; }
+#errorMsg	{ display:none; position:absolute; left:30px; bottom:22px; width:150px; color:#FFF; text-align:center; line-height:14px; }
 #validatingMsg	{ display:none; position:absolute; left:30px; bottom:35px; width:150px; color:#FFF; text-align:center; line-height:14px; }
 
+#errorMsg > a   { color: #FFF; font-size: 15px }
 #content P	{ text-align:justify; }
 
 .narrow-content	{ position:relative; float:left; width:560px; }

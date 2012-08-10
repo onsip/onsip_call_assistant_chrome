@@ -140,7 +140,11 @@ function handleOnSIPLogin() {
       SETTINGS_PG_LOG && console.log('SETTINGS PG :: OnSIP account valid error');
       pref.set('onsipCredentialsGood', false);
       hideAllMessages();
-      $('#errorMsg').text('The OnSIP credentials were not valid').clearQueue().fadeOut(150).fadeIn(300);
+      var err = "Invalid OnSIP credentials.<br>" +
+        "Get your password at " +
+        "<a href='https://my.onsip.com' target='_blank'> " +
+        "https://my.onsip.com </a>";
+      $('#errorMsg').html(err).clearQueue().fadeOut(150).fadeIn(300);
       $('#save-options-btn').removeAttr('disabled');
 
       error_fields = new Array();
