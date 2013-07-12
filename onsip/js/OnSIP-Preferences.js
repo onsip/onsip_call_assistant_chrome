@@ -29,7 +29,8 @@ var OnSIP_Preferences = {
     badgeOnIcon     : 'images/icon-19.png',
     badgeOffIcon    : 'images/icon-19-off.png',
     eventRequested  : false,
-    gaq             : ''
+    gaq             : '',
+    showToUri       : false
   },
   set : function( name, value ) {
     window.localStorage[name] = JSON.stringify(value);

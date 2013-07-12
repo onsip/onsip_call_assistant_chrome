@@ -8,8 +8,8 @@ var BG_APP = {
 
 BG_APP.activeCallCreated   = function ( items ) {
   var i, n, item, phone, len, name,
-      cont_highrise, cont_zendesk, caption;
-  var that = this;
+    cont_highrise, cont_zendesk, caption, that = this;
+
   dbg.log(this.log_context, 'Active Call Created');
   if (name_from_context && name_from_context.length > 0){
     dbg.log (this.log_context, 'Made active call with context ' + name_from_context);
@@ -17,8 +17,8 @@ BG_APP.activeCallCreated   = function ( items ) {
   for (i = 0, len = items.length; i < len; i++) {
     item = items[i];
     phone = extractPhoneNumber(item.toURI);
-    cont_highrise = highrise_app.findContact (phone + '', name_from_context);
-    cont_zendesk = zendesk_app .findContact (phone + '');
+    cont_highrise = highrise_app.findContact(phone + '', name_from_context);
+    cont_zendesk = zendesk_app .findContact(phone + '');
     name  = this._normalizeName (cont_zendesk, cont_highrise);
     phone = name || phone;
     caption = "Calling: ";
@@ -32,7 +32,6 @@ BG_APP.activeCallCreated   = function ( items ) {
           subject  = "To: " + formatPhoneNum('' + phone);
         }
         n  = that._getNotification(nice_id, caption, subject, item);
-        //n.uri = item.uri.query;
         n.uri = that._splitUriBranch(item.uri.queryParam('item'));
         n.phone = formatPhoneNum('' + phone);
         n.contact_highrise = cont_highrise;
@@ -51,7 +50,9 @@ BG_APP.activeCallCreated   = function ( items ) {
       }
     };
 
-    // On Call Created. If a notification already exists then we won't produce another.
+    /**
+      On Call Created. If a notification already exists then we won't produce another.
+    */
     if (this.notifications.length === 0) {
       if (cont_zendesk && cont_zendesk.id) {
         zendesk_app.search ( cont_zendesk.id, f_notification);
@@ -63,24 +64,28 @@ BG_APP.activeCallCreated   = function ( items ) {
 };
 
 BG_APP.activeCallRequested = function ( items ) {
-  var i, n, item, phone, len, cont_highrise,
-      cont_zendesk, caption, name, is_setup, that;
-  var that = this;
+  var i, n, item, phone, len, cont_highrise, cont_zendesk, caption, name,
+    is_setup, that, phone_to, name_from_context, cont_highrise_to, name_to;
 
   dbg.log (this.log_context, 'Active Call Requested');
+
+  that = this;
   for (i = 0, len = items.length; i < len; i++) {
     item = items[i];
-    // We check to make sure that the call setup id was not
-    // only set, but that it matches the id we provided when
-    // we made initiated the call setup..., or the fromURI
-    // includes sip:call-setup instring
+    /**
+      We check to make sure that the call setup id was not
+      only set, but that it matches the id we provided when
+      we made initiated the call setup..., or the fromURI
+      includes sip:call-setup instring
+    */
     is_setup = (item.callSetupID && item.callSetupID.length > 0);
     is_setup = is_setup &&
       (item.callSetupID == OX_EXT.store_cs_id || isSetupCall(item.fromURI));
 
     dbg.log(this.log_context, 'Call Setup ID is ' + item.callSetupID);
-    /** Temporarily adding this feature 12/3/2010 **/
-    /** If this is just a call setup, then we don't display notification **/
+    /**
+      If this is just a call setup, then we don't display notification
+    */
     if (is_setup) {
       if (len < 2) {
         this.launched_n = false;
@@ -89,20 +94,32 @@ BG_APP.activeCallRequested = function ( items ) {
     }
     caption = is_setup ? "Call Setup: " : "Incoming Call: ";
     phone = extractPhoneNumber(item.fromURI);
-    cont_highrise = highrise_app.findContact (phone + '','');
-    cont_zendesk = zendesk_app .findContact (phone + '');
-    name = this._normalizeName (cont_zendesk, cont_highrise);
+    phone_to = extractPhoneNumber(item.toURI);
+    cont_highrise = highrise_app.findContact(phone + '','');
+    cont_zendesk = zendesk_app .findContact(phone + '');
+    name = this._normalizeName(cont_zendesk, cont_highrise);
     phone = name || phone;
+
+    if (pref.get('showToUri')) {
+      cont_highrise_to = highrise_app.findContact(phone_to + '', null);
+      name_to  = this._normalizeName(null, cont_highrise_to);
+      phone_to = name_to || phone_to;
+    }
+
     name_from_context  = '';
 
     var f_notification = {
       onSuccess : function (record_count, subject, is_onsip, nice_id) {
         if (record_count) {
           caption += formatPhoneNum('' + phone) + " (" + record_count + ")";
-          subject  = subject.substr(0, 60).toLowerCase();
+          subject = subject.substr(0, 60).toLowerCase();
         } else {
           if (!is_setup) {
-            subject  = "From: "  + formatPhoneNum('' + phone);
+            if (pref.get('showToUri')) {
+              subject  = "From: "  + formatPhoneNum('' + phone) + ", Line: " + formatPhoneNum('' + phone_to);
+            } else {
+              subject  = "From: "  + formatPhoneNum('' + phone);
+            }
           } else {
             subject  = "Setup: " + formatPhoneNum('' + phone);
           }
@@ -111,6 +128,8 @@ BG_APP.activeCallRequested = function ( items ) {
         n = that._getNotification(nice_id, caption, subject, item);
         n.uri = that._splitUriBranch(item.uri.queryParam('item'));
         n.phone = formatPhoneNum('' + phone);
+        n.phone_to = formatPhoneNum('' + phone_to);
+        n.contact_highrise_to = cont_highrise_to;
         n.is_setup = is_setup;
         n.contact_highrise = cont_highrise;
         n.contact_zendesk = cont_zendesk;
@@ -179,52 +198,52 @@ BG_APP._getNotification = function(nice_id, caption, subject, item) {
 };
 
 /**
- * Normalize on the variations in the name returned by the various third parties.
- * The returned normalized value will be display in the notification toast.
- * Variations include :
- * Zendesk, which returns the full name.
- * Highrise, which returns first and last name
- * Highrise also returns company.
- **/
-BG_APP._normalizeName    = function () {
+  Normalize on the variations in the name returned by the various third parties.
+  The returned normalized value will be display in the notification toast.
+  Variations include :
+  Zendesk, which returns the full name.
+  Highrise, which returns first and last name
+  Highrise also returns company.
+*/
+BG_APP._normalizeName = function () {
   var normalized_name, len, i, c;
   for (i = 0, len = arguments.length; i < len; i++) {
     c = arguments[i];
     if (c && c.full_name) {
-      normalized_name = trim (c.full_name);
+      normalized_name = trim(c.full_name);
       if (normalized_name.length === 0) {
         normalized_name = undefined;
       }
     }
     if (!normalized_name && c && c.first_name && c.last_name) {
       normalized_name = c.first_name + ' ' + c.last_name;
-      normalized_name = trim (normalized_name);
+      normalized_name = trim(normalized_name);
       if (normalized_name.length === 0) {
         normalized_name = undefined;
       }
     }
     if (!normalized_name && c && c.company_name) {
       normalized_name = c.company_name;
-      normalized_name = trim (normalized_name);
+      normalized_name = trim(normalized_name);
       if (normalized_name.length === 0) {
         normalized_name = undefined;
       }
     }
-    if (normalized_name) {
-      return normalized_name;
-    }
   }
-  return;
+  return normalized_name;
 };
 
-/** A phone connection has been established **/
-BG_APP.activeCallConfirmed = function ( items ) {
+/**
+  A phone connection has been established
+*/
+BG_APP.activeCallConfirmed = function(items) {
+  var i, len, name, that;
+
+  that = this;
   dbg.log (this.log_context, 'Active Call Confirmed');
-  var i, len, name;
-  var that = this;
   for (i = 0, len = items.length; i < len; i += 1) {
     var q = this._splitUriBranch(items[i].uri.queryParam('item'));
-    this._postNotetoProfile(q);
+    this._postNotetoProfile(q, items[i]);
     var f = function() {
       that._cancelNotifications(q);
     };
@@ -232,13 +251,14 @@ BG_APP.activeCallConfirmed = function ( items ) {
   }
 };
 
-BG_APP.activeCallPending = function ( item ) {
+BG_APP.activeCallPending = function(item) {
   dbg.log (this.log_context, 'Active Call Pending');
 };
 
-BG_APP.activeCallRetract = function (itemURI) {
-  var i, len;
-  var that = this;
+BG_APP.activeCallRetract = function(itemURI) {
+  var i, len, that;
+
+  that = this;
   dbg.log (this.log_context, 'Active Call Retracted = ' + this.notifications);
   for (i = 0, len = itemURI.length; i < len; i += 1) {
     var q = this._splitUriBranch(itemURI[i].queryParam('item'));
@@ -250,27 +270,46 @@ BG_APP.activeCallRetract = function (itemURI) {
   }
 };
 
-/** Helper method. Post a note through the Highrise / Zendesk API **/
-BG_APP._postNotetoProfile  = function (item) {
-  var i, len, flag_incoming, costumer, full_name, is_setup, phone, notif;
+/**
+  Helper method. Post a note through the Highrise / Zendesk API
+ */
+BG_APP._postNotetoProfile  = function (item_uri, item) {
+  var i, len, flag_incoming, customer, full_name, is_setup, phone, notif,
+    customer_zd, customer_hr, customer_hr_to, to_aor;
+
   for (i = 0, len = this.notifications.length; i < len; i += 1) {
-    if (item === this.notifications[i].uri) {
-      notif       = this.notifications[i];
-      costumer_hr = notif.contact_highrise;
-      costumer_zd = notif.contact_zendesk;
-      is_setup    = notif.is_setup;
+    if (item_uri === this.notifications[i].uri) {
+      notif = this.notifications[i];
+      customer_hr_to = notif.contact_highrise_to;
+      customer_hr = notif.contact_highrise;
+      customer_zd = notif.contact_zendesk;
+      is_setup = notif.is_setup;
 
       if (!is_setup) {
-        if (pref.get ('highriseEnabled') && costumer_hr && costumer_hr.id) {
-          highrise_app.postNote (costumer_hr, pref.get('userTimezone'), notif.flag_incoming);
+        /**
+         highrise
+         */
+        if (pref.get('highriseEnabled')) {
+          to_aor = item && item.toAOR;
+          if (customer_hr && customer_hr.id) {
+            highrise_app.postNote(customer_hr, pref.get('userTimezone'), notif.flag_incoming, to_aor);
+          }
+          if (customer_hr_to && customer_hr_to.id) {
+            highrise_app.postReceiveNote(customer_hr_to, pref.get('userTimezone'), notif.flag_incoming, notif.phone, to_aor);
+          }
         }
-        if (pref.get ('zendeskEnabled') && notif.flag_incoming && !notif.is_onsip) {
-          if (costumer_zd && costumer_zd.id) {
+        /**
+         zendesk
+         */
+        if (pref.get('zendeskEnabled') && notif.flag_incoming && !notif.is_onsip) {
+          if (customer_zd && customer_zd.id) {
             dbg.log(this.log_context, 'Lets try posting a ticket to Zendesk');
-            zendesk_app.postNote  (costumer_zd, pref.get('userTimezone'));
+            zendesk_app.postNote  (customer_zd, pref.get('userTimezone'));
           } else {
             phone = notif.phone;
-            /** Commented out so no random tickets would be created **/
+            /**
+              Commented out so no random tickets would be created
+            */
             //zendesk_app.postNoteUnknown (phone, pref.get('userTimezone'));
           }
         }
@@ -280,10 +319,11 @@ BG_APP._postNotetoProfile  = function (item) {
 };
 
 /** Helper method. hide / cancel and remove desktop notifications **/
-BG_APP._cancelNotifications = function (item) {
+BG_APP._cancelNotifications = function(item) {
+  var a = [], n;
+
   dbg.log (this.log_context, 'In cancel notification ' + this.notifications.length + ' notifications ');
-  var a = [];
-  var n = this.notifications.pop();
+  n = this.notifications.pop();
   while (n) {
     dbg.log (this.log_context, 'Check URI comparison ' + n.uri + ' == ' + item);
     if (item === n.uri) {

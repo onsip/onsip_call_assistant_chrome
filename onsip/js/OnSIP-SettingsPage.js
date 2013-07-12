@@ -420,6 +420,13 @@ function setHighriseSettings(pref){
   if (timezoneSetting) {
     $('#timezone').val (timezoneSetting);
   }
+
+  if (pref.get('showToUri')) {
+    $('#chk-show-advanced').attr('checked','checked');
+  } else {
+    $('#chk-show-advanced').removeAttr('checked');
+  }
+
 }
 
 /** Set Zendesk defaults **/
@@ -461,6 +468,17 @@ function SetHelperBehavior(formID){
       $('#timezone').val("0.0");
     });
 
+  $('#chk-show-advanced').change(
+    function(e) {
+      pref.set('showToUri', $(this).is(':checked'));
+    }
+  );
+
+  $('#advanced-title').click(
+    function(e) {
+      $('#advanced-toggle').toggle();
+    }
+  );
 }
 
 /** Set up Tooltips **/

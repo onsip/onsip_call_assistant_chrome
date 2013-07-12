@@ -99,6 +99,10 @@ H4	   { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#FFF; m
 #footerContent	{ position:relative; width:980px; margin:8px auto; text-align:center; }
 
 #clear-highrise { color:#fff; font:small Arial,helvetica,sans-serif;}
+#advanced-title { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#FFF; margin:14px 0 0 0px; padding:0 0 5px 72px; text-decoration:underline; cursor: pointer}
+#advanced { color:#fff; font:small Arial,helvetica,sans-serif; float: right; width: 186px; }
+#advanced-toggle { display: none; }
+#doclear { clear: both; }
 
 /**
 #header-zendesk  { cursor:pointer; text-decoration:underline }
@@ -117,7 +121,7 @@ select#timezone{
 
 .tool-tip-trigger{
     color: #FFF;
-    float: left;
+    float: right;
     padding: 2px 10px;
     font-size: 16px;
     cursor: pointer;
