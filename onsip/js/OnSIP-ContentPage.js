@@ -7,9 +7,9 @@ var _enabled   = false;
 /** These selector paths will be used to trigger a background refresh of all the Highrise **/
 /** customer data that is cached locally in the plug-in.  These Highrise paths are linked to **/
 /** to form fields that trigger this update **/
-var HQ_SELECTOR_PATH_ADD_NEW = '#page_main_column .edit .submit input[name$="commit"]';
-var HQ_SELECTOR_PATH_UPDATE  = '#page_main_column #contact_and_permissions_tab .submit input[name$="commit"]';
-var HQ_SELECTOR_PATH_DELETE  = '#screen_body .col .innercol .submit input[type$="submit"]';
+var HQ_SELECTOR_PATH_ADD_NEW = '#page_main_column .submit input[name="commit"]';
+var HQ_SELECTOR_PATH_UPDATE  = '#page_main_column #contact_and_permissions_tab .submit input[name="commit"]';
+var HQ_SELECTOR_PATH_DELETE  = ['.confirm_destroy .submit input[type="submit"]'];
 
 /** Add listener for commands from the background process **/
 chrome.extension.onMessage.addListener( function (request, sender, sendResponse) {
@@ -306,12 +306,8 @@ function addHighriseEvents() {
     /** #page_main_column #contact_and_permissions_tab .submit input[name$="commit"] **/
     var path_selector = HQ_SELECTOR_PATH_UPDATE;
     if (!($(path_selector).length)) {
-      /** #page_main_column .edit .submit input[name$="commit"] **/
+      /** #page_main_column .submit input[name$="commit"] **/
       path_selector = HQ_SELECTOR_PATH_ADD_NEW;
-      if (!($(path_selector).length)){
-        /** #screen_body .col .innercol .submit input[type$="submit"] **/
-        path_selector = HQ_SELECTOR_PATH_DELETE;
-      }
     }
     if ($(path_selector).length && $(path_selector).attr("onClick") == undefined) {
       $(path_selector).unbind().bind({
@@ -320,6 +316,19 @@ function addHighriseEvents() {
           chrome.extension.sendMessage ({refreshHighrise : true}, function (response) {});
         }
       });
+    }
+
+    for (var i = 0; i < HQ_SELECTOR_PATH_DELETE.length; i++) {
+      path_selector = HQ_SELECTOR_PATH_DELETE[i];
+
+      if ($(path_selector).length && $(path_selector).attr("onClick") == undefined) {
+        $(path_selector).unbind().bind({
+          click : function(e) {
+            dbg.log(CONTENT_PG, 'Submit triggered refresh Highrise data');
+            chrome.extension.sendMessage ({refreshHighrise : true}, function (response) {});
+          }
+        });
+      }
     }
   }
 }

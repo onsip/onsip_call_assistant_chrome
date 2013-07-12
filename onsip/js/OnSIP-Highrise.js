@@ -9,7 +9,7 @@ var HIGHRISE = {
   'attempts'    : 0,
   'log_context' : 'HIGHRISE',
   'timeout_id'  : undefined,
-  'refresh'     : 60000 * 90 /** Refresh every 90 min **/
+  'refresh'     : 60000 * 60 /** Refresh every 60 min **/
 };
 
 /**
@@ -77,9 +77,9 @@ HIGHRISE._createDefaultNote = function(customer, user_tz, incoming, to_aor) {
   to_aor = (to_aor && "[sip:" + to_aor + "]") || "";
   if (full_name && full_name.length > 0) {
     if (incoming) {
-      nt = "<note><body>"        + full_name + " called  @ " + tz + " " + to_aor + "</body></note>";
+      nt = "<note><body><![CDATA["        + full_name + " called  @ " + tz + " " + to_aor + "]]></body></note>";
     } else {
-      nt = "<note><body>Called " + full_name + " @ "         + tz + " " + to_aor + "</body></note>";
+      nt = "<note><body><![CDATA[Called " + full_name + " @ "         + tz + " " + to_aor + "]]</body></note>";
     }
   }
   return nt;
@@ -95,9 +95,9 @@ HIGHRISE._createReceiveNote = function(customer, user_tz, incoming, from, to_aor
   if (full_name && full_name.length > 0) {
     if (incoming) {
       if (from) {
-        nt = "<note><body>Received call on Line: " + full_name + " from " + from + " @ " + tz + " " + to_aor + "</body></note>";
+        nt = "<note><body><![CDATA[Received call on Line: " + full_name + " from " + from + " @ " + tz + " " + to_aor + "]]></body></note>";
       } else {
-        nt = "<note><body>Received call on Line: " + full_name + " called  @ " + tz + " " + to_aor + "</body></note>";
+        nt = "<note><body><![CDATA[Received call on Line: " + full_name + " called  @ " + tz + " " + to_aor + "]]></body></note>";
       }
     }
   }
