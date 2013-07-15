@@ -69,19 +69,30 @@ HIGHRISE._getIdentity = function(customer) {
   return full_name;
 };
 
+HIGHRISE.encodeSpecialChars = function(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/'/g, "&apos;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+};
+
 HIGHRISE._createDefaultNote = function(customer, user_tz, incoming, to_aor) {
   var nt, full_name, tz;
 
   tz = getDateAndTime(getTimezoneAbbrevation(user_tz));
   full_name = this._getIdentity(customer);
-  to_aor = (to_aor && "[sip:" + to_aor + "]") || "";
+  to_aor = (to_aor && "(sip:" + to_aor + ")") || "";
   if (full_name && full_name.length > 0) {
+    full_name = this.encodeSpecialChars(full_name);
     if (incoming) {
-      nt = "<note><body><![CDATA["        + full_name + " called  @ " + tz + " " + to_aor + "]]></body></note>";
+      nt = "<note><body>" + full_name + " called  @ " + tz + " " + to_aor + "</body></note>";
     } else {
-      nt = "<note><body><![CDATA[Called " + full_name + " @ "         + tz + " " + to_aor + "]]</body></note>";
+      nt = "<note><body>Called " + full_name + " @ " + tz + " " + to_aor + "</body></note>";
     }
   }
+
   return nt;
 };
 
@@ -91,13 +102,14 @@ HIGHRISE._createReceiveNote = function(customer, user_tz, incoming, from, to_aor
 
   tz = getDateAndTime(getTimezoneAbbrevation(user_tz));
   full_name = this._getIdentity(customer);
-  to_aor = (to_aor && "[sip:" + to_aor + "]") || "";
+  to_aor = (to_aor && "(sip:" + to_aor + ")") || "";
   if (full_name && full_name.length > 0) {
+    full_name = this.encodeSpecialChars(full_name);
     if (incoming) {
       if (from) {
-        nt = "<note><body><![CDATA[Received call on Line: " + full_name + " from " + from + " @ " + tz + " " + to_aor + "]]></body></note>";
+        nt = "<note><body>Received call on Line: " + full_name + " from " + from + " @ " + tz + " " + to_aor + "</body></note>";
       } else {
-        nt = "<note><body><![CDATA[Received call on Line: " + full_name + " called  @ " + tz + " " + to_aor + "]]></body></note>";
+        nt = "<note><body>Received call on Line: " + full_name + " called  @ " + tz + " " + to_aor + "</body></note>";
       }
     }
   }
@@ -232,14 +244,14 @@ HIGHRISE.postNoteToProfile = function(customer, note, call) {
     if (xhr.readyState !== 4) {
       return false;
     }
-    if (xhr.status !== 200) {
+    if (xhr.status > 299) {
       if (that.call && that.call.onError) {
-	that.call.onError (xhr.status);
+	that.call.onError(xhr.status);
       }
     } else {
       ok = true;
       if (that.call && that.call.onSuccess) {
-	that.call.onSuccess ();
+	that.call.onSuccess();
       }
     }
     return true;
