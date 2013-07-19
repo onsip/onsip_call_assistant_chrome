@@ -1,7 +1,7 @@
 /**
 var dbg = {
   log : function () {
-    if (arguments.length === 2) {
+    if (arguments.length >= 2) {
       var c   = ['STROPHE RAW','CONTENT-PG','CHROME-BACKGROUND','STROPHE', 'OX_EXT', 'BG_APP', 'HIGHRISE','CONTENT-PG','ZENDESK'],
         i = 0, x = '';
       if (!(c && c.length)) {
@@ -12,7 +12,11 @@ var dbg = {
         x = c[i];
         if (x === '*' || x === arguments[0]) {
           var d = new Date();
-          console.log ("[" + d + "] @@@ " + arguments[0] + " :: " + arguments[1]);
+          if (arguments.length === 2) {
+            console.log ("[" + d + "] @@@ " + arguments[0] + " :: " + arguments[1]);
+          } else {
+            console.log ("[" + d + "] @@@ " + arguments[0] + " :: " + arguments[1], arguments[2]);
+          }
           break;
         }
       }
@@ -22,12 +26,11 @@ var dbg = {
   }
 };
 **/
-/** Turn off debugging when on production **/
 
+/** Turn off debugging when on production **/
 var dbg = {
   log : function(){}
 };
-
 
 /** Is provided element in array **/
 function isInArray(stack, needle){
@@ -85,7 +88,6 @@ function getPhoneExtension (phoneNumber) {
 
 /**
  *  Get domain from address
- *  /(ext|x|ex)\s{0,3}.{0,3}\d{2,5}/
  **/
 function getDomain (address) {
   return address.substring(address.indexOf('@') + 1);
@@ -131,10 +133,12 @@ function formatUrl (str, unsecure) {
 *   supplied phone number
 **/
 function formatPhoneNum (phone_number) {
-  var matches   = phone_number.match(/(^\d{1})(\d{3})(\d{3})(\d{4})/);
-  var rev_phone = phone_number;
+  var matches, rev_phone;
+  phone_number = phone_number || '';
+  matches = phone_number.match(/(^\d{1})(\d{3})(\d{3})(\d{4})/);
+  rev_phone = phone_number;
   if (matches && matches.length === 5) {
-    rev_phone  = "(" + matches[2] + ") " + matches[3] + "-" + matches[4];
+    rev_phone = "(" + matches[2] + ") " + matches[3] + "-" + matches[4];
   }
   return rev_phone;
 }

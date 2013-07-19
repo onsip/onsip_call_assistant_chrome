@@ -67,7 +67,7 @@ var OnSIP_Process = function() {
     },
     toggle : function() {
       var enabled = pref.get('enabled'),
-        opts = chrome.extension.getURL('options/highrise/index.html');
+        opts = chrome.extension.getURL('options/setup/index.html');
 
       if (!pref.get('onsipCredentialsGood')) {
         chrome.tabs.create({url: opts});

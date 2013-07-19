@@ -1,4 +1,4 @@
-/** Highrise library for OnSIP-Click-To-Call **/
+/** Highrise library for OnSIP Call Assistant **/
 
 var HIGHRISE = {
   'companies'   : [],
@@ -12,19 +12,27 @@ var HIGHRISE = {
   'refresh'     : 60000 * 60 /** Refresh every 60 min **/
 };
 
-/**
-  Tries to retrieve /people.xml and looks for error code 200
-*/
-HIGHRISE.verifyToken = function (call, highrise_url, token) {
-  var xhr = new XMLHttpRequest(), ok = false, tmout = 30000;
+HIGHRISE.verifyToken = function(call, highrise_url, token) {
+  var xhr = new XMLHttpRequest(), ok = false, tmout = 30000,
+    xml, xmlobject, tokenNode, tv;
 
   xhr.onreadystatechange = function () {
     if (xhr.readyState === 4) {
       if (xhr.status === 200) {
         ok = true;
+        xml = xhr.responseText;
+        xmlobject = (new DOMParser()).parseFromString(xml, "text/xml");
+        tokenNode = xmlobject.getElementsByTagName("token");
+        if (tokenNode && tokenNode.length > 0 && tokenNode[0].firstChild) {
+          tv = tokenNode[0].firstChild.nodeValue;
+          if (tv && tv.length > 0 && tv !== token) {
+            call.onError('Token ' + token + ' is invalid');
+            return;
+          }
+        }
 	call.onSuccess();
       } else {
-        call.onError (xhr.status);
+        call.onError(xhr.status);
       }
     }
   };
@@ -41,7 +49,7 @@ HIGHRISE.verifyToken = function (call, highrise_url, token) {
     }
   };
 
-  xhr.open('GET', this.base_url + '/people.xml', false, this.token, 'X');
+  xhr.open('GET', this.base_url + '/me.xml?r=' + new Date().getTime(), true, this.token, 'X');
   setTimeout(a, tmout);
   xhr.send();
 };

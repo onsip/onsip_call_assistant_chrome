@@ -4,7 +4,7 @@ var OnSIP_Preferences = {
     fromAddress     : 'you@yourdomain.onsip.com',
     onsipPassword   : 'Please enter your password',
     onsipHttpBase   : 'https://my.onsip.com/http-bind/',
-    debug_sp        : false,
+    debug_sp        : true,
     timeout         : 3000,
     enabled         : true,
     phoneExtension  : null,
@@ -31,7 +31,8 @@ var OnSIP_Preferences = {
     eventRequested  : false,
     gaq             : '',
     showToUri       : false,
-    showFromUri     : true
+    showFromUri     : true,
+    focusZdTab      : true
   },
   set : function( name, value ) {
     window.localStorage[name] = JSON.stringify(value);

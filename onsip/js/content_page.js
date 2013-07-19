@@ -21,14 +21,12 @@ var INVALID_NODES = ['SCRIPT', 'STYLE', 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON',
 
 /** Add listener for commands from the background process **/
 chrome.extension.onMessage.addListener( function (request, sender, sendResponse) {
-  // dbg.log(CONTENT_PG, 'Coming From Background Page :: parseDOM  ' + request.parseDOM);
   alterDOM(request);
   updateAddresses(request);
 });
 
 /** Alter DOM on page load **/
 chrome.extension.sendMessage({ pageLoad : true }, function (response) {
- // dbg.log(CONTENT_PG, 'SendRequest');
  alterDOM(response);
  updateAddresses(response);
 });
@@ -49,7 +47,7 @@ function handleDomChange(e) {
     if (parsing) {
       return;
     }
-    dbg.log (CONTENT_PG, 'Handle DOM Change - parsing ' + parsing + ' Extension enabled :: ' + ext_enabled);
+
     var newNodeClass = e.srcElement.className;
     if ( newNodeClass != undefined ) {
       if (/onsip\-message\-box/.test(newNodeClass) || newNodeClass == 'onsip-click-to-call-icon') {
@@ -70,17 +68,16 @@ function handleDomChange(e) {
 function alterDOM(request) {
   /** Parse DOM command **/
   dbg.log (CONTENT_PG, 'AlterDOM');
-  if ( request.parseDOM ) {
+  if (request.parseDOM) {
     _enabled = true;
     /** These events triggered through the Highrise application would send a request **/
     /** to the background page to have the customer cache store refresh to reflect to changes made in Highrise **/
-    dbg.log(CONTENT_PG, 'In alterDOM, will add Highrise triggers');
     addHighriseEvents();
     /** TODO **/
     /** Will likely need to build similar functionality for Zendesk **/
 
     parseDOM(document.body);
-  } else if ( request.clearDOM ) {
+  } else if (request.clearDOM) {
     /** Clear DOM command **/
     _enabled = false;
     clearDOM();
@@ -94,7 +91,7 @@ function alterDOM(request) {
 function updateAddresses(request) {
   if (request.fromAddress) {
     var from_address = request.fromAddress;
-    var to_domain    = getDomain (from_address);
+    var to_domain = getDomain(from_address);
     /** update toAddress in link href **/
     $('.onsip-click-to-call').each(function(){
       var href = this.href;
@@ -227,10 +224,11 @@ function parsePhoneNumbers (node) {
     found = true;
   }
 
+  var spanNode;
   /** handle string address **/
   if (isStringNumber) {
     var stringNumber = number.replace(/sip:/,'');
-    var spanNode     = $('<a href="onsip:'                     + stringNumber +
+    spanNode     = $('<a href="onsip:'      + stringNumber +
       '" title="Click-to-Call '             + stringNumber +
       '" class="onsip-click-to-call" rel="' + stringNumber +
       '" extension="' + extension +'"></a>')[0];
@@ -240,6 +238,7 @@ function parsePhoneNumbers (node) {
     if (foundNorthAmerica && cleanNumber.length == 10) {
       cleanNumber = "1" + cleanNumber;
     }
+
     var spanNode = $('<a href="onsip:' + cleanNumber + '@' + to_domain +
       '" title="Click-to-Call ' + number +
       '" class="onsip-click-to-call" rel="' + cleanNumber +
@@ -332,7 +331,7 @@ function addHighriseEvents() {
 function addEvents(node) {
   $('.onsip-click-to-call', node).unbind().bind({
     click : function(e){
-      dbg.log (CONTENT_PG, 'Call Number');
+      dbg.log(CONTENT_PG, 'Call Number');
       e.preventDefault();
       callNumber (this.innerHTML, this.rel, $(this).attr('extension'), parseHqContext($(this)));
       if (e.stopPropagation) e.stopPropagation();
