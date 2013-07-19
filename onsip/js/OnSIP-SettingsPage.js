@@ -422,9 +422,15 @@ function setHighriseSettings(pref){
   }
 
   if (pref.get('showToUri')) {
-    $('#chk-show-advanced').attr('checked','checked');
+    $('#chk-advanced-to-uri').attr('checked','checked');
   } else {
-    $('#chk-show-advanced').removeAttr('checked');
+    $('#chk-advanced-to-uri').removeAttr('checked');
+  }
+
+  if (pref.get('showFromUri')) {
+    $('#chk-advanced-from-uri').attr('checked','checked');
+  } else {
+    $('#chk-advanced-from-uri').removeAttr('checked');
   }
 
 }
@@ -468,9 +474,15 @@ function SetHelperBehavior(formID){
       $('#timezone').val("0.0");
     });
 
-  $('#chk-show-advanced').change(
+  $('#chk-advanced-to-uri').change(
     function(e) {
       pref.set('showToUri', $(this).is(':checked'));
+    }
+  );
+
+  $('#chk-advanced-from-uri').change(
+    function(e) {
+      pref.set('showFromUri', $(this).is(':checked'));
     }
   );
 

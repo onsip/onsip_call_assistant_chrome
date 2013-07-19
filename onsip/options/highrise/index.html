@@ -84,8 +84,16 @@
       	  <fieldset>
  	    <div id="advanced-title">Advanced</div>
             <div id="advanced-toggle">
-              <input type="checkbox" name="chk-show-advanced" id="chk-show-advanced">Display To-Uri in Popup
-              <div class="tool-tip-trigger" title="Tip: On an incoming call, the notification popup will display the number dialed by the caller">?</div>
+              <table>
+                <tr>
+                  <td><input type="checkbox" name="chk-advanced-to-uri" id="chk-advanced-to-uri">Show To-Uri in Popup</td>
+                  <td><div class="tool-tip-trigger" title="Tip: On an incoming call, the notification popup will display the number dialed by the caller">?</div></td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" name="chk-advanced-from-uri" id="chk-advanced-from-uri">Show From-Uri in Popup</td>
+                  <td><div class="tool-tip-trigger" title="Tip: On an incoming call, The notification popup will display the id of the caller">?</div></td>
+                </tr>
+              </table>
             </div>
           </fieldset>
         </div>

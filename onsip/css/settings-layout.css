@@ -95,12 +95,12 @@ H4	   { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#FFF; m
 
 .narrow-content	{ position:relative; float:left; width:560px; }
 
-#footer		{ position:relative; width:100%; height:43px; padding:45px 0 0; margin:-89px 0 0; font-size:14px; color:##506675; background:#003B73 url(../images/bg-footer.gif) top left repeat-x; }
+#footer		{ position:relative; width:100%; height:43px; padding:45px 0 0; margin:-89px 0 0; font-size:14px; color:#506675; background:#003B73 url(../images/bg-footer.gif) top left repeat-x; }
 #footerContent	{ position:relative; width:980px; margin:8px auto; text-align:center; }
 
 #clear-highrise { color:#fff; font:small Arial,helvetica,sans-serif;}
-#advanced-title { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#FFF; margin:14px 0 0 0px; padding:0 0 5px 72px; text-decoration:underline; cursor: pointer}
-#advanced { color:#fff; font:small Arial,helvetica,sans-serif; float: right; width: 186px; }
+#advanced-title { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#FFF; margin:14px 0 0 0px; padding:0 0 5px 92px; text-decoration:underline; cursor: pointer}
+#advanced { color:#fff; font:small Arial,helvetica,sans-serif; float: right; width: 201px; }
 #advanced-toggle { display: none; }
 #doclear { clear: both; }
 

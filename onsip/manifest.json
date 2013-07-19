@@ -1,6 +1,6 @@
 {
    "name"            : "OnSIP Click-to-Call",
-   "version"         : "1.6.33.4",
+   "version"         : "1.6.33.5",
    "manifest_version":  2,
    "description"     : "Click on any phone number on a page to dial, using the OnSIP Hosted PBX service. Integrated with Highrise CRM for call logging.",
    "icons"	     : {

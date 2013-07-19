@@ -115,10 +115,15 @@ BG_APP.activeCallRequested = function ( items ) {
           subject = subject.substr(0, 60).toLowerCase();
         } else {
           if (!is_setup) {
+            subject = "";
+            if (pref.get('showFromUri')) {
+              subject = "From: "  + formatPhoneNum('' + phone) + " ";
+            }
             if (pref.get('showToUri')) {
-              subject  = "From: "  + formatPhoneNum('' + phone) + ", Line: " + formatPhoneNum('' + phone_to);
-            } else {
-              subject  = "From: "  + formatPhoneNum('' + phone);
+              subject += "Line: " + formatPhoneNum('' + phone_to);
+            }
+            if (subject.length === 0) {
+              subject = "Ringing ...";
             }
           } else {
             subject  = "Setup: " + formatPhoneNum('' + phone);
