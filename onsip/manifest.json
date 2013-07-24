@@ -1,6 +1,6 @@
 {
    "name"            : "OnSIP Click-to-Call",
-   "version"         : "1.6.33.6",
+   "version"         : "1.6.33.7",
    "manifest_version":  2,
    "description"     : "Click on any phone number on a page to dial, using the OnSIP Hosted PBX service. Integrated with Highrise CRM for call logging.",
    "icons"	     : {
@@ -17,7 +17,7 @@
    "background"      : {
      "page": "bg-page.html"
    },
-   "permissions"     : ["webRequest", "webRequestBlocking", "idle", "tabs", "https://*.zendesk.com/*", "https://*.highrisehq.com/*", "https://*.onsip.com/*"],
+   "permissions"     : ["notifications", "webRequest", "webRequestBlocking", "idle", "tabs", "https://*.zendesk.com/*", "https://*.highrisehq.com/*", "https://*.onsip.com/*"],
    "content_security_policy" : "default-src 'self'; connect-src https:; img-src *; script-src 'self' https://ssl.google-analytics.com https://*.onsip.com https://*.highrisehq.com https://*.zendesk.com;",
    "web_accessible_resources": ["images/icon-48.png","images/icon-phone.png","js/libraries/jquery.js","js/OnSIP-Utils.js","js/OnSIP-ContentPage.js","js/libraries/strophe.js","js/libraries/ox.js"],
    "content_scripts" : [{
