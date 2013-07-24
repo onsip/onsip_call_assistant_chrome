@@ -17,17 +17,19 @@ var HQ_SELECTOR_PATH = [
   '#page_main_column .submit input[name="commit"]'
   ];
 
+var INVALID_NODES = ['SCRIPT', 'STYLE', 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A', 'CODE'];
+
 /** Add listener for commands from the background process **/
 chrome.extension.onMessage.addListener( function (request, sender, sendResponse) {
-  dbg.log (CONTENT_PG, 'Coming From Background Page :: parseDOM  ' + request.parseDOM);
-  alterDOM       (request);
+  // dbg.log(CONTENT_PG, 'Coming From Background Page :: parseDOM  ' + request.parseDOM);
+  alterDOM(request);
   updateAddresses(request);
 });
 
 /** Alter DOM on page load **/
 chrome.extension.sendMessage({ pageLoad : true }, function (response) {
- dbg.log (CONTENT_PG, 'SendRequest');
- alterDOM       (response);
+ // dbg.log(CONTENT_PG, 'SendRequest');
+ alterDOM(response);
  updateAddresses(response);
 });
 
@@ -54,6 +56,7 @@ function handleDomChange(e) {
         return;
       }
     }
+
     var targetNode = (e.relatedNode) ? e.relatedNode : e.target;
     parsing = true;
     setTimeout(function() {
@@ -113,19 +116,24 @@ function clearDOM () {
 
 /** Parse DOM and convert phone numbers to click-to-call links **/
 function parseDOM (node) {
-  var invalidNodes     = ['SCRIPT', 'STYLE', 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A', 'CODE'];
-  var nodeName         = node.nodeName.toUpperCase();
-  var childNodesLength = node.childNodes.length;
+  var nodeName = node && node.nodeName && node.nodeName.toUpperCase() || '';
+  var childNodesLength = node && node.childNodes.length || 0;
 
-  if ( $.inArray(nodeName, invalidNodes) > -1 || $(node).hasClass('onsip-message-box') ) {
+  if ($.inArray(nodeName, INVALID_NODES) > -1 || $(node).hasClass('onsip-message-box')) {
     return 0;
   }
 
   for (var n = 0; n < childNodesLength; n++) {
     var found = parseDOM(node.childNodes[n]);
-    if ( found > 0 ) {
-      parseDOM (node);
+    if (found > 0) {
+      parseDOM(node);
       return 0;
+    }
+  }
+
+  if (nodeName === 'IFRAME') {
+    if (node.contentDocument) {
+      parseDOM(node.contentDocument.body);
     }
   }
 

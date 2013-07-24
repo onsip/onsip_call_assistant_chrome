@@ -17,13 +17,14 @@
    "background"      : {
      "page": "bg-page.html"
    },
-   "permissions"     : ["idle", "tabs", "http://*.zendesk.com/*", "https://*.highrisehq.com/*", "https://*.onsip.com/*"],
-   "content_security_policy" : "default-src 'self'; connect-src https:; img-src *; script-src 'self' https://ssl.google-analytics.com https://*.onsip.com https://*.highrisehq.com;",
+   "permissions"     : ["webRequest", "webRequestBlocking", "idle", "tabs", "https://*.zendesk.com/*", "https://*.highrisehq.com/*", "https://*.onsip.com/*"],
+   "content_security_policy" : "default-src 'self'; connect-src https:; img-src *; script-src 'self' https://ssl.google-analytics.com https://*.onsip.com https://*.highrisehq.com https://*.zendesk.com;",
    "web_accessible_resources": ["images/icon-48.png","images/icon-phone.png","js/libraries/jquery.js","js/OnSIP-Utils.js","js/OnSIP-ContentPage.js","js/libraries/strophe.js","js/libraries/ox.js"],
    "content_scripts" : [{
      "matches" : ["http://*/*", "https://*/*"],
      "js"      : ["js/libraries/jquery.js", "js/OnSIP-Utils.js", "js/OnSIP-ContentPage.js" ],
      "css"     : ["css/content-page.css"],
-     "run_at"  :  "document_end"
+     "run_at"  :  "document_end",
+     "all_frames" : true
    }]
 }
