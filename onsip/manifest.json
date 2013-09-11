@@ -1,6 +1,6 @@
 {
    "name"            : "OnSIP Call Assistant",
-   "version"         : "1.7.1.13",
+   "version"         : "1.7.1.14",
    "manifest_version":  2,
    "description"     : "Click any phone number on a page to dial, uses OnSIP Hosted PBX Service. Integrates with Highrise CRM and Zendesk.",
    "icons"	     : {
