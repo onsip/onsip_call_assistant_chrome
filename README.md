@@ -28,10 +28,10 @@ Oren Forer
 oren@onsip.com
 
 ## OnSIP Features
-Will display notifications for incoming & outgoing phone calls.  Will rewrite phone numbers on a web page as clickable hyperlinks to do call setup.
+Displays notifications for incoming & outgoing phone calls.  Will rewrite phone numbers on a web page as clickable hyperlinks to do call setup.
 
 ## Highrise Support
-Will attempt to map a phone number to a Highrise contact and display the name of the contact.  Will logs calls in Highrise.
+Will attempt to map a phone number to a Highrise contact and display the name of the contact in notification.  Will log calls in Highrise.
 
 ## Zendesk Support
 Will attempt to map a phone number to a Zendesk user.  Will automatically create and display tickets when incoming calls are answered. Tickets are pre-filled with basic details about the call.
