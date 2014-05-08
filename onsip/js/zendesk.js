@@ -431,7 +431,6 @@ Zendesk.App = {
     tf = new Zendesk.TicketFields();
     for (i = 0; i < cf.length; i++) {
       if (!cf[i].id) {
-        debugger;
         data = {"ticket_field": {"type": "text", "title": cf[i].name }};
         tf.create(data, {
           success: function(model, resp, options) {

@@ -208,6 +208,26 @@ BG_APP.activeCallRetract = function(items) {
 };
 
 BG_APP._getNotification = function(caption, subject, item) {
+  // Chrome 35+
+  if (!window.webkitNotifications && window.Notification) {
+    dbg.log('Using standard Notification API');
+    return {
+      cancel: function () {
+        if (this.__notification) {
+          this.__notification.close();
+        }
+      },
+      show: function () {
+        dbg.log(this.log_context, 'foo', caption, subject);
+        this.__notification = new Notification(caption, {
+          icon: 'images/icon-48.png',
+          body: subject
+        });
+      }
+    };
+  }
+
+  dbg.log('Using legacy webkitNotification API');
   return webkitNotifications.createNotification('images/icon-48.png',
     caption, subject);
 };

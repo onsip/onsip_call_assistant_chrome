@@ -129,8 +129,14 @@ function parseDOM (node) {
   }
 
   if (nodeName === 'IFRAME') {
-    if (node.contentDocument) {
-      parseDOM(node.contentDocument.body);
+    var doc;
+    try {
+      doc = node.contentDocument;
+    } catch (e) {
+      console.warn("OnSIP Call Assistant - Could not traverse IFRAME");
+    }
+    if (doc) {
+      parseDOM(doc.body);
     }
   }
 
