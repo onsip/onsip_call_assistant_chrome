@@ -25,7 +25,7 @@ Built on Chrome's extension API. Leverages OnSIP's XMPP API for call control in 
 ### Author
 ---------------
 Oren Forer
-oren@onsip.com
+developer@onsip.com
 
 ## OnSIP Features
 Displays notifications for incoming & outgoing phone calls.  Will rewrite phone numbers on a web page as clickable hyperlinks to do call setup.
