@@ -266,6 +266,7 @@ HIGHRISE.postNoteToProfile = function(customer, note, call) {
   };
 
   xhr.open("POST", this.base_url + "/" +  customer.type + "/" + customer.id + "/notes.xml", true, this.token, 'X');
+  xhr.setRequestHeader("Content-Type", "application/xml");
   xhr.send(note);
 };
 
