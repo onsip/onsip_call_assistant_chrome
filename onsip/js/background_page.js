@@ -28,23 +28,23 @@ var name_from_context = '';
 /**
  Connect, subscribe, and register to XMPP API
 */
-OX_EXT.apps = [BG_APP];
+SIP_EXT.apps = [BG_APP];
 
 if (pref && pref.get('onsipCredentialsGood') === true && pref.get('onsipPassword') && pref.get('fromAddress')) {
   if (pref.get('onsipPassword').length > 0 && pref.get('fromAddress').length > 0) {
-    OX_EXT.init (
+    SIP_EXT.init (
       pref, {
         onSuccess: function () {
-          dbg.log(BG_LOG, 'Succeeded in OX_EXT.init for connecting & subscribing');
+          dbg.log(BG_LOG, 'Succeeded in SIP_EXT.init for connecting & subscribing');
         },
         onError: function (error) {
-          dbg.log(BG_LOG, 'There was an error in OX_EXT.init ' + error);
+          dbg.log(BG_LOG, 'There was an error in SIP_EXT.init ' + error);
           found_errors = true;
         }
       }
     );
   } else {
-    dbg.log(BG_LOG, 'OX_EXT.init NOT called, no credentials found');
+    dbg.log(BG_LOG, 'SIP_EXT.init NOT called, no credentials found');
   }
 };
 
@@ -108,17 +108,17 @@ var sc = function() {
     return;
   }
   if (!found_errors) {
-    found_errors = OX_EXT.strophe_conn.errors > 0;
+    found_errors = SIP_EXT.sip_ua.isConnected();
   }
   if (found_errors) {
-    dbg.log (BG_LOG, 'Discovered ' + OX_EXT.strophe_conn.errors  + ' errors lets RE-ESTABLISH connection');
+    dbg.log (BG_LOG, 'sip_ua unregistered, lets RE-ESTABLISH connection');
     var do_exec = function() {
-      OX_EXT.failures = 0;
+      SIP_EXT.failures = 0;
       BG_APP.launched_n = false;
-      OX_EXT.init(
+      SIP_EXT.init(
         pref, {
           onSuccess : function() {
-            dbg.log (BG_LOG, 'Succeeded in OX_EXT.init for REBOUND connecting & subscribing');
+            dbg.log (BG_LOG, 'Succeeded in SIP_EXT.init for REBOUND connecting & subscribing');
             found_errors = false;
             // reset interval
             dbg.log(BG_LOG, 'Reconnection interval on success set at ' + errored_interval);
@@ -174,7 +174,7 @@ var sc = function() {
       }
     };
 
-    OX_EXT.iConnectCheck(
+    SIP_EXT.iConnectCheck(
       pref, {
         onSuccess: function() {
           dbg.log(BG_LOG, 'Successfully connected to BOSH Server, do_exec()');
@@ -226,7 +226,6 @@ chrome.extension.onMessage.addListener(
     if (request.setupCall && pref.get('enabled')) {
       var from_address  = pref.get('fromAddress');
       var to_address = request.phone_no;
-      var call_setup_id = new Date().getTime() + '' + Math.floor(Math.random() * 1000);
       /**
         Name from context would ascertain the individual
         we are calling further down the call initiation process
@@ -234,7 +233,7 @@ chrome.extension.onMessage.addListener(
        */
       name_from_context = request.name_from_context;
       dbg.log(BG_LOG, 'Call requested FROM: ' + from_address + ' - TO: ' + to_address);
-      OX_EXT.createCall(from_address, to_address, call_setup_id);
+      SIP_EXT.createCall(from_address, to_address);
     }
 
     /**
@@ -249,7 +248,7 @@ chrome.extension.onMessage.addListener(
       pref.set('fromAddress', request.username);
       pref.set('onsipPassword', request.password);
 
-      OX_EXT.init(
+      SIP_EXT.init(
         pref, {
           onSuccess: function() {
             dbg.log(BG_LOG, "SIP user Verified Successfully");

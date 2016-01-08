@@ -246,7 +246,7 @@ function extractPhoneNumber(str){
 
 function isSetupCall (str) {
   var rev_str;
-  if (str && (str.indexOf (':call-setup@')) > 0) {
+  if (str && ((str.indexOf (':call-setup@')) > 0 || (str.indexOf (':clicktocall@')) > 0)) {
     return true;
   }
   return false;

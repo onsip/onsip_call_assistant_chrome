@@ -1,6 +1,45 @@
 /**
  * Zendesk Integration for OnSIP Call Assistant
  */
+// This code was written by Tyler Akins and has been placed in the
+// public domain.  It would be nice if you left this header intact.
+// Base64 code from Tyler Akins -- http://rumkin.com
+
+var keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+/**
+ * Encodes a string in base64
+ * @param {String} input The string to encode in base64.
+ */
+function encode64(input) {
+  var output = "";
+  var chr1, chr2, chr3;
+  var enc1, enc2, enc3, enc4;
+  var i = 0;
+
+  do {
+    chr1 = input.charCodeAt(i++);
+    chr2 = input.charCodeAt(i++);
+    chr3 = input.charCodeAt(i++);
+
+    enc1 = chr1 >> 2;
+    enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+    enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+    enc4 = chr3 & 63;
+
+    if (isNaN(chr2)) {
+      enc3 = enc4 = 64;
+    } else if (isNaN(chr3)) {
+      enc4 = 64;
+    }
+
+    output = output + keyStr.charAt(enc1) + keyStr.charAt(enc2) +
+      keyStr.charAt(enc3) + keyStr.charAt(enc4);
+  } while (i < input.length);
+
+  return output;
+}
+
 var Zendesk = Zendesk || {};
 
 Zendesk.Config = {
@@ -313,24 +352,24 @@ Zendesk.App = {
 
     item = info.callItem || {};
 
-    dbg.log(this.logContext, "In Create Ticket - call Id - " + item.callID);
+    dbg.log(this.logContext, "In Create Ticket - call Id - " + item.callId);
 
     if (info.isIncoming) {
       tags.push('incoming');
       /**
         Don't create a ticket for extension-to-extension calling
        */
-      if (item.fromURI) {
-        var domain = item.fromURI.split("@");
+      if (item.localUri) {
+        var domain = item.localUri.split("@");
         if (domain.length === 2) {
           if (domain[1].toLowerCase() ===
               this.sipAddress.split("@")[1].toLowerCase()) {
             dbg.log(this.logContext,
-              "Extension-to-Extension, will not create ticket " + item.fromURI);
+              "Extension-to-Extension, will not create ticket " + item.localUri);
             return;
           }
         }
-        tmp = this._normalizePhoneNumber(item.fromURI);
+        tmp = this._normalizePhoneNumber(item.localUri);
         if (tmp && tmp.length >= 10) {
           body = ", dial back # " + formatPhoneNum(tmp);
         }
@@ -344,8 +383,8 @@ Zendesk.App = {
     subject = "This ticket was automatically " +
       "created when on call with " + info.phoneNumber;
 
-    if (item.toAOR) {
-      body = "Associated SIP User: " + item.toAOR + body;
+    if (item.remoteUri) {
+      body = "Associated SIP User: " + item.remoteUri + body;
     }
 
     var ticket = {
@@ -377,14 +416,14 @@ Zendesk.App = {
           var n, f = {};
           if (fld.id) {
             n = fld.name.toLowerCase();
-            if (item.toAOR && n === Zendesk.CustomField.ONSIP_SIP_ADDRESS.toLowerCase()) {
-              f[fld.id] = item.toAOR;
+            if (item.remoteUri && n === Zendesk.CustomField.ONSIP_SIP_ADDRESS.toLowerCase()) {
+              f[fld.id] = item.remoteUri;
             }
-            else if (item.toURI && n === Zendesk.CustomField.ONSIP_CALL_DESTINATION.toLowerCase()) {
-              f[fld.id] = formatPhoneNum(that._normalizePhoneNumber(item.toURI));
+            else if (item.remoteUri && n === Zendesk.CustomField.ONSIP_CALL_DESTINATION.toLowerCase()) {
+              f[fld.id] = formatPhoneNum(that._normalizePhoneNumber(item.remoteUri));
             }
-            else if (item.fromURI && n === Zendesk.CustomField.ONSIP_CALL_SOURCE.toLowerCase()) {
-              f[fld.id] = formatPhoneNum(that._normalizePhoneNumber(item.fromURI));
+            else if (item.localUri && n === Zendesk.CustomField.ONSIP_CALL_SOURCE.toLowerCase()) {
+              f[fld.id] = formatPhoneNum(that._normalizePhoneNumber(item.localUri));
             }
             if (f[fld.id]) {
               customFields.push(f);
@@ -396,11 +435,11 @@ Zendesk.App = {
       ticket['ticket'].custom_fields = customFields;
     }
 
-    dbg.log(this.logContext, "custom tickets - " + item.callID);
+    dbg.log(this.logContext, "custom tickets - " + item.callId);
 
     tickets = new Zendesk.Tickets();
     options = options || {};
-    options.callID = item.callID;
+    options.callID = item.callId;
     tickets.create(ticket, options);
     dbg.log(this.logContext, "create tickets");
   },

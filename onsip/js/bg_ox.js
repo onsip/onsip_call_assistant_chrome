@@ -6,205 +6,193 @@ var BG_APP = {
   "log_context": 'BG_APP'
 };
 
-BG_APP.activeCallCreated = function(items) {
-  var i, n, item, phone, len, subject,
+BG_APP.activeCallCreated = function(item) {
+  var  n, phone, subject,
     highriseContact, zendeskContact, caption;
 
-  dbg.log(this.log_context, 'Active Call Created');
-  for (i = 0, len = items.length; i < len; i++) {
-    item = items[i];
-    dbg.log(this.log_context, "active call created ", item);
-    phone = extractPhoneNumber(item.toURI);
+  dbg.log(this.log_context, "active call created ", item);
 
-    if (pref.get('highriseEnabled')) {
-      highriseContact = highrise_app.findContact(phone, name_from_context);
-    }
-    if (pref.get('zendeskEnabled')) {
-      zendeskContact = zendesk_app.findContact(phone);
-    }
+  if (item.remoteUri) {
+    phone = extractPhoneNumber(item.remoteUri);
+  } else {
+    phone = "Unknown caller";
+  }
 
-    caption = "Calling: ";
-    phone = this._normalizeName(zendeskContact, highriseContact) || phone;
-    subject  = "To: " + formatPhoneNum(phone);
+  if (pref.get('highriseEnabled')) {
+    highriseContact = highrise_app.findContact(phone, name_from_context);
+  }
+  if (pref.get('zendeskEnabled')) {
+    zendeskContact = zendesk_app.findContact(phone);
+  }
 
-    n = this._getNotification(caption, subject, item);
-    dbg.log(this.log_context, "On Call Created, create the notification");
-    n = n || {};
-    n.callItem = item;
-    n.zendeskContact = zendeskContact;
-    n.highriseContact = highriseContact;
-    n.phone = formatPhoneNum(phone);
-    n.callInitiated = new Date().getTime();
+  caption = "Calling: ";
+  phone = this._normalizeName(zendeskContact, highriseContact) || phone;
+  subject  = "To: " + formatPhoneNum(phone);
 
-    /**
-     * You wouldn't receive multiple Call Create packets, but
-     * this check exists when callling yourself
-     */
-    n.shouldNotify = this._showNotification(item.callID, this.notifications);
-    if (n.shouldNotify) {
-      dbg.log(this.log_context, "On Call Created, adding to notifications ", n);
-      this.notifications.push(n);
-      n.show();
-    }
+  n = this._getNotification(caption, subject, item);
+  dbg.log(this.log_context, "On Call Created, create the notification");
+  n = n || {};
+  n.callItem = item;
+  n.zendeskContact = zendeskContact;
+  n.highriseContact = highriseContact;
+  n.phone = formatPhoneNum(phone);
+  n.callInitiated = new Date().getTime();
+
+  /**
+   * You wouldn't receive multiple Call Create packets, but
+   * this check exists when callling yourself
+   */
+  n.shouldNotify = this._showNotification(item.callId, this.notifications);
+  if (n.shouldNotify) {
+    dbg.log(this.log_context, "On Call Created, adding to notifications ", n);
+    this.notifications.push(n);
+    n.show();
   }
 };
 
-BG_APP.activeCallRequested = function (items) {
-  var i, n, item, phone, len, fmtPhone, highriseContact, zendeskContact, that,
+BG_APP.activeCallRequested = function (item) {
+  var n, phone, fmtPhone, highriseContact, zendeskContact, that,
     caption, isSetup, phoneWToUri, highriseContactWToUri, subject, foundCid;
 
-  dbg.log(this.log_context, 'Active Call Requested');
+  dbg.log(this.log_context, "active call requested ", item);
 
-  for (i = 0, len = items.length; i < len; i++) {
-    item = items[i];
-    dbg.log(this.log_context, "active call requested ", item);
-
-    that = this;
-    foundCid = _.find(this.callIdQueue,
-      function(element, idx, list) {
-        if (element && element.cid === item.callID) {
-          that.callIdQueue[idx].count++;
-          return true;
-        }
+  that = this;
+  foundCid = _.find(this.callIdQueue,
+    function(element, idx, list) {
+      if (element && element.cid === item.callId) {
+        that.callIdQueue[idx].count++;
+        return true;
       }
-    );
-
-    if (!foundCid) {
-      dbg.log(this.log_context, "add call id to queue  " + item.callID);
-      this.callIdQueue.push({cid: item.callID, count: 1});
     }
+  );
+
+  if (!foundCid) {
+    dbg.log(this.log_context, "add call id to queue  " + item.callId);
+    this.callIdQueue.push({cid: item.callId, count: 1});
+  }
+
+  /**
+     We check to make sure that the call setup id was not
+     only set, but that it matches the id we provided when
+     we made initiated the call setup..., or the fromURI
+     includes sip:call-setup instring
+  */
+  isSetup = isSetupCall(item.localUri);
+
+  /**
+   If this is just a call setup, then we don't display notification.
+   Optionally, remove to start displaying call setup notifications.
+  */
+  if (isSetup) {
+    dbg.log(this.log_context, 'Call Setup call, ignoring');
+    return;
+  }
+
+  phone = extractPhoneNumber(item.localUri);
+
+  if (item.remoteUri) {
+    phoneWToUri = extractPhoneNumber(item.remoteUri);
 
     /**
-      We check to make sure that the call setup id was not
-      only set, but that it matches the id we provided when
-      we made initiated the call setup..., or the fromURI
-      includes sip:call-setup instring
+       To Uri functionality was built more for Highrise. Might need to
+       address this feature for Zendesk as well.
     */
-    isSetup = (item.callSetupID && item.callSetupID.length > 0);
-    isSetup = isSetup &&
-      (item.callSetupID == OX_EXT.store_cs_id || isSetupCall(item.fromURI));
-
-    /**
-      If this is just a call setup, then we don't display notification.
-      Optionally, remove to start displaying call setup notifications.
-    */
-    if (isSetup) {
-      dbg.log(this.log_context, 'Call Setup ID is ' + item.callSetupID);
-      continue;
-    }
-
-    phone = extractPhoneNumber(item.fromURI);
-    phoneWToUri = extractPhoneNumber(item.toURI);
-    caption = isSetup ? "Call Setup: " : "Incoming Call: ";
-    phone = phone || '';
-
-    if (pref.get('highriseEnabled')) {
-      highriseContact = highrise_app.findContact(phone, '');
-    }
-    if (pref.get('zendeskEnabled')) {
-      zendeskContact = zendesk_app.findContact(phone);
-    }
-
-    phone = this._normalizeName(zendeskContact, highriseContact) || phone;
-
-    /**
-      To Uri functionality was built more for Highrise. Might need to
-      address this feature for Zendesk as well.
-     */
     if (pref.get('showToUri')) {
       highriseContactWToUri = highrise_app.findContact(phoneWToUri, null);
       phoneWToUri = this._normalizeName(highriseContactWToUri) || phoneWToUri;
     }
+  }
 
-    /**
-      Some comments on this variable can be found in background.js
-     */
-    name_from_context  = '';
+  caption = isSetup ? "Call Setup: " : "Incoming Call: ";
+  phone = phone || '';
 
-    fmtPhone = formatPhoneNum('' + phone);
-    subject = "";
+  if (pref.get('highriseEnabled')) {
+    highriseContact = highrise_app.findContact(phone, '');
+  }
+  if (pref.get('zendeskEnabled')) {
+    zendeskContact = zendesk_app.findContact(phone);
+  }
 
-    if (pref.get('showFromUri')) {
-      subject = "From: " + fmtPhone + " ";
-    }
-    if (pref.get('showToUri')) {
-      subject += "Line: " + formatPhoneNum('' + phoneWToUri);
-    }
-    if (isSetup) {
-      subject = "Setup: " + fmtPhone;
-    }
-    if (subject.length === 0) {
-      subject = "Ringing ...";
-    }
+  phone = this._normalizeName(zendeskContact, highriseContact) || phone;
 
-    n = this._getNotification(caption, subject, item);
-    dbg.log(this.log_context, "On Call Requested, create the notification");
-    n = n || {};
-    n.callItem = item;
-    n.isSetup = isSetup;
-    n.flagIncoming = true;
-    n.zendeskContact = zendeskContact;
-    n.highriseContact = highriseContact;
-    n.phone = formatPhoneNum('' + phone);
-    n.callInitiated = new Date().getTime();
-    n.highriseContactWToUri = highriseContactWToUri;
-    n.shouldNotify = this._showNotification(item.callID, this.notifications);
+  /**
+     Some comments on this variable can be found in background.js
+  */
+  name_from_context  = '';
 
-    /**
-      A user can have many registered devices, and the XMPP API will deliver
-      an 'incoming' packet for every registered device. Meaning we'll get
-      duplicate request packets.'
-     */
-    if (n.shouldNotify) {
-      dbg.log(this.log_context, "On Call Requested, adding to notifications ", n);
-      this.notifications.push(n);
-      n.show();
-    }
+  fmtPhone = formatPhoneNum('' + phone);
+  subject = "";
+
+  if (pref.get('showFromUri')) {
+    subject = "From: " + fmtPhone + " ";
+  }
+  if (pref.get('showToUri')) {
+    subject += "Line: " + formatPhoneNum('' + phoneWToUri);
+  }
+  if (isSetup) {
+    subject = "Setup: " + fmtPhone;
+  }
+  if (subject.length === 0) {
+    subject = "Ringing ...";
+  }
+
+  n = this._getNotification(caption, subject, item);
+  dbg.log(this.log_context, "On Call Requested, create the notification");
+  n = n || {};
+  n.callItem = item;
+  n.isSetup = isSetup;
+  n.flagIncoming = true;
+  n.zendeskContact = zendeskContact;
+  n.highriseContact = highriseContact;
+  n.phone = formatPhoneNum('' + phone);
+  n.callInitiated = new Date().getTime();
+  n.highriseContactWToUri = highriseContactWToUri;
+  n.shouldNotify = this._showNotification(item.callId, this.notifications);
+
+  /**
+     A user can have many registered devices, and the XMPP API will deliver
+     an 'incoming' packet for every registered device. Meaning we'll get
+     duplicate request packets.'
+  */
+  if (n.shouldNotify) {
+    dbg.log(this.log_context, "On Call Requested, adding to notifications ", n);
+    this.notifications.push(n);
+    n.show();
   }
 };
 
 /**
   A call has been established
 */
-BG_APP.activeCallConfirmed = function(items) {
-  var i, len, name, that, callItem;
-
-  that = this;
+BG_APP.activeCallConfirmed = function(item) {
+  var that = this;
   dbg.log(this.log_context, 'Active Call Confirmed');
-  this._reconcileCallItems(items);
+  this._reconcileCallItem(item);
 
-  for (i = 0, len = items.length; i < len; i += 1) {
-    callItem = items[i];
-    dbg.log(this.log_context, "call item confirmed ", callItem);
-    this._postNotetoProfile(callItem);
-    (function(cItem) {
-      setTimeout(function() {
-        that._reconcileNotifications(cItem);
-      }, 2000);
-    })(callItem);
-  }
+  dbg.log(this.log_context, "call item confirmed ", item);
+  this._postNotetoProfile(item);
+  (function(cItem) {
+    setTimeout(function() {
+      that._reconcileNotifications(cItem);
+    }, 2000);
+  })(item);
 };
 
 BG_APP.activeCallPending = function(item) {
   dbg.log(this.log_context, 'Active Call Pending');
 };
 
-BG_APP.activeCallRetract = function(items) {
-  var i, len, that, callItem;
-
-  that = this;
+BG_APP.activeCallRetract = function(item) {
+  var that = this;
   dbg.log(this.log_context, 'Active Call Retracted');
-  this._reconcileCallItems(items);
+  this._reconcileCallItem(item);
 
-  for (i = 0, len = items.length; i < len; i += 1) {
-    callItem = items[i];
-    dbg.log(this.log_context, "call item retract ", callItem);
-    (function(cItem) {
-      setTimeout(function() {
-        that._reconcileNotifications(cItem);
-      }, 3000);
-    })(callItem);
-  }
+  dbg.log(this.log_context, "call item retract ", item);
+  (function(cItem) {
+    setTimeout(function() {
+      that._reconcileNotifications(cItem);
+    }, 3000);
+  })(item);
 };
 
 BG_APP._getNotification = function(caption, subject, item) {
@@ -257,7 +245,7 @@ BG_APP._showNotification = function(callId, currentNotifications) {
    */
   var isNotifying = _.find(currentNotifications,
     function(element, idx, list) {
-      if (element.shouldNotify && element.callItem.callID === callId) {
+      if (element.shouldNotify && element.callItem.callId === callId) {
         return true;
       }
     }
@@ -283,61 +271,52 @@ BG_APP._getActiveCallItemId = function(uri) {
   return itemId;
 };
 
-BG_APP._reconcileCallItems = function(items) {
+BG_APP._reconcileCallItem = function(item) {
   var that = this;
-  items = items || [];
   dbg.log(this.log_context,
     "Found " + this.notifications.length +
       " notifications", this.notifications);
 
-  _.each(this.notifications,
-    function(element, index, list) {
-      var item, len, i, callId;
-      for (i=0, len = items.length; i < len; i++) {
-        item = items[i];
-        /**
-          The call item will have a dialogState property if it's delivered from
-          call incoming (requested), outgoing (created), or answered (confirmed)
-          events. A dialogState property will not exist for a call retraction.
-         */
-        if (item.dialogState) {
-          if (item.dialogState === 'confirmed') {
-            if (list[index].callItem.callID === item.callID &&
-                !that.notifications[index].callAnsweredTime) {
-              dbg.log(that.log_context, "Update Call Answered Time");
-              that.notifications[index].callAnsweredTime = new Date().getTime();
-            }
-          }
-        } else {
-          /**
-           This is a retraction. In a retraction we'll compare the item id,
-           rather than callId
-           */
-          if (that._getActiveCallItemId(list[index].callItem.uri) ===
-              that._getActiveCallItemId(item)) {
-            if (that.notifications[index].callAnsweredTime) {
-              that.notifications[index].callHangupTime = new Date().getTime();
-            }
-            that.notifications[index].markForDeletion = new Date().getTime();
-
-            callId = that.notifications[index].callItem.callID;
-            _.each(that.callIdQueue,
-              function(element, idx, list) {
-                if (element && element.cid === callId) {
-                  that.callIdQueue[idx].count--;
-                  dbg.log(that.log_context,
-                    "Count in reconcile retraction for " + element.cid + " is now " +
-                      that.callIdQueue[idx].count);
-                }
-              }
-            );
-
-          }
+  _.each(this.notifications, function(element, index, list) {
+    var callId;
+    /**
+       The call item will have a dialogState property if it's delivered from
+       call incoming (requested), outgoing (created), or answered (confirmed)
+       events. A dialogState property will not exist for a call retraction.
+    */
+    if (item.state) {
+      if (item.state === 'confirmed') {
+        if (list[index].callItem.callId === item.callId &&
+            !that.notifications[index].callAnsweredTime) {
+          dbg.log(that.log_context, "Update Call Answered Time");
+          that.notifications[index].callAnsweredTime = new Date().getTime();
         }
       }
+    } else {
+      /**
+         This is a retraction. In a retraction we'll compare the item id,
+         rather than callId
+      */
+      if (that._getActiveCallItemId(list[index].callItem) ===
+          that._getActiveCallItemId(item)) {
+        if (that.notifications[index].callAnsweredTime) {
+          that.notifications[index].callHangupTime = new Date().getTime();
+        }
+        that.notifications[index].markForDeletion = new Date().getTime();
+
+        callId = that.notifications[index].callItem.callId;
+        _.each(that.callIdQueue, function(element, idx, list) {
+          if (element && element.cid === callId) {
+            that.callIdQueue[idx].count--;
+            dbg.log(that.log_context,
+                    "Count in reconcile retraction for " + element.cid + " is now " +
+                    that.callIdQueue[idx].count);
+          }
+        });
+      }
     }
-  );
-},
+  });
+};
 
 /**
   Helper method. Post a note through the Highrise / Zendesk API
@@ -350,9 +329,9 @@ BG_APP._postNotetoProfile  = function (item, callback) {
     n = this.notifications[i];
     dbg.log(this.log_context,
       "PostNote item -> " + i + ", incoming = " + n.flagIncoming +
-        ", shouldNotify = " + n.shouldNotify + ", matching " + item.callID  +
-          " and " + n.callItem.callID);
-    if (n.shouldNotify && item.callID === n.callItem.callID) {
+        ", shouldNotify = " + n.shouldNotify + ", matching " + item.callId  +
+          " and " + n.callItem.callId);
+    if (n.shouldNotify && item.callId === n.callItem.callId) {
       zdContact = n.zendeskContact;
       hrContact = n.highriseContact;
       hrContactWToUri = n.highriseContactWToUri;
@@ -362,7 +341,7 @@ BG_APP._postNotetoProfile  = function (item, callback) {
          highrise
          */
         if (pref.get('highriseEnabled')) {
-          toAor = item && item.toAOR;
+          toAor = item && item.remoteUri;
           tz = pref.get('userTimezone');
           if (hrContact && hrContact.id) {
             highrise_app.postNote(hrContact, tz, n.flagIncoming, toAor);
@@ -392,7 +371,7 @@ BG_APP._postNotetoProfile  = function (item, callback) {
               var u = pref.get('zendeskUrl') + "/agent/#/tickets/" + resp.ticket.id;
               _.each(that.notifications,
                 function(element, index, list) {
-                  if (element.callItem.callID === options.callID) {
+                  if (element.callItem.callId === options.callId) {
                     that.notifications[index].ticketId = resp.ticket.id;
                   }
                 });
@@ -431,7 +410,7 @@ BG_APP._reconcileNotifications = function(item) {
   n = this.notifications.pop();
   while(n) {
     if (n.markForDeletion ||
-       (item.dialogState && item.callID === n.callItem.callID)) {
+       (item.state && item.callId === n.callItem.callId)) {
       if (n.shouldNotify && n.flagIncoming) {
         n.shouldNotify = false;
         if (n.markForDeletion) {
@@ -445,12 +424,12 @@ BG_APP._reconcileNotifications = function(item) {
         } else {
           dbg.log(this.log_context,
             'Set shouldNotify prop to false for call id ' +
-              item.callID);
+              item.callId);
 
           var that = this;
           _.each(this.callIdQueue,
             function(element, idx, list) {
-              if (element && element.cid === item.callID) {
+              if (element && element.cid === item.callId) {
                 if (that.callIdQueue[idx].count > 1) {
                   n.shouldNotify = true;
                   dbg.log(that.log_context, 'REVERT shouldNotify prop to TRUE');
@@ -491,7 +470,7 @@ BG_APP._updateCallLength = function(n) {
   if (n.ticketId) {
     that = this;
     dbg.log(this.log_context, "Ticket is valid");
-    callId = n.callItem.callID;
+    callId = n.callItem.callId;
     foundCid = _.find(this.callIdQueue,
       function(element, idx, list) {
         if (element && element.cid === callId) {
