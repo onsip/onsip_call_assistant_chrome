@@ -87,19 +87,31 @@ SIP_EXT.init = function (pref, callback) {
     that.sip_ua.stop();
   }
 
-  apiCalls.SessionCreate(this.from_address, this.pwd).then(function (sessionResponse) {
-    var session = sessionResponse.Context.Session;
-
-    return apiCalls.UserAddressBrowse(session.SessionId, session.UserId);
-  }).then(function (userAddressResponse) {
+  apiCalls.UserAddressBrowse(this.from_address, this.pwd)
+  .then(function (userAddressResponse) {
     var userAddresses = userAddressResponse.Result.UserAddressBrowse.UserAddresses.UserAddress;
     userAddresses = [].concat(userAddresses || []);
 
-    var user = userAddresses[0];
+    var idx = 0,
+    user = null;
+
+    for (idx; idx < userAddresses.length; idx++) {
+      var tempUser = userAddresses[idx],
+        tempUri = tempUser.Address.Username + '@' + tempUser.Address.Domain;
+
+      if (tempUri === that.from_address) {
+        config.uri = tempUri;
+        user = userAddresses[idx];
+        break;
+      }
+    }
+
+    if (!user) {
+      throw 'User not found';
+    }
 
     config.authorizationUser = user.AuthUsername;
     config.password = user.AuthPassword;
-    config.uri = user.Address.Username + '@' + user.Address.Domain;
 
     return config;
   }).then(function (config) {
@@ -132,6 +144,7 @@ SIP_EXT._onConnected = function (callback) {
   sub.on('notify', this.handleDialog);
 
   sub.once('notify', callback.onSuccess);
+  sub.once('failed', callback.onError);
 };
 
 

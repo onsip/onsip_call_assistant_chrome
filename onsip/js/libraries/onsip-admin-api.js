@@ -17,14 +17,6 @@ function apiAction (actionName, queryParameters, basicAuth) {
     },
   };
 
-  // TODO Unicode support
-  // https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_.22Unicode_Problem.22
-  if (basicAuth) {
-    var user = basicAuth.username;
-    var pass = basicAuth.password;
-    xhrOptions.headers.Authorization = 'Basic ' + btoa(user + ':' + pass);
-  }
-
   return new Promise(function (resolve, reject) {
     var xmlhttp = new XMLHttpRequest();
 
@@ -43,6 +35,12 @@ function apiAction (actionName, queryParameters, basicAuth) {
     };
 
     xmlhttp.open('POST', apiURI);
+
+    //basicAuth is now necessary for the call assistant sessionId'd calls
+    if (basicAuth.username && basicAuth.password) {
+      xmlhttp.setRequestHeader("Authorization", "Basic " + btoa(basicAuth.username + ":" + basicAuth.password));
+    }
+
     xmlhttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 
     xmlhttp.send(query);
@@ -133,16 +131,12 @@ var apiCalls = {
       'Password': password
     });
   },
-  UserRead: function (sessionId) {
-    return apiAction('UserRead', {
-      'SessionId': sessionId
-    });
-  },
-  UserAddressBrowse: function (sessionId, userId) {
+  UserAddressBrowse: function (username, password) {
     return apiAction('UserAddressBrowse', {
-      'SessionId': sessionId,
-      'UserId': userId,
       'Limit': 25000
+      }, {
+     'username': username,
+     'password': password
     });
   },
   CallSetup: function (fromAddress, toAddress) {
