@@ -21,7 +21,11 @@ function apiAction (actionName, queryParameters, basicAuth) {
     var xmlhttp = new XMLHttpRequest();
 
     xmlhttp.onreadystatechange = function() {
-      if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+      if (xmlhttp.readyState == 4) {
+        if (xmlhttp.status !== 200) {
+          reject("Bad Username/Password");
+          return;
+        }
         var x;
 
         try {

@@ -84,6 +84,7 @@ SIP_EXT.init = function (pref, callback) {
   if (that.sip_ua && that.sip_ua.isConnected()) {
     dbg.log (that.log_context, 'Restarting User Agent');
 
+    that.sip_ua.removeAllListeners();
     that.sip_ua.stop();
   }
 
@@ -139,12 +140,14 @@ SIP_EXT._onConnected = function (callback) {
   this.firstNotify = true;
   this.savedDialogs = {};
 
-  var sub = this.sip_ua.subscribe(this.from_address, 'dialog', {expires: expiresTime});
+  this.failureCallback = callback.onError;
 
-  sub.on('notify', this.handleDialog);
+  this.sub = this.sip_ua.subscribe(this.from_address, 'dialog', {expires: expiresTime});
 
-  sub.once('notify', callback.onSuccess);
-  sub.once('failed', callback.onError);
+  this.sub.on('notify', this.handleDialog);
+
+  this.sub.once('notify', callback.onSuccess);
+  this.sub.once('failed', this.failureCallback);
 };
 
 
@@ -162,12 +165,23 @@ SIP_EXT.createCall = function (from_address, to_address) {
   });
 };
 
+SIP_EXT.refreshSubscription = function () {
+  /** Re-subscribe every 45 min **/
+  var expiresTime  = 60000 * 45;
+  var that = SIP_EXT;
+
+  dbg.log(this.log_context, 'Received a stripped NOTIFY for ourself, refreshing to try again');
+
+  this.sub.refresh();
+};
+
 SIP_EXT.handleDialog = function (notification) {
   var data = JSON.parse(xml2json(parseXml(notification.request.body), ''));
   var that = SIP_EXT;
 
   var dialogList = [];
   var dialogs = {};
+  var refreshNecessary = false;
   var states = {
     'terminated': 0,
     'early'     : 1,
@@ -198,6 +212,8 @@ SIP_EXT.handleDialog = function (notification) {
         //dialog.data.localUri = uriService.toUri(dialog.local[0].identity[0]._ || dialog.local[0].identity[0], ua);
         dialog.data.localUri = dialog.local.identity['#text'];
         dialog.data.localDisplayName = dialog.local.identity['@display'];
+      } else if (!dialog.local){
+        refreshNecessary = true;
       }
 
       if (dialog.remote && dialog.remote.identity) {
@@ -208,6 +224,11 @@ SIP_EXT.handleDialog = function (notification) {
       dialogs[callId] = dialog;
     }
   });
+
+  if (refreshNecessary) {
+    that.refreshSubscription();
+    return;
+  }
 
   if (that.firstNotify) {
     that.firstNotify = false;
