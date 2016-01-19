@@ -108,7 +108,7 @@ var sc = function() {
     return;
   }
   if (!found_errors) {
-    found_errors = SIP_EXT.sip_ua.isConnected();
+    found_errors = !SIP_EXT.sip_ua.isConnected();
   }
   if (found_errors) {
     dbg.log (BG_LOG, 'sip_ua unregistered, lets RE-ESTABLISH connection');
