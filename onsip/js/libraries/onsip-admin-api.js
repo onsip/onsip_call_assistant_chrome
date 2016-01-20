@@ -1,6 +1,7 @@
 var apiURI = 'https://api.onsip.com/api';
 
 function apiAction (actionName, queryParameters, basicAuth) {
+  basicAuth = basicAuth || {};
   queryParameters = queryParameters || {};
   queryParameters.Action = actionName;
   queryParameters.Output = 'json';

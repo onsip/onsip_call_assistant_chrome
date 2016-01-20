@@ -108,10 +108,10 @@ var sc = function() {
     return;
   }
   if (!found_errors) {
-    found_errors = !SIP_EXT.sip_ua.isConnected();
+    found_errors = !SIP_EXT.allUAsConnected();
   }
   if (found_errors) {
-    dbg.log (BG_LOG, 'sip_ua unregistered, lets RE-ESTABLISH connection');
+    dbg.log (BG_LOG, 'a user agent disconnected, lets RE-ESTABLISH connection');
     var do_exec = function() {
       SIP_EXT.failures = 0;
       BG_APP.launched_n = false;
@@ -267,7 +267,8 @@ chrome.extension.onMessage.addListener(
             }
             sendResponse({ok : false});
           }
-        }
+        },
+        true
       );
     }
 

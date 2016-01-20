@@ -2,7 +2,6 @@
 
 var SIP_EXT = {
   "name"         : "SIP.js Based Chrome Plug-in",
-  "sip_ua"      : undefined,
   "from_address" : undefined,
   "apps"         : [],
   "pwd"          : undefined,
@@ -15,16 +14,90 @@ SIP_EXT.getDefaultConfig = function () {
     wsServers: ['wss://edge.sip.onsip.com'],
     traceSip: true,
     register: false,
-    //uri: need from UserAddressBrowse
-    //authorizationUser: UserAddressBrowse
-    //password: UserAddressBrowse
+    //uri: specific per UserAddress
+    //authorizationUser: specific per UserAddress
+    //password: specific per UserAddress
     userAgentString: SIP.C.USER_AGENT + ' OnsipChromeCallAssistant/2.0.0-dev',
   };
 };
 
-SIP_EXT.createUA = function (config) {
-  dbg.log (this.log_context, 'Initialized SIP.js UA');
-  this.sip_ua = new SIP.UA(config);
+SIP_EXT.createUAs = function (failure) {
+  var promises = [],
+    that = SIP_EXT;
+  failure = failure || function () {};
+
+  that.users.forEach(function (user) {
+    var config = that.getDefaultConfig();
+    config.uri = user.uri;
+    config.authorizationUser = user.authorizationUser;
+    config.password = user.password;
+
+    user.ua = new SIP.UA(config);
+
+    promises.push(new Promise(function (resolve, reject) {
+      var intervalId = setTimeout(reject, 10000);
+
+      user.ua.afterConnected(function () {
+        clearTimeout(intervalId);
+        resolve();
+      });
+    }));
+
+    //probably needs to be better
+    user.ua.on('disconnected', failure);
+
+    user.ua.start();
+  });
+
+  return Promise.all(promises);
+};
+
+SIP_EXT.allUAsConnected = function () {
+  return SIP_EXT.users.every(function (user) {
+    return user.ua.isConnected();
+  });
+};
+
+SIP_EXT.removeUAs = function () {
+  SIP_EXT.users.forEach(function (user) {
+    user.ua.removeAllListeners();
+    user.ua.stop();
+
+    delete user.ua;
+  });
+};
+
+SIP_EXT.createSubscriptions = function (failure) {
+  /** Re-subscribe every 45 min **/
+  var expiresTime  = 60000 * 45,
+    that = SIP_EXT,
+    promises = [];
+  failure = failure || {};
+
+  dbg.log('SIPJS', 'UAs Connected, creating subscriptions');
+
+  that.users.forEach(function (user) {
+    user.firstNotify = true;
+    user.savedDialogs = [];
+
+    user.sub = user.ua.subscribe(user.uri, 'dialog', {expires: expiresTime});
+
+    user.sub.on('notify', that.handleDialog.bind(that, user));
+    user.sub.once('failed', function () {
+      user.sub.removeAllListeners();
+      failure();
+    });
+
+    promises.push(new Promise(function (resolve, reject) {
+      var intervalId = setTimeout(reject, 10000);
+      user.sub.once('notify', function () {
+        clearTimeout(intervalId);
+        resolve();
+      });
+    }));
+  });
+
+  return Promise.all(promises);
 };
 
 SIP_EXT.iConnectCheck = function (pref, call) {
@@ -66,7 +139,7 @@ SIP_EXT.iConnectCheck = function (pref, call) {
   xhr.send();
 };
 
-SIP_EXT.init = function (pref, callback) {
+SIP_EXT.init = function (pref, callback, manualLogin) {
   var url = pref.get ('onsipHttpBase');
   var that = this;
   var resource = 'chrome-sipjs-plugin';
@@ -79,103 +152,59 @@ SIP_EXT.init = function (pref, callback) {
     resource += '-zendesk';
   }
   **/
-  var config = that.getDefaultConfig();
 
-  if (that.sip_ua && that.sip_ua.isConnected()) {
-    dbg.log (that.log_context, 'Restarting User Agent');
+  var apiRefresh = false;
+  if (!manualLogin) {
+    if (this.lastApiCall) {
+      var fourDaysInMs = 345600000;
 
-    that.sip_ua.removeAllListeners();
-    that.sip_ua.stop();
+      apiRefresh = ((Date.now() - this.lastApiCall) > fourDaysInMs);
+    }
   }
+
+  if (that.users && that.users.length > 0) {
+    dbg.log (that.log_context, 'Restarting User Agents');
+    that.removeUAs();
+
+    if (!apiRefresh && !manualLogin) {
+      return that.createUAs(callback.onError)
+      .then(that.createSubscriptions.bind(that, callback.onError))
+      .then(callback.onSuccess)
+      .catch(callback.onError);
+    }
+  }
+
+  this.lastApiCall = Date.now();
 
   apiCalls.UserAddressBrowse(this.from_address, this.pwd)
   .then(function (userAddressResponse) {
-    var userAddresses = userAddressResponse.Result.UserAddressBrowse.UserAddresses.UserAddress;
+    var userId = userAddressResponse.Context.Session.UserId,
+      userAddresses = userAddressResponse.Result.UserAddressBrowse.UserAddresses.UserAddress;
+
     userAddresses = [].concat(userAddresses || []);
+    that.users = [];
 
-    var idx = 0,
-    user = null;
-
-    for (idx; idx < userAddresses.length; idx++) {
-      var tempUser = userAddresses[idx],
-        tempUri = tempUser.Address.Username + '@' + tempUser.Address.Domain;
-
-      if (tempUri === that.from_address) {
-        config.uri = tempUri;
-        user = userAddresses[idx];
-        break;
+    userAddresses.forEach(function (tempUser) {
+      if (userId === tempUser.UserId) {
+        tempUser.uri = tempUser.Address.Username + '@' + tempUser.Address.Domain;
+        tempUser.authorizationUser = tempUser.AuthUsername;
+        tempUser.password = tempUser.AuthPassword;
+        that.users.push(tempUser);
       }
-    }
+    });
 
-    if (!user) {
+    if (that.users.length === 0) {
       throw 'User not found';
     }
 
-    config.authorizationUser = user.AuthUsername;
-    config.password = user.AuthPassword;
-
-    return config;
-  }).then(function (config) {
-    that.createUA(config);
-
-    that.sip_ua.rawLog = function(data) {
-      dbg.log ('SIPJS RAW','Log  :: ' + data );
-    };
-
-    that.sip_ua.once('connected', that._onConnected.bind(that, callback));
-    that.sip_ua.on('disconnected', function () {
-      dbg.log (that.log_context, 'User Agent disconnected, attempting to reconnect');
-      that.sip_ua.start();
-    });
-
-  }).catch(callback.onError);
+    return;
+  }).then(that.createUAs)
+  .then(that.createSubscriptions.bind(that, callback.onError))
+  .then(callback.onSuccess)
+  .catch(callback.onError);
 };
 
-SIP_EXT._onConnected = function (callback) {
-  /** Re-subscribe every 45 min **/
-  var expiresTime  = 60000 * 45;
-
-  dbg.log('SIPJS', 'UA Connected' );
-
-  this.firstNotify = true;
-  this.savedDialogs = {};
-
-  this.failureCallback = callback.onError;
-
-  this.sub = this.sip_ua.subscribe(this.from_address, 'dialog', {expires: expiresTime});
-
-  this.sub.on('notify', this.handleDialog);
-
-  this.sub.once('notify', callback.onSuccess);
-  this.sub.once('failed', this.failureCallback);
-};
-
-
-SIP_EXT.createCall = function (from_address, to_address) {
-  var that = this;
-
-  to_address = to_address + '@jnctn.net';
-  //from_address = 'sip:' + from_address;
-  dbg.log (this.log_context, 'Create Call - ' + from_address + ' ^ ' + to_address);
-
-  apiCalls.CallSetup(from_address, to_address).then(function () {
-    dbg.log(that.log_context, 'Create call success');
-  }).catch(function () {
-    dbg.log(that.log_context, 'Create call error');
-  });
-};
-
-SIP_EXT.refreshSubscription = function () {
-  /** Re-subscribe every 45 min **/
-  var expiresTime  = 60000 * 45;
-  var that = SIP_EXT;
-
-  dbg.log(this.log_context, 'Received a stripped NOTIFY for ourself, refreshing to try again');
-
-  this.sub.refresh();
-};
-
-SIP_EXT.handleDialog = function (notification) {
+SIP_EXT.handleDialog = function (user, notification) {
   var data = JSON.parse(xml2json(parseXml(notification.request.body), ''));
   var that = SIP_EXT;
 
@@ -189,7 +218,7 @@ SIP_EXT.handleDialog = function (notification) {
     'confirmed' : 2
   };
   if (!data['dialog-info'].dialog) {
-    this.firstNotify = false;
+    user.firstNotify = false;
     return;
   }
 
@@ -226,30 +255,34 @@ SIP_EXT.handleDialog = function (notification) {
   });
 
   if (refreshNecessary) {
-    that.refreshSubscription();
+    dbg.log(that.log_context, 'Received a stripped NOTIFY for ourself, refreshing to try again');
+
+    user.sub.refresh();
     return;
   }
 
-  if (that.firstNotify) {
-    that.firstNotify = false;
+  if (user.firstNotify) {
+    user.firstNotify = false;
 
     for (callId in dialogs) {
       var incomingDialog = dialogs[callId];
+      if (!incomingDialog.data) return; //unique in an empty array? what?
       if (incomingDialog.data.state !== 'terminated') {
-        that.savedDialogs[callId] = incomingDialog;
+        user.savedDialogs[callId] = incomingDialog;
       }
     }
     return;
   }
 
   for (callId in dialogs) {
-    var savedDialog = that.savedDialogs[callId];
+    var savedDialog = user.savedDialogs[callId];
     var incomingDialog = dialogs[callId];
+    if (!incomingDialog.data) return; //unique in an empty array? what?
 
     if ((savedDialog && incomingDialog.data.state !== savedDialog.data.state) ||
         (!savedDialog && incomingDialog.data.state !== 'terminated')) {
       incomingDialog.data.changed = true;
-      that.savedDialogs[callId] = incomingDialog;
+      user.savedDialogs[callId] = incomingDialog;
     }
   }
 
@@ -258,8 +291,9 @@ SIP_EXT.handleDialog = function (notification) {
   //terminated -> retract
 
   //we now have the newest dialog from an actually new event (non-first notify), lets figure out what to publish
-  for (callId in that.savedDialogs) {
-    var savedDialog = that.savedDialogs[callId];
+  for (callId in user.savedDialogs) {
+    var savedDialog = user.savedDialogs[callId];
+    if (!savedDialog.data) return; //unique in an empty array? what?
 
     if (savedDialog.data.changed) {
       savedDialog.data.changed = false;
@@ -283,7 +317,7 @@ SIP_EXT.handleDialog = function (notification) {
     }
 
     if (savedDialog.data.state === 'terminated') {
-      delete that.savedDialogs[callId];
+      delete user.savedDialogs[callId];
     };
   }
 }
@@ -300,8 +334,16 @@ SIP_EXT.__publishEventToApps = function (event) {
   }
 };
 
-SIP_EXT.cancelCall = function (handle) {
-  if (handle && handle.hangup) {
-    handle.hangup();
-  }
+SIP_EXT.createCall = function (from_address, to_address) {
+  var that = this;
+
+  to_address = to_address + '@jnctn.net';
+  //from_address = 'sip:' + from_address;
+  dbg.log (this.log_context, 'Create Call - ' + from_address + ' ^ ' + to_address);
+
+  apiCalls.CallSetup(from_address, to_address).then(function () {
+    dbg.log(that.log_context, 'Create call success');
+  }).catch(function () {
+    dbg.log(that.log_context, 'Create call error');
+  });
 };
