@@ -174,7 +174,8 @@ SIP_EXT.init = function (pref, callback, manualLogin) {
     }
   }
 
-  this.lastApiCall = Date.now();
+  this.lastApiCall = Date.now()
+  that.users = [];
 
   apiCalls.UserAddressBrowse(this.from_address, this.pwd)
   .then(function (userAddressResponse) {
@@ -182,7 +183,6 @@ SIP_EXT.init = function (pref, callback, manualLogin) {
       userAddresses = userAddressResponse.Result.UserAddressBrowse.UserAddresses.UserAddress;
 
     userAddresses = [].concat(userAddresses || []);
-    that.users = [];
 
     userAddresses.forEach(function (tempUser) {
       if (userId === tempUser.UserId) {
