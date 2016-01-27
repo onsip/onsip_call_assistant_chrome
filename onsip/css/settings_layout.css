@@ -62,7 +62,7 @@ H4	   { font: 15px/20px 'FolioBold', Arial, Helvetica, sans-serif; color:#FFF; m
 #wrapper   { position:relative; width:960px; margin:0 auto; overflow:hidden; padding:0; min-height:100%;  }
 
 #header	     { position:relative; height:90px; }
-#logo	     { position:absolute; display:block; bottom:0; left:0; width:122px; height:39px; background:url(../images/../images/OnSIP-darkblue-122x39.png) center center no-repeat; text-align:left; text-indent:-9999px; }
+#logo	     { position:absolute; display:block; bottom:0; left:0; width:122px; height:39px; background:url(../images/OnSIP-darkblue-440x280.png) center center no-repeat; text-align:left; text-indent:-9999px; }
 #mainMenu    { position:absolute; bottom:0; right:0; margin:0; padding:0; list-style:none; }
 #mainMenu LI { float:left; padding:0 0 0 20px; margin:0 0 0 20px; border-left:1px solid #84A6CD; }
 #mainMenu LI:first-child { padding:0; margin:0; border:0; }

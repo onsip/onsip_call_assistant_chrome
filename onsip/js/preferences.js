@@ -3,7 +3,6 @@ var OnSIP_Preferences = {
     apiTimeout      : 30000,
     fromAddress     : 'you@yourdomain.onsip.com',
     onsipPassword   : 'Please enter your password',
-    onsipHttpBase   : 'https://my.onsip.com/http-bind/',
     debug_sp        : true,
     timeout         : 3000,
     enabled         : false,

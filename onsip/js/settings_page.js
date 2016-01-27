@@ -164,8 +164,8 @@ function handleOnSIPLogin() {
 
       err = "Bad login!<br>" +
         "Get your password at " +
-        "<a href='https://my.onsip.com' target='_blank'> " +
-        "https://my.onsip.com </a>";
+        "<a href='https://insta.onsip.com' target='_blank'> " +
+        "https://insta.onsip.com </a>";
 
       $('#errorMsg').html(err).clearQueue().fadeOut(150).fadeIn(300);
       $('#save-options-btn').removeAttr('disabled');

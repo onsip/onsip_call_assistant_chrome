@@ -149,5 +149,8 @@ var apiCalls = {
       'FromAddress': fromAddress,
       'ToAddress': toAddress
     });
+  },
+  NoOp: function () {
+    return apiAction('NoOp');
   }
 }

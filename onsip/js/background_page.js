@@ -35,7 +35,7 @@ if (pref && pref.get('onsipCredentialsGood') === true && pref.get('onsipPassword
     SIP_EXT.init (
       pref, {
         onSuccess: function () {
-          dbg.log(BG_LOG, 'Succeeded in SIP_EXT.init for connecting & subscribing');
+          dbg.log(BG_LOG, 'Succeeded in SIP_EXT.init for logging in');
         },
         onError: function (error) {
           dbg.log(BG_LOG, 'There was an error in SIP_EXT.init ' + error);
@@ -242,8 +242,7 @@ chrome.extension.onMessage.addListener(
     if (request.verifyOnSipUser) {
       dbg.log(BG_LOG,
         'Request verify on sip user  ' +
-          request.username + ', ***  -- ' +
-            pref.get('onsipHttpBase'));
+          request.username + ', ***  -- api.onsip.com');
 
       pref.set('fromAddress', request.username);
       pref.set('onsipPassword', request.password);

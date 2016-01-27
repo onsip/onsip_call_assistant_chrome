@@ -9,138 +9,7 @@ var SIP_EXT = {
   "DEF_TIMEOUT"  : 7000
 };
 
-SIP_EXT.getDefaultConfig = function () {
-  return {
-    wsServers: ['wss://edge.sip.onsip.com'],
-    traceSip: true,
-    register: false,
-    //uri: specific per UserAddress
-    //authorizationUser: specific per UserAddress
-    //password: specific per UserAddress
-    userAgentString: SIP.C.USER_AGENT + ' OnsipChromeCallAssistant/2.0.0-dev',
-  };
-};
-
-SIP_EXT.createUAs = function (failure) {
-  var promises = [],
-    that = SIP_EXT;
-  failure = failure || function () {};
-
-  that.users.forEach(function (user) {
-    var config = that.getDefaultConfig();
-    config.uri = user.uri;
-    config.authorizationUser = user.authorizationUser;
-    config.password = user.password;
-
-    user.ua = new SIP.UA(config);
-
-    promises.push(new Promise(function (resolve, reject) {
-      var intervalId = setTimeout(reject, 10000);
-
-      user.ua.afterConnected(function () {
-        clearTimeout(intervalId);
-        resolve();
-      });
-    }));
-
-    //probably needs to be better
-    user.ua.on('disconnected', failure);
-
-    user.ua.start();
-  });
-
-  return Promise.all(promises);
-};
-
-SIP_EXT.allUAsConnected = function () {
-  return SIP_EXT.users.every(function (user) {
-    return user.ua.isConnected();
-  });
-};
-
-SIP_EXT.removeUAs = function () {
-  SIP_EXT.users.forEach(function (user) {
-    user.ua.removeAllListeners();
-    user.ua.stop();
-
-    delete user.ua;
-  });
-};
-
-SIP_EXT.createSubscriptions = function (failure) {
-  /** Re-subscribe every 45 min **/
-  var expiresTime  = 60000 * 45,
-    that = SIP_EXT,
-    promises = [];
-  failure = failure || {};
-
-  dbg.log('SIPJS', 'UAs Connected, creating subscriptions');
-
-  that.users.forEach(function (user) {
-    user.firstNotify = true;
-    user.savedDialogs = [];
-
-    user.sub = user.ua.subscribe(user.uri, 'dialog', {expires: expiresTime});
-
-    user.sub.on('notify', that.handleDialog.bind(that, user));
-    user.sub.once('failed', function () {
-      user.sub.removeAllListeners();
-      failure();
-    });
-
-    promises.push(new Promise(function (resolve, reject) {
-      var intervalId = setTimeout(reject, 10000);
-      user.sub.once('notify', function () {
-        clearTimeout(intervalId);
-        resolve();
-      });
-    }));
-  });
-
-  return Promise.all(promises);
-};
-
-SIP_EXT.iConnectCheck = function (pref, call) {
-  var xhr   = new XMLHttpRequest();
-  var url   = pref.get ('onsipHttpBase');
-  var ok    = false;
-  var that  = this;
-  var tmout = 30000; /** 30 sec **/
-
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState !== 4) {
-      return false;
-    }
-    if (xhr.status === 200) {
-      ok = true;
-      if (call && call.onSuccess) {
-        return call.onSuccess();
-      }
-    }
-    else {
-      if (call && call.onError) {
-        return call.onError();
-      }
-    }
-  };
-
-  var a = function () {
-    if (!ok) {
-      xhr.abort();
-      if (call && call.onError) {
-        call.onError();
-      }
-    }
-  };
-
-  dbg.log(this.log_context, 'Verifying Internet Connectivity');
-  xhr.open("GET", url, false);
-  setTimeout(a, tmout);
-  xhr.send();
-};
-
 SIP_EXT.init = function (pref, callback, manualLogin) {
-  var url = pref.get ('onsipHttpBase');
   var that = this;
   var resource = 'chrome-sipjs-plugin';
   this.from_address = pref.get ('fromAddress');
@@ -175,6 +44,7 @@ SIP_EXT.init = function (pref, callback, manualLogin) {
   }
 
   this.lastApiCall = Date.now()
+  this.failedRecoveries = 0;
   that.users = [];
 
   apiCalls.UserAddressBrowse(this.from_address, this.pwd)
@@ -198,10 +68,183 @@ SIP_EXT.init = function (pref, callback, manualLogin) {
     }
 
     return;
-  }).then(that.createUAs)
-  .then(that.createSubscriptions.bind(that, callback.onError))
-  .then(callback.onSuccess)
-  .catch(callback.onError);
+  }).then(callback.onSuccess)
+  .catch(callback.onError)
+  .then(that.createUAs)
+  .then(that.createSubscriptions)
+  .catch(that.recoverUAs);
+};
+
+SIP_EXT.iConnectCheck = function (pref, call) {
+  var timeoutId;
+
+  var failureTimeout = function (e) {
+    clearTimeout(timeoutId);
+    if (call && call.onError) {
+      call.onError();
+    }
+  };
+
+  dbg.log(this.log_context, 'Verifying Internet Connectivity');
+  apiCalls.NoOp().then(function () {
+    clearTimeout(timeoutId);
+    call.onSuccess();
+  }).catch(failureTimeout);
+
+  timeoutId =  setTimeout(failureTimeout, 30000) // 30 seconds
+};
+
+SIP_EXT.createUAs = function () {
+  var promises = [],
+    that = SIP_EXT;
+
+  that.users.forEach(function (user) {
+    var config = {
+      wsServers: ['wss://edge.sip.onsip.com'],
+      traceSip: true,
+      register: false,
+      userAgentString: SIP.C.USER_AGENT + ' OnsipChromeCallAssistant/2.0.0-dev',
+      uri: user.uri,
+      authorizationUser: user.authorizationUser,
+      password: user.password
+    };
+
+    user.ua = new SIP.UA(config);
+
+    user.ua.data = user.ua.data || {};
+    user.ua.data.failedRecoveries = 0;
+
+    promises.push(new Promise(function (resolve, reject) {
+      var intervalId = setTimeout(reject, 10000);
+
+      user.ua.afterConnected(function () {
+        clearTimeout(intervalId);
+        resolve();
+      });
+    }));
+
+    //probably needs to be better
+    user.ua.on('disconnected', that.recoverUA.bind(that, user));
+
+    user.ua.start();
+  });
+
+  return Promise.all(promises);
+};
+
+SIP_EXT.allUAsConnected = function () {
+  return SIP_EXT.users && SIP_EXT.users.every(function (user) {
+    return user.ua && user.ua.isConnected();
+  });
+};
+
+SIP_EXT.removeUAs = function () {
+  SIP_EXT.users.forEach(function (user) {
+    user.ua.removeAllListeners();
+    user.ua.stop();
+
+    delete user.ua;
+  });
+};
+
+SIP_EXT.recoverUAs = function () {
+  var that = SIP_EXT;
+
+  dbg.log('SIPJS', 'recovering all UAs');
+
+  that.removeUAs();
+
+  if (that.failedRecoveries > 3) {
+    dbg.log('SIPJS', 'giving up on recovery');
+    //exit, 30 second auto-recovery will catch up and error_out in background_page.js
+    return;
+  }
+
+  that.createUAs()
+  .then(that.createSubscriptions)
+  .then(function () {
+    //major retry complete
+    that.failedRecoveries = 0;
+  })
+  .catch(function () {
+    that.failedRecoveries++;
+    that.recoverUAs();
+  });
+};
+
+SIP_EXT.recoverUA = function (user) {
+  var that = SIP_EXT,
+    intervalId;
+
+  dbg.log('SIPJS', 'recovering UA for ' + user.uri);
+
+  if (user.ua.data.failedRecoveries > 3) {
+    that.failedRecoveries = 0;
+    dbg.log('SIPJS', 'single recovery failed 4 times, moving to total recovery');
+    that.recoverUAs();
+  }
+
+  if (!user.ua.isConnected()) {
+    user.ua.start();
+  } else if (user.ua.sub) {
+    user.ua.sub.unsubscribe();
+    user.ua.sub.removeAllListeners();
+  }
+
+  failureTimeout = function () {
+    user.ua.data.failedRecoveries++;
+    that.recoverUA(user);
+  };
+
+  intervalId = setTimeout(failureTimeout, 10000);
+
+  user.ua.afterConnected(function () {
+    clearTimeout(intervalId);
+    intervalId = setTimeout(failureTimeout, 10000);
+    user.sub.once('notify', function () {
+      user.ua.data.failedRecoveries = 0;
+      clearTimeout(intervalId);
+    });
+    user.sub.once('failed', that.recoverUA.bind(that, user));
+  });
+};
+
+SIP_EXT.createSub = function (user) {
+  /** Re-subscribe every 45 min **/
+  var expiresTime  = 60 * 45,
+    that = SIP_EXT;
+
+  user.firstNotify = true;
+  user.savedDialogs = [];
+  user.ignoredDialogs = [];
+
+  dbg.log('SIPJS', 'creating subscription for ' + user.uri);
+
+  user.sub = user.ua.subscribe(user.uri, 'dialog', {expires: expiresTime});
+
+  user.sub.on('notify', that.handleDialog.bind(that, user));
+  user.sub.once('failed', that.recoverUA.bind(that, user));
+};
+
+SIP_EXT.createSubscriptions = function () {
+  var that = SIP_EXT,
+    promises = [];
+
+  dbg.log('SIPJS', 'UAs Connected, creating subscriptions');
+
+  that.users.forEach(function (user) {
+    that.createSub(user);
+
+    promises.push(new Promise(function (resolve, reject) {
+      var intervalId = setTimeout(reject, 10000);
+      user.sub.once('notify', function () {
+        clearTimeout(intervalId);
+        resolve();
+      });
+    }));
+  });
+
+  return Promise.all(promises);
 };
 
 SIP_EXT.handleDialog = function (user, notification) {
@@ -261,29 +304,61 @@ SIP_EXT.handleDialog = function (user, notification) {
     return;
   }
 
-  if (user.firstNotify) {
-    user.firstNotify = false;
+  //dtls causes duplicate entries in the NOTIFY with different Call Ids,
+  //so we strip them and leave the one we saw first
+  //sometimes gateway'ed calls flip uris, so check both ways
+  // known issue: if a calls b and b calls a and both are ringing simultaneously, you will only see 1
+  function isDtlsDupe(incomingDialog) {
+    return user.ignoredDialogs[incomingDialog.data.callId] ||
+    Object.keys(user.savedDialogs).some(function (savedDialogId) {
+      var savedDialog = user.savedDialogs[savedDialogId];
 
-    for (callId in dialogs) {
-      var incomingDialog = dialogs[callId];
-      if (!incomingDialog.data) return; //unique in an empty array? what?
-      if (incomingDialog.data.state !== 'terminated') {
-        user.savedDialogs[callId] = incomingDialog;
+      if ((savedDialog.data.callId !== incomingDialog.data.callId) &&
+          (!savedDialog.data.confirmedTime && !incomingDialog.data.confirmedTime) &&
+          (((savedDialog.data.localUri === incomingDialog.data.localUri) &&
+            (savedDialog.data.remoteUri === incomingDialog.data.remoteUri)) ||
+           ((savedDialog.data.localUri === incomingDialog.data.remoteUri) &&
+            (savedDialog.data.remoteUri === incomingDialog.data.localUri)))) {
+        user.ignoredDialogs[incomingDialog.data.callId] = true;
+        return true;
       }
-    }
-    return;
+    });
   }
 
-  for (callId in dialogs) {
+  //updates first, then dupes can be checked
+  for (var callId in dialogs) {
     var savedDialog = user.savedDialogs[callId];
     var incomingDialog = dialogs[callId];
-    if (!incomingDialog.data) return; //unique in an empty array? what?
+    //'unique' in a value in an empty array is why the data check is here
+    if (!incomingDialog.data) {
+      return;
+    }
+    dbg.log('SIPJS', 'on notify: condensed dialog', incomingDialog.data.callId, 'is in state', incomingDialog.data.state);
 
-    if ((savedDialog && incomingDialog.data.state !== savedDialog.data.state) ||
-        (!savedDialog && incomingDialog.data.state !== 'terminated')) {
-      incomingDialog.data.changed = true;
+    if (savedDialog) {
+      if (incomingDialog.data.state !== savedDialog.data.state) {
+        user.savedDialogs[callId] = incomingDialog;
+      }
+      delete dialogs[callId];
+    }
+  }
+
+  //at this point, all that is left is dialogs not found in savedDialogs
+  for (var callId in dialogs) {
+    var incomingDialog = dialogs[callId];
+    //'unique' in a value in an empty array is why the data check is here
+    if (!incomingDialog.data) {
+      return;
+    }
+    if (incomingDialog.data.state !== 'terminated' && !isDtlsDupe(incomingDialog)) {
+      incomingDialog.data.changed = !user.firstNotify;
       user.savedDialogs[callId] = incomingDialog;
     }
+  }
+
+  if (user.firstNotify) {
+    user.firstNotify = false;
+    return;
   }
 
   //proceeding is dialing -> created is dialing
@@ -291,7 +366,7 @@ SIP_EXT.handleDialog = function (user, notification) {
   //terminated -> retract
 
   //we now have the newest dialog from an actually new event (non-first notify), lets figure out what to publish
-  for (callId in user.savedDialogs) {
+  for (var callId in user.savedDialogs) {
     var savedDialog = user.savedDialogs[callId];
     if (!savedDialog.data) return; //unique in an empty array? what?
 
@@ -319,6 +394,10 @@ SIP_EXT.handleDialog = function (user, notification) {
     if (savedDialog.data.state === 'terminated') {
       delete user.savedDialogs[callId];
     };
+  }
+
+  if (user.savedDialogs.length === 0) {
+    user.ignoredDialogs = [];
   }
 }
 
