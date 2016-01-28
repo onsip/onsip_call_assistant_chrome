@@ -337,6 +337,7 @@ SIP_EXT.handleDialog = function (user, notification) {
 
     if (savedDialog) {
       if (incomingDialog.data.state !== savedDialog.data.state) {
+        incomingDialog.data.changed = true;
         user.savedDialogs[callId] = incomingDialog;
       }
       delete dialogs[callId];
