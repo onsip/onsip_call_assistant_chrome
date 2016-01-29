@@ -110,7 +110,7 @@ function getOnsipUser (callback) {
       if (callback) {
         ts = Math.round(((new Date().getTime() - _startTimeLoginProc) / 1000));
         if (isNaN(ts)) ts = 0;
-        if (response.ok) {
+        if (response && response.ok) {
           _gaq.push(['_trackEvent', 'options',
             'onSipLoginSuccess','OnSIP Login Success', ts]);
           callback.onSuccess();

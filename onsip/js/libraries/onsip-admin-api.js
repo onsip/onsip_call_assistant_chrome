@@ -144,10 +144,13 @@ var apiCalls = {
      'password': password
     });
   },
-  CallSetup: function (fromAddress, toAddress) {
-    return apiAction('CallSetup', {
+  AuthCallSetup: function (fromAddress, toAddress, username, password) {
+    return apiAction('AuthCallSetup', {
       'FromAddress': fromAddress,
       'ToAddress': toAddress
+      }, {
+     'username': username,
+     'password': password
     });
   },
   NoOp: function () {

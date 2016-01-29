@@ -421,7 +421,7 @@ SIP_EXT.createCall = function (from_address, to_address) {
   //from_address = 'sip:' + from_address;
   dbg.log (this.log_context, 'Create Call - ' + from_address + ' ^ ' + to_address);
 
-  apiCalls.CallSetup(from_address, to_address).then(function () {
+  apiCalls.AuthCallSetup(from_address, to_address, this.from_address, this.pwd).then(function () {
     dbg.log(that.log_context, 'Create call success');
   }).catch(function () {
     dbg.log(that.log_context, 'Create call error');
