@@ -109,14 +109,16 @@ Zendesk.Users = Backbone.Collection.extend({
     u.save(data, options);
   },
   parse: function (response) {
-    if (response.user) {
-     return response.user;
+    if (response) {
+      if (response.user) {
+       return response.user;
+      }
+      this.count = response.count;
+      this.next_page = response.next_page;
+      this.previous_page = response.previous_page;
+      response.users = _.filter(response.users, function(u) { return u.phone });
+      return this.models.concat(response.users);
     }
-    this.count = response.count;
-    this.next_page = response.next_page;
-    this.previous_page = response.previous_page;
-    response.users = _.filter(response.users, function(u) { return u.phone });
-    return this.models.concat(response.users);
   },
   _findNext: function(options) {
     this.fetch(options);
@@ -151,8 +153,10 @@ Zendesk.TicketFields = Backbone.Model.extend({
     this.save(data, options);
   },
   parse: function(response) {
-    this.count = response.count;
-    this.fields = response.ticket_fields;
+    if (response) {
+      this.count = response.count;
+      this.fields = response.ticket_fields;
+    }
   }
 });
 
@@ -180,11 +184,13 @@ Zendesk.Search = Backbone.Model.extend({
     this.fetch(options);
   },
   parse: function (response) {
-    this.set("count", response.count);
-    this.set("facets", response.facets);
-    this.set("results", response.results);
-    this.set("next_page", response.next_page);
-    this.set("previous_page", response.previous_page);
+    if (response) {
+      this.set("count", response.count);
+      this.set("facets", response.facets);
+      this.set("results", response.results);
+      this.set("next_page", response.next_page);
+      this.set("previous_page", response.previous_page);
+    }
   }
 });
 

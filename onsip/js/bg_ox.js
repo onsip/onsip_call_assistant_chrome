@@ -59,7 +59,7 @@ BG_APP.activeCallRequested = function (item) {
   that = this;
   foundCid = _.find(this.callIdQueue,
     function(element, idx, list) {
-      if (element && element.cid === item.callId) {
+      if (element && element.cid === item.callId && that.callIdQueue[idx]) {
         that.callIdQueue[idx].count++;
         return true;
       }
@@ -306,7 +306,7 @@ BG_APP._reconcileCallItem = function(item) {
 
         callId = that.notifications[index].callItem.callId;
         _.each(that.callIdQueue, function(element, idx, list) {
-          if (element && element.cid === callId) {
+          if (element && element.cid === callId && that.callIdQueue[idx]) {
             that.callIdQueue[idx].count--;
             dbg.log(that.log_context,
                     "Count in reconcile retraction for " + element.cid + " is now " +
@@ -429,7 +429,7 @@ BG_APP._reconcileNotifications = function(item) {
           var that = this;
           _.each(this.callIdQueue,
             function(element, idx, list) {
-              if (element && element.cid === item.callId) {
+              if (element && element.cid === item.callId && that.callIdQueue[idx]) {
                 if (that.callIdQueue[idx].count > 1) {
                   n.shouldNotify = true;
                   dbg.log(that.log_context, 'REVERT shouldNotify prop to TRUE');
@@ -473,7 +473,7 @@ BG_APP._updateCallLength = function(n) {
     callId = n.callItem.callId;
     foundCid = _.find(this.callIdQueue,
       function(element, idx, list) {
-        if (element && element.cid === callId) {
+        if (element && element.cid === callId && that.callIdQueue[idx]) {
           dbg.log(that.log_context,
             "in updateCallLength, count is " +
               that.callIdQueue[idx].count);
