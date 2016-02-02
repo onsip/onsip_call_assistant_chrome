@@ -1,6 +1,6 @@
 {
    "name"            : "OnSIP Call Assistant",
-   "version"         : "1.8.0.8",
+   "version"         : "1.8.0.9",
    "manifest_version":  2,
    "description"     : "OnSIP customers can maximize workday efficiency with click-to-call, caller ID popups, and Zendesk & Highrise integration.",
    "icons"	     : {

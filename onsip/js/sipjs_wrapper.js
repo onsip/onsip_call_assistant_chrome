@@ -119,15 +119,20 @@ SIP_EXT.createUAs = function () {
 
       user.ua.afterConnected(function () {
         clearTimeout(intervalId);
+        //disconnected does not come out as often as expected
+        // so use later 'connected's for recovery
+        user.ua.on('connected', that.recoverUA.bind(that, user));
+
         resolve();
       });
     }));
 
-    //probably needs to be better
     user.ua.on('disconnected', that.recoverUA.bind(that, user));
 
     user.ua.start();
   });
+
+  window.addEventListener('online', that.recoverUAs);
 
   return Promise.all(promises);
 };
@@ -145,6 +150,8 @@ SIP_EXT.removeUAs = function () {
 
     delete user.ua;
   });
+
+  window.removeEventListener('online', this.recoverUAs);
 };
 
 SIP_EXT.recoverUAs = function () {
@@ -186,9 +193,12 @@ SIP_EXT.recoverUA = function (user) {
 
   if (!user.ua.isConnected()) {
     user.ua.start();
-  } else if (user.ua.sub) {
-    user.ua.sub.unsubscribe();
-    user.ua.sub.removeAllListeners();
+  }
+
+  if (user.sub) {
+    user.sub.unsubscribe();
+    user.sub.removeAllListeners();
+    delete user.sub;
   }
 
   failureTimeout = function () {
@@ -201,10 +211,13 @@ SIP_EXT.recoverUA = function (user) {
   user.ua.afterConnected(function () {
     clearTimeout(intervalId);
     intervalId = setTimeout(failureTimeout, 10000);
+
+    that.createSub(user);
     user.sub.once('notify', function () {
       user.ua.data.failedRecoveries = 0;
       clearTimeout(intervalId);
     });
+
     user.sub.once('failed', that.recoverUA.bind(that, user));
   });
 };

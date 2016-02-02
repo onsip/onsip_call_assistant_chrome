@@ -252,7 +252,7 @@ Zendesk.App = {
     var users = new Zendesk.Users();
     options = options || {};
     options.timeout = 10000;
-    options.async = false;
+    options.async = true;
     users.findMe(options);
     if (users.length > 0) {
       this.myId = users.at(0).get("id");
