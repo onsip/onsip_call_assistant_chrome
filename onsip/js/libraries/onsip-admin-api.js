@@ -6,6 +6,9 @@ function apiAction (actionName, queryParameters, basicAuth) {
   queryParameters.Action = actionName;
   queryParameters.Output = 'json';
 
+  var appDetails = chrome.app.getDetails();
+  queryParameters.CallAssistantVersion = appDetails.version;
+
   var query = stringify(queryParameters);
 
   //Tidy way of showing what we do below
