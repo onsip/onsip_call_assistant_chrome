@@ -10,10 +10,10 @@ var SIP_EXT = {
 };
 
 SIP_EXT.init = function (pref, callback, manualLogin) {
-  var that = this;
-  var resource = 'chrome-sipjs-plugin';
-  this.from_address = pref.get ('fromAddress');
-  this.pwd = pref.get ('onsipPassword');
+  var that = this,
+    resource = 'chrome-sipjs-plugin',
+    temp_from = pref.get('fromAddress'),
+    temp_pwd = pref.get('onsipPassword');
   /** not ready //
   if (pref.get('highriseEnabled') === true){
     resource += '-highrise';
@@ -21,6 +21,17 @@ SIP_EXT.init = function (pref, callback, manualLogin) {
     resource += '-zendesk';
   }
   **/
+
+  if (this.apiFailed && this.from_address === temp_from && this.pwd === temp_pwd) {
+    dbg.log(this.log_context, 'Login attempted with already bad credentials, failing');
+    callback.onError();
+    return;
+  }
+
+  this.apiFailed = false;
+  this.from_address = temp_from;
+  this.pwd = temp_pwd;
+  this.failed = false;
 
   var apiRefresh = false;
   if (!manualLogin) {
@@ -69,8 +80,10 @@ SIP_EXT.init = function (pref, callback, manualLogin) {
 
     return;
   }).then(callback.onSuccess)
-  .catch(callback.onError)
-  .then(that.createUAs)
+  .catch(function () {
+    that.apiFailed = true;
+    callback.onError();
+  }).then(that.createUAs)
   .then(that.createSubscriptions)
   .catch(that.recoverUAs);
 };

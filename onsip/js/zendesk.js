@@ -79,8 +79,15 @@ Zendesk.User = Backbone.Model.extend({
 Zendesk.Users = Backbone.Collection.extend({
   model: Zendesk.User,
   findMe: function(options) {
+    var that = this;
+
     this.url = Zendesk.Config.baseUrl + "/api/v2/users/me.json?d=" + new Date().getTime();
+    this.prom = new Promise(function (resolve, reject) {
+      that.resolve = resolve;
+      that.reject = reject;
+    });
     this.fetch(options);
+    return this.prom;
   },
   findAll: function(options) {
     this.url = Zendesk.Config.baseUrl + "/api/v2/users.json";
@@ -111,13 +118,17 @@ Zendesk.Users = Backbone.Collection.extend({
   parse: function (response) {
     if (response) {
       if (response.user) {
-       return response.user;
+        this.resolve && this.resolve(response.user);
+        return response.user;
       }
       this.count = response.count;
       this.next_page = response.next_page;
       this.previous_page = response.previous_page;
       response.users = _.filter(response.users, function(u) { return u.phone });
+      this.resolve && this.resolve(this.models.concat(response.users));
       return this.models.concat(response.users);
+    } else {
+      this.reject();
     }
   },
   _findNext: function(options) {
@@ -180,7 +191,7 @@ Zendesk.Search = Backbone.Model.extend({
     var q = escape("phone:" + phone);
     this.url = Zendesk.Config.baseUrl + "/api/v2/search.json?query=" + q;
     options = options || {};
-    options.async = false;
+    options.async = true;
     this.fetch(options);
   },
   parse: function (response) {
@@ -249,14 +260,17 @@ Zendesk.App = {
     });
   },
   verify: function(options) {
+    var that = this;
     var users = new Zendesk.Users();
     options = options || {};
     options.timeout = 10000;
     options.async = true;
-    users.findMe(options);
-    if (users.length > 0) {
-      this.myId = users.at(0).get("id");
-    }
+    users.findMe(options).then(function (usersMaybe) {
+      usersMaybe = [].concat(usersMaybe || []);
+      if (usersMaybe.length > 0) {
+        that.myId = usersMaybe[0]["id"];
+      }
+    });
   },
   _verifyCustomFields: function() {
     this._findCustomFields();

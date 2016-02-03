@@ -291,28 +291,28 @@ BG_APP._reconcileCallItem = function(item) {
           dbg.log(that.log_context, "Update Call Answered Time");
           that.notifications[index].callAnsweredTime = new Date().getTime();
         }
-      }
-    } else {
-      /**
-         This is a retraction. In a retraction we'll compare the item id,
-         rather than callId
-      */
-      if (that._getActiveCallItemId(list[index].callItem) ===
-          that._getActiveCallItemId(item)) {
-        if (that.notifications[index].callAnsweredTime) {
-          that.notifications[index].callHangupTime = new Date().getTime();
-        }
-        that.notifications[index].markForDeletion = new Date().getTime();
-
-        callId = that.notifications[index].callItem.callId;
-        _.each(that.callIdQueue, function(element, idx, list) {
-          if (element && element.cid === callId && that.callIdQueue[idx]) {
-            that.callIdQueue[idx].count--;
-            dbg.log(that.log_context,
-                    "Count in reconcile retraction for " + element.cid + " is now " +
-                    that.callIdQueue[idx].count);
+      } else if (item.state === 'terminated') {
+        /**
+           This is a retraction. In a retraction we'll compare the item id,
+           rather than callId
+        */
+        if (that._getActiveCallItemId(list[index].callItem) ===
+            that._getActiveCallItemId(item)) {
+          if (that.notifications[index].callAnsweredTime) {
+            that.notifications[index].callHangupTime = new Date().getTime();
           }
-        });
+          that.notifications[index].markForDeletion = new Date().getTime();
+
+          callId = that.notifications[index].callItem.callId;
+          _.each(that.callIdQueue, function(element, idx, list) {
+            if (element && element.cid === callId && that.callIdQueue[idx]) {
+              that.callIdQueue[idx].count--;
+              dbg.log(that.log_context,
+                      "Count in reconcile retraction for " + element.cid + " is now " +
+                      that.callIdQueue[idx].count);
+            }
+          });
+        }
       }
     }
   });
@@ -371,7 +371,7 @@ BG_APP._postNotetoProfile  = function (item, callback) {
               var u = pref.get('zendeskUrl') + "/agent/#/tickets/" + resp.ticket.id;
               _.each(that.notifications,
                 function(element, index, list) {
-                  if (element.callItem.callId === options.callId) {
+                  if (element.callItem.callId === options.callID) {
                     that.notifications[index].ticketId = resp.ticket.id;
                   }
                 });
