@@ -410,7 +410,7 @@ BG_APP._reconcileNotifications = function(item) {
   n = this.notifications.pop();
   while(n) {
     if (n.markForDeletion ||
-       (item.state && item.callId === n.callItem.callId)) {
+        ((item.state && item.state !== 'terminated')  && item.callId === n.callItem.callId)) {
       if (n.shouldNotify && n.flagIncoming) {
         n.shouldNotify = false;
         if (n.markForDeletion) {
