@@ -298,10 +298,9 @@ BG_APP._reconcileCallItem = function(item) {
         */
         if (that._getActiveCallItemId(list[index].callItem) ===
             that._getActiveCallItemId(item)) {
-          if (that.notifications[index].callAnsweredTime) {
-            that.notifications[index].callHangupTime = new Date().getTime();
-          }
-          that.notifications[index].markForDeletion = new Date().getTime();
+
+          that.notifications[index].callHangupTime = that.notifications[index].callHangupTime || new Date().getTime();
+          that.notifications[index].markForDeletion = that.notifications[index].markForDeletion || new Date().getTime();
 
           callId = that.notifications[index].callItem.callId;
           _.each(that.callIdQueue, function(element, idx, list) {
