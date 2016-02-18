@@ -254,23 +254,6 @@ BG_APP._showNotification = function(callId, currentNotifications) {
   return !isNotifying;
 };
 
-BG_APP._getActiveCallItemId = function(uri) {
-  var idx, query, itemId = '', aItem;
-
-  if (uri && uri.query && uri.query.length > 0) {
-    query = uri.query;
-    idx = query.indexOf('item=');
-    if (idx != -1) {
-      itemId = query.substring(idx + 5);
-      aItem = itemId.split(":");
-      if (aItem.length === 2) {
-        itemId = aItem[0];
-      }
-    }
-  }
-  return itemId;
-};
-
 BG_APP._reconcileCallItem = function(item) {
   var that = this;
   dbg.log(this.log_context,
@@ -296,8 +279,7 @@ BG_APP._reconcileCallItem = function(item) {
            This is a retraction. In a retraction we'll compare the item id,
            rather than callId
         */
-        if (that._getActiveCallItemId(list[index].callItem) ===
-            that._getActiveCallItemId(item)) {
+        if (list[index].callItem.callId === item.callId) {
 
           that.notifications[index].callHangupTime = that.notifications[index].callHangupTime || new Date().getTime();
           that.notifications[index].markForDeletion = that.notifications[index].markForDeletion || new Date().getTime();
