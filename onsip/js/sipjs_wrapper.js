@@ -158,10 +158,12 @@ SIP_EXT.allUAsConnected = function () {
 
 SIP_EXT.removeUAs = function () {
   SIP_EXT.users.forEach(function (user) {
-    user.ua.removeAllListeners();
-    user.ua.stop();
+    if (user.ua) {
+      user.ua.removeAllListeners();
+      user.ua.stop();
 
-    delete user.ua;
+      delete user.ua;
+    }
   });
 
   window.removeEventListener('online', this.recoverUAs);
@@ -198,7 +200,7 @@ SIP_EXT.recoverUA = function (user) {
 
   dbg.log('SIPJS', 'recovering UA for ' + user.uri);
 
-  if (user.ua.data.failedRecoveries > 3) {
+  if (!user.ua || user.ua.data.failedRecoveries > 3) {
     that.failedRecoveries = 0;
     dbg.log('SIPJS', 'single recovery failed 4 times, moving to total recovery');
     that.recoverUAs();
