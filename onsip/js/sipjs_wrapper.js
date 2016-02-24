@@ -22,8 +22,8 @@ SIP_EXT.init = function (pref, callback, manualLogin) {
   }
   **/
 
-  if (this.apiFailed && this.from_address === temp_from && this.pwd === temp_pwd) {
-    dbg.log(this.log_context, 'Login attempted with already bad credentials, failing');
+  if (!manualLogin && this.apiFailed && this.from_address === temp_from && this.pwd === temp_pwd) {
+    dbg.log(that.log_context, 'Login attempted with already bad credentials, failing');
     callback.onError();
     return;
   }
@@ -54,7 +54,7 @@ SIP_EXT.init = function (pref, callback, manualLogin) {
     }
   }
 
-  this.lastApiCall = Date.now()
+  this.lastApiCall = Date.now();
   this.failedRecoveries = 0;
   that.users = [];
 

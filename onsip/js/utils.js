@@ -2,7 +2,7 @@
 var dbg = {
   log : function () {
     if (arguments.length >= 2) {
-      var c   = ['STROPHE RAW','CONTENT-PG','CHROME-BACKGROUND','STROPHE', 'OX_EXT', 'BG_APP', 'HIGHRISE','CONTENT-PG','ZENDESK'],
+      var c   = ['STROPHE RAW','CONTENT-PG','CHROME-BACKGROUND','STROPHE', 'SIP_EXT', 'BG_APP', 'HIGHRISE','CONTENT-PG','ZENDESK'],
         i = 0, x = '';
       if (!(c && c.length)) {
         return;
