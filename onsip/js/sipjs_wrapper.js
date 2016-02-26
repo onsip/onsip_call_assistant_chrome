@@ -342,7 +342,8 @@ SIP_EXT.handleDialog = function (user, notification) {
       var savedDialog = user.savedDialogs[savedDialogId];
 
       if ((savedDialog.data.callId !== incomingDialog.data.callId) &&
-          (!savedDialog.data.confirmedTime && !incomingDialog.data.confirmedTime) &&
+          ((!savedDialog.data.confirmedTime && !incomingDialog.data.confirmedTime) ||
+           (savedDialog.data.confirmedTime === incomingDialog.data.confirmedTime)) &&
           (((savedDialog.data.localUri === incomingDialog.data.localUri) &&
             (savedDialog.data.remoteUri === incomingDialog.data.remoteUri)) ||
            ((savedDialog.data.localUri === incomingDialog.data.remoteUri) &&
