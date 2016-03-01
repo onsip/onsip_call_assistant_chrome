@@ -336,6 +336,8 @@ SIP_EXT.handleDialog = function (user, notification) {
   //so we strip them and leave the one we saw first
   //sometimes gateway'ed calls flip uris, so check both ways
   // known issue: if a calls b and b calls a and both are ringing simultaneously, you will only see 1
+  // the .split(';')[0] is because sometimes uri's (inexplicably) come down with ';app=q' appended, so they don't match
+  //   with the non ';app=q' ones even though they are the same call
   function isDtlsDupe(incomingDialog) {
     return user.ignoredDialogs[incomingDialog.data.callId] ||
     Object.keys(user.savedDialogs).some(function (savedDialogId) {
@@ -344,10 +346,10 @@ SIP_EXT.handleDialog = function (user, notification) {
       if ((savedDialog.data.callId !== incomingDialog.data.callId) &&
           ((!savedDialog.data.confirmedTime && !incomingDialog.data.confirmedTime) ||
            (savedDialog.data.confirmedTime === incomingDialog.data.confirmedTime)) &&
-          (((savedDialog.data.localUri === incomingDialog.data.localUri) &&
-            (savedDialog.data.remoteUri === incomingDialog.data.remoteUri)) ||
-           ((savedDialog.data.localUri === incomingDialog.data.remoteUri) &&
-            (savedDialog.data.remoteUri === incomingDialog.data.localUri)))) {
+          (((savedDialog.data.localUri.split(';')[0] === incomingDialog.data.localUri.split(';')[0]) &&
+            (savedDialog.data.remoteUri.split(';')[0] === incomingDialog.data.remoteUri.split(';')[0])) ||
+           ((savedDialog.data.localUri.split(';')[0] === incomingDialog.data.remoteUri.split(';')[0]) &&
+            (savedDialog.data.remoteUri.split(';')[0] === incomingDialog.data.localUri.split(';')[0])))) {
         user.ignoredDialogs[incomingDialog.data.callId] = true;
         return true;
       }
