@@ -350,7 +350,8 @@ SIP_EXT.handleDialog = function (user, notification) {
             (savedDialog.data.remoteUri.split(';')[0] === incomingDialog.data.remoteUri.split(';')[0])) ||
            ((savedDialog.data.localUri.split(';')[0] === incomingDialog.data.remoteUri.split(';')[0]) &&
             (savedDialog.data.remoteUri.split(';')[0] === incomingDialog.data.localUri.split(';')[0])))) {
-        user.ignoredDialogs[incomingDialog.data.callId] = true;
+        incomingDialog.data.savedId = savedDialogId;
+        user.ignoredDialogs[incomingDialog.data.callId] = incomingDialog;
         return true;
       }
     });
@@ -385,6 +386,15 @@ SIP_EXT.handleDialog = function (user, notification) {
     if (incomingDialog.data.state !== 'terminated' && !isDtlsDupe(incomingDialog)) {
       incomingDialog.data.changed = !user.firstNotify;
       user.savedDialogs[callId] = incomingDialog;
+    } else if (isDtlsDupe(incomingDialog)) {
+      var ignoredDialog = user.ignoredDialogs[callId];
+      var savedDialog = user.savedDialogs[ignoredDialog.data.savedId];
+      if (savedDialog && states[incomingDialog.data.state] > states[savedDialog.data.state]) {
+        user.savedDialogs[ignoredDialog.data.savedId].data.state = incomingDialog.data.state;
+        user.savedDialogs[ignoredDialog.data.savedId].data.changed = true;
+      }
+      incomingDialog.data.savedId = ignoredDialog.data.savedId;
+      user.ignoredDialogs[callId] = incomingDialog;
     }
   }
 
