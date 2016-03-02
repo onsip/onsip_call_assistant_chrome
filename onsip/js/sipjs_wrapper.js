@@ -342,14 +342,18 @@ SIP_EXT.handleDialog = function (user, notification) {
     return user.ignoredDialogs[incomingDialog.data.callId] ||
     Object.keys(user.savedDialogs).some(function (savedDialogId) {
       var savedDialog = user.savedDialogs[savedDialogId];
+      var savedLocal = savedDialog.data.localUri ? savedDialog.data.localUri.split(';')[0] : null;
+      var savedRemote = savedDialog.data.remoteUri ? savedDialog.data.remoteUri.split(';')[0] : null;
+      var incomingLocal = savedDialog.data.localUri ? savedDialog.data.localUri.split(';')[0] : null;
+      var incomingRemote = savedDialog.data.remoteUri ? savedDialog.data.remoteUri.split(';')[0] : null;
 
       if ((savedDialog.data.callId !== incomingDialog.data.callId) &&
           ((!savedDialog.data.confirmedTime && !incomingDialog.data.confirmedTime) ||
            (savedDialog.data.confirmedTime === incomingDialog.data.confirmedTime)) &&
-          (((savedDialog.data.localUri.split(';')[0] === incomingDialog.data.localUri.split(';')[0]) &&
-            (savedDialog.data.remoteUri.split(';')[0] === incomingDialog.data.remoteUri.split(';')[0])) ||
-           ((savedDialog.data.localUri.split(';')[0] === incomingDialog.data.remoteUri.split(';')[0]) &&
-            (savedDialog.data.remoteUri.split(';')[0] === incomingDialog.data.localUri.split(';')[0])))) {
+          (((savedLocal === incomingLocal) &&
+            (savedRemote === incomingRemote)) ||
+           ((savedLocal=== incomingRemote) &&
+            (savedRemote === incomingLocal)))) {
         incomingDialog.data.savedId = savedDialogId;
         user.ignoredDialogs[incomingDialog.data.callId] = incomingDialog;
         return true;
