@@ -370,6 +370,7 @@ SIP_EXT.handleDialog = function (user, notification) {
     if (savedDialog) {
       if (incomingDialog.data.state !== savedDialog.data.state) {
         incomingDialog.data.changed = true;
+        incomingDialog.data.oldState = savedDialog.data.state;
         user.savedDialogs[callId] = incomingDialog;
       }
       delete dialogs[callId];
@@ -391,7 +392,7 @@ SIP_EXT.handleDialog = function (user, notification) {
       var savedDialog = user.savedDialogs[ignoredDialog.data.savedId];
       if (savedDialog && states[incomingDialog.data.state] > states[savedDialog.data.state]) {
         user.savedDialogs[ignoredDialog.data.savedId].data.state = incomingDialog.data.state;
-        user.savedDialogs[ignoredDialog.data.savedId].data.changed = true;
+        user.savedDialogs[ignoredDialog.data.savedId].data.changed = !(savedDialog.data.oldState && savedDialog.data.oldState === incomingDialog.data.state);
       }
       incomingDialog.data.savedId = ignoredDialog.data.savedId;
       user.ignoredDialogs[callId] = incomingDialog;
@@ -412,6 +413,7 @@ SIP_EXT.handleDialog = function (user, notification) {
     var savedDialog = user.savedDialogs[callId];
     if (!savedDialog.data) return; //unique in an empty array? what?
 
+    delete savedDialog.data.oldState;
     if (savedDialog.data.changed) {
       savedDialog.data.changed = false;
 
