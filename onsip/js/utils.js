@@ -229,7 +229,7 @@ function rtrim(str, chars) {
 function extractPhoneNumber(str){
   var rev_str, s_temp;
   rev_str = str.replace(/sip:/, '');
-  rev_str = rev_str.replace(/@[a-z0-9._]+/, '');
+  rev_str = rev_str.replace(/@[a-z0-9._\-]+/, '');
   rev_str = rev_str.replace( /;\s*[a-z0-9._=]+/ ,'');
   if (rev_str === 'call-setup') {
     var idx = str.indexOf (';id=');
