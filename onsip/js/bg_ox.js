@@ -13,7 +13,11 @@ BG_APP.activeCallCreated = function(item) {
   dbg.log(this.log_context, "active call created ", item);
 
   if (item.remoteUri) {
-    phone = extractPhoneNumber(item.remoteUri);
+    if (item.remoteUri.indexOf('pstn.jnctn.net') > 0) {
+      phone = extractPhoneNumber(item.remoteUri);
+    } else {
+      phone = item.remoteUri;
+    }
   } else {
     phone = "Unknown caller";
   }

@@ -91,7 +91,7 @@ HIGHRISE._createDefaultNote = function(customer, user_tz, incoming, to_aor) {
 
   tz = getDateAndTime(getTimezoneAbbrevation(user_tz));
   full_name = this._getIdentity(customer);
-  to_aor = (to_aor && "(sip:" + to_aor + ")") || "";
+  to_aor = (to_aor && "(" + to_aor + ")") || "";
   if (full_name && full_name.length > 0) {
     full_name = this.encodeSpecialChars(full_name);
     if (incoming) {
@@ -189,7 +189,8 @@ HIGHRISE.findContact = function (phone_number, customer_from_context) {
   company = customer;
   for (i = 0, len = this.contacts.length; i < len; i += 1) {
     for (j = 0; j < this.contacts[i].phone_numbers.length; j += 1) {
-      if (this.contacts[i].phone_numbers[j].phone_number === phone_number) {
+      if (this.contacts[i].phone_numbers[j].phone_number === phone_number ||
+          this.contacts[i].phone_numbers[j].phone_number === phone_number.replace(/sip:/, '')) {
 	customer = this.contacts[i];
 	customer.type = 'people';
 	dbg.log (this.log_context, 'Individual  name: ' + customer.first_name + ' ' + customer.last_name  + ' == ' + customer_from_context + ' - ' + b_cfc_ok);
@@ -234,6 +235,10 @@ HIGHRISE.findContact = function (phone_number, customer_from_context) {
 
 /** Normalize the phone number **/
 HIGHRISE._normalizePhoneNumber = function(phone_number) {
+  if (phone_number.indexOf('@') >= 0) {
+    return phone_number;
+  }
+
   var clean_phone_num, clean_phone_ext;
 
   clean_phone_ext = getPhoneExtension(phone_number);
