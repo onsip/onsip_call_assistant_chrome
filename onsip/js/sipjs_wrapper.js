@@ -5,6 +5,7 @@ var SIP_EXT = {
   "from_address" : undefined,
   "apps"         : [],
   "pwd"          : undefined,
+  "failSafeTimer": undefined,
   "log_context"  : "SIP_EXT",
   "DEF_TIMEOUT"  : 7000
 };
@@ -238,8 +239,8 @@ SIP_EXT.recoverUA = function (user) {
 };
 
 SIP_EXT.createSub = function (user) {
-  /** Re-subscribe every 45 min **/
-  var expiresTime  = 60 * 45,
+  /** Re-subscribe every 10 min **/
+  var expiresTime  = 60 * 10,
     that = SIP_EXT;
 
   user.firstNotify = true;
@@ -288,6 +289,10 @@ SIP_EXT.handleDialog = function (user, notification) {
     'proceeding': 1,
     'confirmed' : 2
   };
+
+  clearTimeout(that.failSafeTimer);
+  that.failSafeTimer = setTimeout(that.recoverUAs, 600000);
+
   if (!data['dialog-info'].dialog) {
     user.firstNotify = false;
     return;
