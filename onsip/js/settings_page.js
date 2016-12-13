@@ -36,8 +36,8 @@ function onSubmit(e) {
 
   e && e.preventDefault();
 
-  chrome.extension.sendMessage({clearCache:true});
-  chrome.extension.sendMessage({checkConnection:true, run:false});
+  chrome.runtime.sendMessage({clearCache:true});
+  chrome.runtime.sendMessage({checkConnection:true, run:false});
 
   pref.set('onsipCredentialsGood', false);
 
@@ -69,7 +69,7 @@ function onSubmit(e) {
      */
     getOnsipUser(handleOnSIPLogin());
 
-    chrome.extension.sendMessage({checkConnection:true, run:true});
+    chrome.runtime.sendMessage({checkConnection:true, run:true});
   } else {
     $('#save-options-btn').removeAttr('disabled');
     $('#errorMsg').
@@ -104,7 +104,7 @@ function getOnsipUser (callback) {
     username = $('#fromAddress').val(),
     password = $('#onsipPassword').val();
 
-  chrome.extension.sendMessage({verifyOnSipUser:true,
+  chrome.runtime.sendMessage({verifyOnSipUser:true,
     username:username, password:password},
     function (response) {
       if (callback) {
@@ -164,8 +164,8 @@ function handleOnSIPLogin() {
 
       err = "Bad login!<br>" +
         "Get your password at " +
-        "<a href='https://insta.onsip.com' target='_blank'> " +
-        "https://insta.onsip.com </a>";
+        "<a href='https://app.onsip.com' target='_blank'> " +
+        "https://app.onsip.com </a>";
 
       $('#errorMsg').html(err).clearQueue().fadeOut(150).fadeIn(300);
       $('#save-options-btn').removeAttr('disabled');
@@ -291,7 +291,7 @@ function validateHighriseCredentials (callback){
   SETTINGS_PG_LOG &&
     console.log('SETTINGS PG :: Sending verifyHighrise request to BG-PAGE');
 
-  chrome.extension.sendMessage({verifyHighrise:true, highrise_url:url,
+  chrome.runtime.sendMessage({verifyHighrise:true, highrise_url:url,
     highrise_token:token},
     function (response) {
       if (callback) {
@@ -317,7 +317,7 @@ function validateZendeskCredentials (callback) {
   SETTINGS_PG_LOG &&
     console.log ('SETTINGS PG :: Sending verifyZendesk request to BG-PAGE');
 
-  chrome.extension.sendMessage({ verifyZendesk : true, zendesk_url : url,
+  chrome.runtime.sendMessage({ verifyZendesk : true, zendesk_url : url,
     zendesk_usr : usr, zendesk_pwd : pwd},
     function (response) {
       if (callback) {

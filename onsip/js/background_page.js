@@ -196,7 +196,7 @@ if (pref && pref.get('onsipCredentialsGood')) {
 /**
  * Add listener for requests from the pages
  */
-chrome.extension.onMessage.addListener(
+chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
 
     /**

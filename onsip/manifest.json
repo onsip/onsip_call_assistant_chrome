@@ -13,7 +13,9 @@
      "default_title" : "Disable OnSIP extension",
      "default_icon"  : "images/icon-19.png"
    },
-   "options_page"    : "options/setup/index.html",
+   "options_ui"      : {
+     "page": "options/setup/index.html"
+   },
    "background"      : {
      "page": "bg_page.html"
    },
