@@ -20,13 +20,13 @@ var HQ_SELECTOR_PATH = [
 var INVALID_NODES = ['SCRIPT', 'STYLE', 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A', 'CODE'];
 
 /** Add listener for commands from the background process **/
-chrome.extension.onMessage.addListener( function (request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener( function (request, sender, sendResponse) {
   alterDOM(request);
   updateAddresses(request);
 });
 
 /** Alter DOM on page load **/
-chrome.extension.sendMessage({ pageLoad : true }, function (response) {
+chrome.runtime.sendMessage({ pageLoad : true }, function (response) {
  alterDOM(response);
  updateAddresses(response);
 });
@@ -325,7 +325,7 @@ function addHighriseEvents() {
         $(path_selector).unbind().bind({
           click : function(e) {
             dbg.log(CONTENT_PG, 'Submit triggered refresh Highrise data');
-            chrome.extension.sendMessage ({refreshHighrise : true}, function (response) {});
+            chrome.runtime.sendMessage ({refreshHighrise : true}, function (response) {});
           }
         });
       }
@@ -352,7 +352,7 @@ function addEvents(node) {
       left      = (left > 0) ? left : 0;
 
       var icon  = $('<div class="onsip-click-to-call-icon"></div>');
-      iconFile  = chrome.extension.getURL('images/icon-phone.png');
+      iconFile  = chrome.runtime.getURL('images/icon-phone.png');
       icon.css  ({ 'background-image' : 'url(' + iconFile + ')',
         'top' : top + 'px', 'left' : left + 'px'}).appendTo('body').fadeIn(200);
       $this.data('icon', icon);
@@ -373,5 +373,5 @@ function callNumber(phone_no, clean_no, extension, name_from_context) {
   msg += '[phone :  '   + phone_no  + '] - [clean no:' + clean_no + '] -';
   msg += '[extension: ' + extension + '] - [name from context page: - ' + name_from_context + ']';
   dbg.log (CONTENT_PG, msg);
-  chrome.extension.sendMessage ({ setupCall : true, phone_no : clean_no, extension : extension, name_from_context : name_from_context }, function (response) {});
+  chrome.runtime.sendMessage ({ setupCall : true, phone_no : clean_no, extension : extension, name_from_context : name_from_context }, function (response) {});
 }

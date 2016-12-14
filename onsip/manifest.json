@@ -1,6 +1,6 @@
 {
    "name"            : "OnSIP Call Assistant",
-   "version"         : "1.8.0.24",
+   "version"         : "1.8.0.25",
    "manifest_version":  2,
    "description"     : "OnSIP customers can maximize workday efficiency with click-to-call, caller ID popups, and Zendesk & Highrise integration.",
    "icons"	     : {
@@ -13,7 +13,9 @@
      "default_title" : "Disable OnSIP extension",
      "default_icon"  : "images/icon-19.png"
    },
-   "options_page"    : "options/setup/index.html",
+   "options_ui"      : {
+     "page": "options/setup/index.html"
+   },
    "background"      : {
      "page": "bg_page.html"
    },

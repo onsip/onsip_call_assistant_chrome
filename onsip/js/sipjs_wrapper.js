@@ -245,7 +245,6 @@ SIP_EXT.createSub = function (user) {
 
   user.firstNotify = true;
   user.savedDialogs = [];
-  user.ignoredDialogs = [];
 
   dbg.log('SIPJS', 'creating subscription for ' + user.uri);
 
@@ -337,74 +336,24 @@ SIP_EXT.handleDialog = function (user, notification) {
     return;
   }
 
-  //dtls causes duplicate entries in the NOTIFY with different Call Ids,
-  //so we strip them and leave the one we saw first
-  //sometimes gateway'ed calls flip uris, so check both ways
-  // known issue: if a calls b and b calls a and both are ringing simultaneously, you will only see 1
-  // the .split(';')[0] is because sometimes uri's (inexplicably) come down with ';app=q' appended, so they don't match
-  //   with the non ';app=q' ones even though they are the same call
-  function isDtlsDupe(incomingDialog) {
-    return user.ignoredDialogs[incomingDialog.data.callId] ||
-    Object.keys(user.savedDialogs).some(function (savedDialogId) {
-      var savedDialog = user.savedDialogs[savedDialogId];
-      var savedLocal = savedDialog.data.localUri ? savedDialog.data.localUri.split(';')[0] : null;
-      var savedRemote = savedDialog.data.remoteUri ? savedDialog.data.remoteUri.split(';')[0] : null;
-      var incomingLocal = savedDialog.data.localUri ? savedDialog.data.localUri.split(';')[0] : null;
-      var incomingRemote = savedDialog.data.remoteUri ? savedDialog.data.remoteUri.split(';')[0] : null;
-
-      if ((savedDialog.data.callId !== incomingDialog.data.callId) &&
-          ((!savedDialog.data.confirmedTime && !incomingDialog.data.confirmedTime) ||
-           (savedDialog.data.confirmedTime === incomingDialog.data.confirmedTime)) &&
-          (((savedLocal === incomingLocal) &&
-            (savedRemote === incomingRemote)) ||
-           ((savedLocal=== incomingRemote) &&
-            (savedRemote === incomingLocal)))) {
-        incomingDialog.data.savedId = savedDialogId;
-        user.ignoredDialogs[incomingDialog.data.callId] = incomingDialog;
-        return true;
-      }
-    });
-  }
-
-  //updates first, then dupes can be checked
   for (var callId in dialogs) {
-    var savedDialog = user.savedDialogs[callId];
-    var incomingDialog = dialogs[callId];
+    var savedDialog = user.savedDialogs[callId],
+        incomingDialog = dialogs[callId];
     //'unique' in a value in an empty array is why the data check is here
     if (!incomingDialog.data) {
       return;
     }
     dbg.log('SIPJS', 'on notify: condensed dialog', incomingDialog.data.callId, 'is in state', incomingDialog.data.state);
 
-    if (savedDialog) {
-      if (incomingDialog.data.state !== savedDialog.data.state) {
-        incomingDialog.data.changed = true;
-        incomingDialog.data.oldState = savedDialog.data.state;
-        user.savedDialogs[callId] = incomingDialog;
-      }
-      delete dialogs[callId];
-    }
-  }
-
-  //at this point, all that is left is dialogs not found in savedDialogs
-  for (var callId in dialogs) {
-    var incomingDialog = dialogs[callId];
-    //'unique' in a value in an empty array is why the data check is here
-    if (!incomingDialog.data) {
-      return;
-    }
-    if (incomingDialog.data.state !== 'terminated' && !isDtlsDupe(incomingDialog)) {
+    if (savedDialog && incomingDialog.data.state !== savedDialog.data.state) {
+      //this is a call we've seen in a previous dialog-info
+      incomingDialog.data.changed = true;
+      incomingDialog.data.oldState = savedDialog.data.state;
+      user.savedDialogs[callId] = incomingDialog;
+    } else if (!savedDialog && incomingDialog.data.state !== 'terminated') {
+      //this is a new call that we aren't tracking yet
       incomingDialog.data.changed = !user.firstNotify;
       user.savedDialogs[callId] = incomingDialog;
-    } else if (isDtlsDupe(incomingDialog)) {
-      var ignoredDialog = user.ignoredDialogs[callId];
-      var savedDialog = user.savedDialogs[ignoredDialog.data.savedId];
-      if (savedDialog && states[incomingDialog.data.state] > states[savedDialog.data.state]) {
-        user.savedDialogs[ignoredDialog.data.savedId].data.state = incomingDialog.data.state;
-        user.savedDialogs[ignoredDialog.data.savedId].data.changed = !(savedDialog.data.oldState && savedDialog.data.oldState === incomingDialog.data.state);
-      }
-      incomingDialog.data.savedId = ignoredDialog.data.savedId;
-      user.ignoredDialogs[callId] = incomingDialog;
     }
   }
 
@@ -447,10 +396,6 @@ SIP_EXT.handleDialog = function (user, notification) {
     if (savedDialog.data.state === 'terminated') {
       delete user.savedDialogs[callId];
     };
-  }
-
-  if (user.savedDialogs.length === 0) {
-    user.ignoredDialogs = [];
   }
 }
 
