@@ -51,6 +51,9 @@ Zendesk.sync = Backbone.sync;
 Backbone.sync = function(method, model, options) {
   options.beforeSend = function (xhr) {
     xhr.setRequestHeader('Authorization', Zendesk.Config.auth);
+    if (Zendesk.App.myAuthToken) {
+        xhr.setRequestHeader('X-CSRF-Token', Zendesk.App.myAuthToken);
+    }
   };
   Zendesk.sync(method, model, options);
 };
@@ -215,6 +218,7 @@ Zendesk.CustomField.ONSIP_CUSTOM_DURATION_RANGE = "Duration";
 
 Zendesk.App = {
   myId: null,
+  myAuthToken: null,
   sipAddress: null,
   logContext: "ZENDESK",
   customFieldList: [
@@ -269,6 +273,7 @@ Zendesk.App = {
       usersMaybe = [].concat(usersMaybe || []);
       if (usersMaybe.length > 0) {
         that.myId = usersMaybe[0]["id"];
+        that.myAuthToken= usersMaybe[0]["authenticity_token"];
       }
     });
   },
