@@ -116,7 +116,7 @@ function parseDOM (node) {
   var nodeName = node && node.nodeName && node.nodeName.toUpperCase() || '';
   var childNodesLength = node && node.childNodes.length || 0;
 
-  if (!node || $.inArray(nodeName, INVALID_NODES) > -1 || $(node).hasClass('onsip-message-box')) {
+  if (!node || $.inArray(nodeName, INVALID_NODES) > -1 || $(node).hasClass('onsip-message-box') || $(node).hasClass('onsip-disable-clicktocall')) {
     return 0;
   }
 
